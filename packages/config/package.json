@@ -1,5 +1,5 @@
 {
-  "name": "@ujuz/db",
+  "name": "@ujuz/config",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -14,8 +14,9 @@
     "lint": "echo 'no lint configured'"
   },
   "dependencies": {
-    "@ujuz/config": "file:../config",
-    "mongodb": "^7.0.0"
+    "dotenv": "^17.2.3",
+    "pino": "^9.6.0",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "typescript": "^5.5.4"

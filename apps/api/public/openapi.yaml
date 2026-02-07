@@ -1,0 +1,1052 @@
+openapi: 3.1.0
+info:
+  title: UJUz (우쥬) - 어린이집 입소 도우미 API
+  description: |
+    UJUz는 대한민국 어린이집 입소를 돕는 AI 서비스입니다.
+    주변 어린이집 검색, 입소 점수 예측, TO(충원) 알림, AI 상담 등을 제공합니다.
+
+    주요 기능:
+    - 📍 위치 기반 어린이집 검색 (반경, 카테고리 필터)
+    - 🔢 입소 점수 계산 및 예측
+    - 🔔 TO(충원) 알림 구독
+    - 🤖 AI 상담 (우주봇)
+    - 👶 자녀 정보 관리
+  version: 1.6.0
+  contact:
+    name: UJUz Team
+    url: https://ujuz.kr
+
+servers:
+  - url: https://api.ujuz.kr
+    description: Production
+  - url: http://localhost:3000
+    description: Development
+
+paths:
+  /places/nearby:
+    get:
+      operationId: getNearbyPlaces
+      summary: 주변 어린이집/시설 검색
+      description: |
+        사용자 위치 기준으로 주변 어린이집 및 아동 시설을 검색합니다.
+        GeoJSON 2dsphere 인덱스 기반 거리 계산을 사용합니다.
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          description: 사용자 위도 (예: 37.4979)
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+            example: 37.4979
+        - name: lng
+          in: query
+          required: true
+          description: 사용자 경도 (예: 127.0276)
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+            example: 127.0276
+        - name: radius
+          in: query
+          description: 검색 반경 (미터, 기본 5000)
+          schema:
+            type: integer
+            minimum: 100
+            maximum: 50000
+            default: 5000
+        - name: categories
+          in: query
+          description: 카테고리 필터 (쉼표 구분, 예 daycare,playground)
+          schema:
+            type: string
+            example: daycare
+        - name: limit
+          in: query
+          description: 결과 수 (기본 20, 최대 50)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - name: offset
+          in: query
+          description: 페이지 오프셋
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: 주변 시설 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlaceWithDistance'
+
+  /places/search:
+    get:
+      operationId: searchPlaces
+      summary: 어린이집/시설 텍스트 검색
+      description: 어린이집 이름 또는 주소로 검색합니다.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: 검색어 (1~50자)
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 50
+            example: 햇살 어린이집
+        - name: limit
+          in: query
+          description: 결과 수 (기본 10, 최대 50)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: 검색 결과
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlaceSummary'
+
+  /places/{id}:
+    get:
+      operationId: getPlaceById
+      summary: 시설 상세 정보
+      description: 특정 어린이집/시설의 상세 정보를 반환합니다.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 시설 상세
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/PlaceDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/ujuz/admission/calculate:
+    post:
+      operationId: calculateAdmissionScore
+      summary: 입소 점수 계산
+      description: |
+        어린이집 입소 점수를 계산하고 입소 가능성을 예측합니다.
+        맞벌이, 한부모, 다자녀 등 우선순위 점수를 반영합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - facility_id
+                - child_id
+                - target_class
+                - priority_type
+              properties:
+                facility_id:
+                  type: string
+                  description: 어린이집 ID
+                child_id:
+                  type: string
+                  description: 자녀 ID
+                target_class:
+                  type: string
+                  description: 입소 희망 반 (예 0세반, 1세반)
+                  enum: [0세반, 1세반, 2세반, 3세반, 4세반, 5세반]
+                priority_type:
+                  type: string
+                  description: 우선순위 유형
+                  enum: [dual_income, single_parent, multi_child, disability, low_income, none]
+                additional_priorities:
+                  type: array
+                  items:
+                    type: string
+                waiting_position:
+                  type: integer
+      responses:
+        '200':
+          description: 점수 계산 결과
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AdmissionResult'
+
+  /api/ujuz/admission/history:
+    get:
+      operationId: getAdmissionHistory
+      summary: 입소 점수 조회 이력
+      description: 사용자의 입소 점수 계산 이력을 반환합니다.
+      responses:
+        '200':
+          description: 점수 이력
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdmissionResult'
+
+  /api/ujuz/alerts/to:
+    get:
+      operationId: getTOSubscriptions
+      summary: TO 알림 구독 목록
+      description: 사용자가 구독 중인 어린이집 TO(충원) 알림 목록을 반환합니다.
+      responses:
+        '200':
+          description: 구독 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TOSubscription'
+    post:
+      operationId: subscribeTOAlert
+      summary: TO 알림 구독
+      description: 특정 어린이집의 TO(충원) 알림을 구독합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - facility_id
+                - facility_name
+              properties:
+                facility_id:
+                  type: string
+                facility_name:
+                  type: string
+                target_classes:
+                  type: array
+                  items:
+                    type: string
+                notification_preferences:
+                  type: object
+                  properties:
+                    push:
+                      type: boolean
+                    email:
+                      type: boolean
+      responses:
+        '200':
+          description: 구독 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/TOSubscription'
+
+  /api/ujuz/alerts/to/history:
+    get:
+      operationId: getTOAlertHistory
+      summary: TO 알림 이력
+      description: 최근 어린이집 TO(충원) 알림 이력을 반환합니다.
+      responses:
+        '200':
+          description: 알림 이력
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TOAlert'
+
+  /api/ujuz/bot/query:
+    post:
+      operationId: queryBot
+      summary: 우주봇 AI 상담
+      description: |
+        어린이집 입소, 보육 관련 질문에 AI가 답변합니다.
+        대화 컨텍스트를 유지하여 연속 대화가 가능합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  description: 사용자 질문
+                  example: 강남구에서 맞벌이 가정이 국공립 어린이집 입소하려면 점수가 얼마나 필요한가요?
+                conversation_id:
+                  type: string
+                  description: 대화 ID (연속 대화 시)
+                context:
+                  type: object
+                  description: 추가 컨텍스트
+      responses:
+        '200':
+          description: AI 응답
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      answer:
+                        type: string
+                      conversation_id:
+                        type: string
+                      sources:
+                        type: array
+                        items:
+                          type: string
+
+  /api/ujuz/v1/admission-score:
+    get:
+      operationId: getAdmissionScoreV1
+      summary: 입소 점수 계산 (V1 Engine)
+      description: |
+        Gamma-Poisson 베이지안 엔진으로 6개월 내 입소 확률을 계산합니다.
+        지역별 사전분포, 시즌성, 우선순위 보정이 적용됩니다.
+      parameters:
+        - name: facility_id
+          in: query
+          required: true
+          description: 시설 ID (placeId 또는 UUID)
+          schema:
+            type: string
+        - name: child_age_band
+          in: query
+          required: true
+          description: 자녀 연령대 (0-5)
+          schema:
+            type: string
+            enum: ['0', '1', '2', '3', '4', '5']
+        - name: priority_type
+          in: query
+          required: true
+          description: 우선순위 유형
+          schema:
+            type: string
+            enum: [dual_income, sibling, single_parent, multi_child, disability, low_income, general]
+        - name: waiting_position
+          in: query
+          description: 대기 순번 (미제공 시 기본값 사용)
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: 입소 점수 결과
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AdmissionScoreV1'
+
+  /api/ujuz/v1/admission-score/bot-format:
+    get:
+      operationId: getAdmissionScoreBotFormat
+      summary: 입소 점수 봇 포맷
+      description: 입소 점수를 자연어 텍스트로 반환합니다.
+      parameters:
+        - name: facility_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: child_age_band
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: ['0', '1', '2', '3', '4', '5']
+        - name: priority_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [dual_income, sibling, single_parent, multi_child, disability, low_income, general]
+      responses:
+        '200':
+          description: 봇 포맷 응답
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  message:
+                    type: string
+                    description: 자연어 입소 분석 텍스트
+
+  /insights:
+    get:
+      operationId: getInsights
+      summary: 시설 인사이트 조회
+      description: 하나 이상의 시설에 대한 AI 분석 인사이트를 반환합니다.
+      parameters:
+        - name: placeIds
+          in: query
+          required: true
+          description: 시설 ID (쉼표 구분 또는 배열)
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+      responses:
+        '200':
+          description: 인사이트 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Insight'
+
+  /peer/live-status:
+    get:
+      operationId: getPeerLiveStatus
+      summary: 피어 실시간 현황
+      description: 커뮤니티 실시간 활동 현황을 반환합니다.
+      responses:
+        '200':
+          description: 실시간 현황
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+
+  /peer/activities:
+    get:
+      operationId: getPeerActivities
+      summary: 피어 활동 목록
+      description: 최근 커뮤니티 활동 목록을 페이지네이션으로 반환합니다.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: 활동 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+
+  /peer/trending/places:
+    get:
+      operationId: getPeerTrendingPlaces
+      summary: 인기 시설 목록
+      description: 커뮤니티에서 가장 많이 언급되는 시설 목록을 반환합니다.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 30
+            default: 10
+      responses:
+        '200':
+          description: 인기 시설
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /peer/activity:
+    post:
+      operationId: recordPeerActivity
+      summary: 피어 활동 기록
+      description: 시설 방문, 리뷰 등의 활동을 기록합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - activity_type
+              properties:
+                activity_type:
+                  type: string
+                  enum: [visit, review, question, info_share, recommendation]
+                place_id:
+                  type: string
+                place_name:
+                  type: string
+                  maxLength: 200
+                age_group:
+                  type: string
+                description:
+                  type: string
+                  maxLength: 2000
+      responses:
+        '201':
+          description: 활동 기록 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+
+  /group-buys:
+    get:
+      operationId: listGroupBuys
+      summary: 공동구매 목록
+      description: 공동구매 목록을 필터/정렬/페이지네이션으로 조회합니다.
+      parameters:
+        - name: item_type
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: 공동구매 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+
+  /group-buys/joined:
+    get:
+      operationId: getJoinedGroupBuys
+      summary: 참여 중인 공동구매
+      description: 사용자가 참여 중인 공동구매 목록을 반환합니다.
+      responses:
+        '200':
+          description: 참여 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /group-buys/{id}:
+    get:
+      operationId: getGroupBuyById
+      summary: 공동구매 상세
+      description: 특정 공동구매의 상세 정보를 반환합니다.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 공동구매 상세
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /group-buys/{id}/join:
+    post:
+      operationId: joinGroupBuy
+      summary: 공동구매 참여
+      description: 특정 공동구매에 참여합니다.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 참여 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+
+  /group-buys/{id}/leave:
+    delete:
+      operationId: leaveGroupBuy
+      summary: 공동구매 탈퇴
+      description: 특정 공동구매에서 탈퇴합니다.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 탈퇴 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+
+  /api/ujuz/users/me:
+    get:
+      operationId: getUserProfile
+      summary: 사용자 프로필 조회
+      description: 현재 사용자의 프로필과 자녀 정보를 반환합니다.
+      responses:
+        '200':
+          description: 프로필 정보
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/UserProfile'
+    patch:
+      operationId: updateUserProfile
+      summary: 사용자 프로필 수정
+      description: 사용자의 표시 이름, 아바타 등을 수정합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name:
+                  type: string
+                  maxLength: 50
+                avatar_url:
+                  type: string
+                  format: uri
+                  maxLength: 500
+      responses:
+        '200':
+          description: 수정 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+
+  /api/ujuz/users/me/children:
+    post:
+      operationId: addChild
+      summary: 자녀 등록
+      description: 사용자의 자녀 정보를 추가합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nickname
+                - birth_date
+              properties:
+                nickname:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                birth_date:
+                  type: string
+                  pattern: '^\d{4}-\d{2}-\d{2}$'
+                  description: ISO date format (YYYY-MM-DD)
+                age_class:
+                  type: string
+                  nullable: true
+                target_facilities:
+                  type: array
+                  items:
+                    type: string
+                priority_types:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: 자녀 등록 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      nickname:
+                        type: string
+                      birth_date:
+                        type: string
+                      age_class:
+                        type: string
+                        nullable: true
+
+  /api/ujuz/users/me/push-token:
+    post:
+      operationId: registerPushToken
+      summary: 푸시 토큰 등록
+      description: 푸시 알림을 위한 디바이스 토큰을 등록합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: 등록 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+
+  /api/ujuz/alerts/to/{facilityId}:
+    delete:
+      operationId: unsubscribeTOAlert
+      summary: TO 알림 구독 해제
+      description: 특정 어린이집의 TO 알림 구독을 해제합니다.
+      parameters:
+        - name: facilityId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 해제 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+
+  /api/ujuz/bot/conversations:
+    get:
+      operationId: listBotConversations
+      summary: 대화 목록
+      description: 사용자의 우주봇 대화 목록을 반환합니다.
+      responses:
+        '200':
+          description: 대화 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      conversations:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            title:
+                              type: string
+                            last_message:
+                              type: string
+                            created_at:
+                              type: string
+                              format: date-time
+                            updated_at:
+                              type: string
+                              format: date-time
+
+  /api/ujuz/bot/conversations/{id}:
+    get:
+      operationId: getBotConversation
+      summary: 대화 상세
+      description: 특정 대화의 전체 메시지를 반환합니다.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 대화 상세
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteBotConversation
+      summary: 대화 삭제
+      description: 특정 대화를 삭제합니다.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 삭제 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+
+  /api/ujuz/subscriptions/plans:
+    get:
+      operationId: getSubscriptionPlans
+      summary: 구독 요금제 목록
+      description: 이용 가능한 구독 요금제를 반환합니다.
+      responses:
+        '200':
+          description: 요금제 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /api/ujuz/subscriptions/me:
+    get:
+      operationId: getUserSubscription
+      summary: 내 구독 조회
+      description: 현재 사용자의 구독 정보를 반환합니다.
+      responses:
+        '200':
+          description: 구독 정보
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+                    nullable: true
+    delete:
+      operationId: cancelSubscription
+      summary: 구독 해지
+      description: 현재 구독을 해지합니다.
+      responses:
+        '200':
+          description: 해지 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+
+  /api/ujuz/subscriptions:
+    post:
+      operationId: createSubscription
+      summary: 구독 생성
+      description: 새로운 구독을 생성합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - plan_tier
+                - billing_cycle
+              properties:
+                plan_tier:
+                  type: string
+                  enum: [free, basic, premium]
+                billing_cycle:
+                  type: string
+                  enum: [monthly, yearly]
+      responses:
+        '201':
+          description: 구독 생성 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+
+  /health:

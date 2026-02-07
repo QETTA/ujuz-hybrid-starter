@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "UJUz (우쥬) - 어린이집 입소 도우미",
+  "name_for_model": "ujuz_daycare",
+  "description_for_human": "주변 어린이집 검색, 입소 점수 예측, TO(충원) 알림을 제공하는 서비스입니다.",
+  "description_for_model": "UJUz는 대한민국 어린이집(daycare/childcare center) 입소를 돕는 서비스입니다. 주요 기능: 1) 위치 기반 주변 어린이집 검색 (getNearbyPlaces) - 사용자 위치(위도/경도)와 반경을 받아 주변 어린이집을 거리순으로 반환합니다. 정원수, 현원수, 시설 유형(국공립/민간/가정 등)을 포함합니다. 2) 이름/주소 검색 (searchPlaces) - 어린이집 이름이나 주소로 검색합니다. 3) 입소 점수 계산 (calculateAdmissionScore) - 자녀 연령, 가정 유형(맞벌이/한부모/다자녀 등), 어린이집 경쟁률을 기반으로 입소 가능성을 예측합니다. 4) TO 알림 (getTOAlertHistory) - 어린이집 충원(TO) 발생 알림 이력을 확인합니다. 5) AI 상담 (queryBot) - 어린이집 입소 관련 질문에 답변합니다. 사용자가 '근처 어린이집', '가까운 어린이집', '어린이집 추천' 등을 물으면 getNearbyPlaces를 호출하세요. 위치 정보가 없으면 사용자에게 위치를 물어보세요.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://api.ujuz.kr/openapi.yaml"
+  },
+  "logo_url": "https://api.ujuz.kr/logo.png",
+  "contact_email": "support@ujuz.kr",
+  "legal_info_url": "https://ujuz.kr/terms"
+}

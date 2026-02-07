@@ -5,14 +5,12 @@
   "scripts": {
     "dev": "concurrently -n API,ALERTS,AI -c auto \"npm:dev -w apps/api\" \"npm:dev -w apps/worker-alerts\" \"npm:dev -w apps/worker-ai\"",
     "build": "npm run build -ws",
-    "db:generate": "npm run db:generate -w packages/db",
-    "db:migrate": "npm run db:migrate -w packages/db",
-    "seed": "npm run seed -w packages/db",
-    "lint": "npm run lint -ws"
+    "typecheck": "tsc --noEmit -p apps/api/tsconfig.json && tsc --noEmit -p apps/worker-alerts/tsconfig.json && tsc --noEmit -p packages/db/tsconfig.json && tsc --noEmit -p packages/config/tsconfig.json && tsc --noEmit -p packages/shared/tsconfig.json",
+    "lint": "npm run lint -ws --if-present"
   },
   "devDependencies": {
     "concurrently": "^9.0.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.5.4"
+    "tsx": "^4.19.2",
+    "typescript": "~5.9.2"
   }
 }

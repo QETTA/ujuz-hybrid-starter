@@ -1,5 +1,5 @@
 {
-  "name": "@ujuz/db",
+  "name": "@ujuz/shared",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -14,8 +14,7 @@
     "lint": "echo 'no lint configured'"
   },
   "dependencies": {
-    "@ujuz/config": "file:../config",
-    "mongodb": "^7.0.0"
+    "@ujuz/config": "file:../config"
   },
   "devDependencies": {
     "typescript": "^5.5.4"

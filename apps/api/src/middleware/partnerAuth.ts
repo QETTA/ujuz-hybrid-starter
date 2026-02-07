@@ -1,0 +1,43 @@
+import type { NextFunction, Request, Response } from 'express';
+import { hashPartnerKey } from '@ujuz/shared';
+import { getDbOrThrow } from '../services/partnerDb.js';
+import { AppError } from '@ujuz/shared';
+
+/**
+ * Partner API-key auth.
+ * Header: x-partner-key: <raw key>
+ *
+ * Attaches:
+ *   (req as any).partnerOrgId
+ *   (req as any).partnerKeyId
+ */
+export async function requirePartnerOrg(req: Request, _res: Response, next: NextFunction) {
+  const raw = req.header('x-partner-key');
+  if (!raw) {
+    throw new AppError('Missing x-partner-key', 401, 'missing_partner_key');
+  }
+
+  const db = await getDbOrThrow();
+  const keyHash = hashPartnerKey(raw);
+
+  const keyDoc = await db.collection('partner_api_keys').findOne({
+    key_hash: keyHash,
+    revoked_at: { $exists: false },
+  });
+
+  if (!keyDoc) {
+    throw new AppError('Invalid partner key', 401, 'invalid_partner_key');
+  }
+
+  const orgId = (keyDoc as any).org_id as string;
+  const org = await db.collection('partner_orgs').findOne({ org_id: orgId });
+
+  if (!org || (org as any).status === 'disabled') {
+    throw new AppError('Partner org disabled', 403, 'partner_org_disabled');
+  }
+
+  (req as any).partnerOrgId = orgId;
+  (req as any).partnerKeyId = (keyDoc as any).key_id;
+
+  next();
+}

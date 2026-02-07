@@ -1,1 +1,2 @@
-export * from './client.js';
+export * from './mongodb.js';
+export * from './mongodb-indexes.js';
