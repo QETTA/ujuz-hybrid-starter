@@ -13,3 +13,23 @@
 5) npm run dev
 
 API 기본 포트: http://localhost:4000
+
+## Docs
+- docs/04-MOMCAFE-MONETIZATION.md: 육아맘카페 파트너(B2B2C) 수익화 전략
+- docs/05-PARTNER-API.md: 파트너 API/위젯/레퍼럴 명세
+
+## New APIs (Starter)
+- Admin (x-admin-key):
+  - POST /v1/partners/orgs
+  - POST /v1/partners/cafes
+  - POST /v1/partners/cafes/:cafeId/referral-links
+  - POST /v1/partners/cafes/:cafeId/widgets
+  - GET  /v1/partners/payouts/preview?period=YYYY-MM
+  - POST /v1/partners/payouts/run
+
+- Partner ingest (x-partner-key):
+  - POST /v1/partners/cafes/:cafeId/external-posts:batch
+
+- Public:
+  - POST /v1/referrals/track
+  - GET  /v1/widgets/:widgetKey

@@ -39,12 +39,48 @@ enum AiJobStatus {
   FAILED
 }
 
+enum PartnerPlatform {
+  NAVER_CAFE
+  KAKAO_OPENCHAT
+  BAND
+  OTHER
+}
+
+enum PartnerStatus {
+  ACTIVE
+  PAUSED
+  TERMINATED
+}
+
+enum WidgetType {
+  TO_ALERT
+  ADMISSION_SCORE
+  DEALS
+  TRENDING
+  BOT
+}
+
+enum ReferralEventType {
+  INSTALL
+  SIGNUP
+  SUBSCRIBE
+  DEAL_PURCHASE
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  PAID
+  FAILED
+}
+
 model User {
   id          String   @id @default(cuid())
   email       String?  @unique
   handle      String?  @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  isAdmin     Boolean  @default(false)
 
   childProfiles  ChildProfile[]
   memberships    Membership[]
@@ -57,6 +93,8 @@ model User {
   aiJobs         AiJob[]
   aiUsage        AiUsage[]
   dealRequests   DealRequest[]
+  referralAttributions ReferralAttribution[]
+  referralEvents       ReferralEvent[]
 }
 
 model ChildProfile {
@@ -313,6 +351,184 @@ model DealRequest {
   createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+}
+
+model PartnerOrg {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  orgType      String?  // momcafe, media, school, etc
+  contactName  String?
+  contactEmail String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cafes   PartnerCafe[]
+  apiKeys PartnerApiKey[]
+
+  @@index([name])
+}
+
+model PartnerApiKey {
+  id        String   @id @default(cuid())
+  orgId     String
+  label     String?
+  keyHash   String   @unique
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+
+  org PartnerOrg @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, revokedAt])
+}
+
+model PartnerCafe {
+  id             String          @id @default(cuid())
+  orgId          String
+  platform       PartnerPlatform @default(NAVER_CAFE)
+  platformCafeId String?
+  name           String
+  url            String?
+  region         String?
+  status         PartnerStatus   @default(ACTIVE)
+
+  // revenue share (default values can be overridden per cafe)
+  shareRateSubscription Float @default(0.2)
+  shareRateCommerce     Float @default(0.1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org          PartnerOrg       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  widgets      PartnerWidget[]
+  referralLinks ReferralLink[]
+  externalPosts ExternalPost[]
+  payoutLedgers PayoutLedger[]
+
+  @@unique([platform, platformCafeId])
+  @@index([orgId, status])
+  @@index([platform, platformCafeId])
+}
+
+model PartnerWidget {
+  id        String     @id @default(cuid())
+  cafeId    String
+  type      WidgetType
+  widgetKey String     @unique
+  config    Json?
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+
+  cafe PartnerCafe @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+
+  @@index([cafeId, type, isActive])
+}
+
+model ReferralLink {
+  id          String   @id @default(cuid())
+  cafeId      String
+  code        String   @unique
+  channel     String?  // banner, post, admin_menu, etc
+  landingPath String   @default("/install")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  cafe   PartnerCafe @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  events ReferralEvent[]
+  attributions ReferralAttribution[]
+
+  @@index([cafeId, isActive])
+}
+
+model ReferralAttribution {
+  id          String   @id @default(cuid())
+  code        String
+  userId      String?
+  anonymousId String?
+  firstTouchAt DateTime @default(now())
+  lastTouchAt  DateTime @updatedAt
+  expiresAt    DateTime
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  link ReferralLink @relation(fields: [code], references: [code], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([anonymousId])
+  @@index([expiresAt])
+}
+
+model ReferralEvent {
+  id          String           @id @default(cuid())
+  code        String
+  userId      String?
+  anonymousId String?
+  type        ReferralEventType
+  amount      Int?             // in KRW
+  currency    String?          // KRW
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  link ReferralLink @relation(fields: [code], references: [code], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([code, type, createdAt])
+}
+
+model PayoutLedger {
+  id                 String       @id @default(cuid())
+  cafeId             String
+  period             String       // YYYY-MM
+  grossSubscription  Int          @default(0)
+  grossCommerce      Int          @default(0)
+  shareSubscription  Int          @default(0)
+  shareCommerce      Int          @default(0)
+  status             PayoutStatus @default(PENDING)
+  memo               String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  cafe PartnerCafe @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+
+  @@unique([cafeId, period])
+  @@index([period, status])
+}
+
+model ExternalPost {
+  id          String   @id @default(cuid())
+  cafeId      String
+  externalId  String
+  title       String
+  body        String
+  url         String?
+  authorHash  String?
+  postedAt    DateTime?
+  fetchedAt   DateTime @default(now())
+  raw         Json?
+  toMention   Boolean  @default(false)
+  toConfidence Float   @default(0.0)
+
+  cafe PartnerCafe @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  toDetections ToDetection[]
+
+  @@unique([cafeId, externalId])
+  @@index([cafeId, fetchedAt])
+  @@index([toMention, toConfidence])
+}
+
+model ToDetection {
+  id            String   @id @default(cuid())
+  externalPostId String
+  facilityName  String?
+  ageClass      String?
+  waitingPosition Int?
+  estimatedSlots Int?
+  confidence    Float    @default(0.6)
+  extracted     Json?
+  createdAt     DateTime @default(now())
+
+  externalPost ExternalPost @relation(fields: [externalPostId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
 }

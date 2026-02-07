@@ -7,11 +7,20 @@ import { authMiddleware, requireAuth, signToken } from './auth.js';
 import { alertsQueue, aiQueue } from './queues.js';
 import { enforceAlertLimit, enforceAiQuota, getUserPlan } from './entitlements.js';
 import { PostType } from '@prisma/client';
+import partnersRouter from './routes/partners.js';
+import referralsRouter from './routes/referrals.js';
+import widgetsRouter from './routes/widgets.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 app.use(authMiddleware);
+
+// --- Partner / Referrals / Widgets
+app.use('/v1/partners', partnersRouter);
+app.use('/v1/referrals', referralsRouter);
+app.use('/v1/widgets', widgetsRouter);
+
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });

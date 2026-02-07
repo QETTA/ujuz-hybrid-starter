@@ -1,5 +1,15 @@
 import 'dotenv/config';
 import { prisma } from './client.js';
+import { createHash, randomBytes } from 'crypto';
+
+function sha256(input: string) {
+  return createHash('sha256').update(input).digest('hex');
+}
+
+function makeCode(prefix = 'cafe') {
+  const rand = randomBytes(5).toString('hex'); // 10 chars
+  return `${prefix}_${rand}`;
+}
 
 async function main() {
   // Neighborhoods (예시)
@@ -34,7 +44,62 @@ async function main() {
     });
   }
 
+  // Partner sample (Momcafe monetization)
+  const org = await prisma.partnerOrg.upsert({
+    where: { name: '대치맘카페(샘플)' },
+    update: {},
+    create: { name: '대치맘카페(샘플)', orgType: 'momcafe', contactName: '관리자', contactEmail: 'admin@example.com' }
+  });
+
+  let cafe = await prisma.partnerCafe.findFirst({ where: { platform: 'NAVER_CAFE', platformCafeId: '12345' } });
+  if (!cafe) {
+    cafe = await prisma.partnerCafe.create({
+      data: {
+        orgId: org.id,
+        platform: 'NAVER_CAFE',
+        platformCafeId: '12345',
+        name: '대치맘카페',
+        url: 'https://cafe.naver.com/sample',
+        region: '서울 강남구',
+        shareRateSubscription: 0.2,
+        shareRateCommerce: 0.1,
+      }
+    });
+  }
+
+  // Partner API key (store hash)
+  const rawKey = process.env.PARTNER_API_KEY_SAMPLE ?? `dev_${randomBytes(16).toString('hex')}`;
+  await prisma.partnerApiKey.upsert({
+    where: { keyHash: sha256(rawKey) },
+    update: { revokedAt: null },
+    create: { orgId: org.id, label: 'sample', keyHash: sha256(rawKey) }
+  });
+
+  // Widget key
+  const widgetKey = process.env.PARTNER_WIDGET_KEY_SAMPLE ?? makeCode('widget');
+  await prisma.partnerWidget.upsert({
+    where: { widgetKey },
+    update: { isActive: true },
+    create: { cafeId: cafe.id, type: 'TO_ALERT', widgetKey, config: { title: '우리 동네 TO 알림', theme: 'light' } }
+  });
+
+  // Referral link code
+  const code = process.env.PARTNER_REFERRAL_CODE_SAMPLE ?? makeCode('ref');
+  await prisma.referralLink.upsert({
+    where: { code },
+    update: { isActive: true },
+    create: { cafeId: cafe.id, code, channel: 'banner', landingPath: '/install' }
+  });
+
+  // Example event (for settlement preview)
+  await prisma.referralEvent.create({
+    data: { code, type: 'INSTALL', anonymousId: 'anon_sample', metadata: { source: 'seed' } }
+  });
   console.log('✅ Seed complete');
+  console.log('--- Partner sample ---');
+  console.log('PARTNER_API_KEY_SAMPLE (raw):', rawKey);
+  console.log('PARTNER_WIDGET_KEY_SAMPLE:', widgetKey);
+  console.log('PARTNER_REFERRAL_CODE_SAMPLE:', code);
 }
 
 main()
