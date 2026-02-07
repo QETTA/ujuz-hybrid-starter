@@ -92,6 +92,8 @@ model User {
   subscription   Subscription?
   aiJobs         AiJob[]
   aiUsage        AiUsage[]
+  reactions      Reaction[]
+  placeReviews   PlaceReview[]
   dealRequests   DealRequest[]
   referralAttributions ReferralAttribution[]
   referralEvents       ReferralEvent[]
@@ -150,6 +152,8 @@ model Place {
 
   neighborhood Neighborhood @relation(fields: [neighborhoodId], references: [id], onDelete: Cascade)
   reviews      PlaceReview[]
+  posts        Post[]
+  bookmarks    Bookmark[]
 
   @@index([neighborhoodId, category])
   @@unique([neighborhoodId, name])
@@ -172,6 +176,7 @@ model Post {
   place        Place?        @relation(fields: [placeId], references: [id], onDelete: SetNull)
   comments     Comment[]
   reactions    Reaction[]
+  bookmarks    Bookmark[]
   alertEvents  AlertEvent[]
 
   @@index([neighborhoodId, createdAt])
