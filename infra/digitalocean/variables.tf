@@ -45,3 +45,9 @@ variable "container_tag" {
   type        = string
   default     = "latest"
 }
+
+variable "ssh_allowed_cidrs" {
+  description = "CIDR blocks allowed to SSH (restrict in production)"
+  type        = list(string)
+  default     = ["0.0.0.0/0", "::/0"]
+}

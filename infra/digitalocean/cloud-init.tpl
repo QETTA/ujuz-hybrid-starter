@@ -38,6 +38,11 @@ write_files:
         redis:
           image: redis:7-alpine
           restart: unless-stopped
+          healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 3s
+            retries: 3
 
         api:
           image: ${image}:${tag}
@@ -47,8 +52,15 @@ write_files:
           ports:
             - "3000:3000"
           depends_on:
-            - redis
+            redis:
+              condition: service_healthy
           restart: unless-stopped
+          healthcheck:
+            test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+            interval: 15s
+            timeout: 5s
+            retries: 3
+            start_period: 10s
 
         worker-alerts:
           image: ${image}:${tag}
@@ -56,7 +68,8 @@ write_files:
             APP_NAME: worker-alerts
           env_file: .env
           depends_on:
-            - redis
+            redis:
+              condition: service_healthy
           restart: unless-stopped
 
         worker-ai:
@@ -65,7 +78,8 @@ write_files:
             APP_NAME: worker-ai
           env_file: .env
           depends_on:
-            - redis
+            redis:
+              condition: service_healthy
           restart: unless-stopped
 
   - path: /etc/systemd/system/ujuz-deploy.service

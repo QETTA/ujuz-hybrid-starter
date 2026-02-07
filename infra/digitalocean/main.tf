@@ -18,10 +18,11 @@ resource "digitalocean_firewall" "app" {
   name        = "${var.droplet_name}-fw"
   droplet_ids = [digitalocean_droplet.app.id]
 
+  # SSH: restricted by var.ssh_allowed_cidrs (set to your IP in production)
   inbound_rule {
     protocol         = "tcp"
     port_range       = "22"
-    source_addresses = ["0.0.0.0/0", "::/0"]
+    source_addresses = var.ssh_allowed_cidrs
   }
 
   inbound_rule {
@@ -33,12 +34,6 @@ resource "digitalocean_firewall" "app" {
   inbound_rule {
     protocol         = "tcp"
     port_range       = "443"
-    source_addresses = ["0.0.0.0/0", "::/0"]
-  }
-
-  inbound_rule {
-    protocol         = "tcp"
-    port_range       = "3000"
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
