@@ -1,11 +1,11 @@
 import 'dotenv/config';
 import { Worker } from 'bullmq';
-import { connectMongo, getMongoDb } from '@ujuz/db';
+import { connectMongo, getMongoDb, closeMongo } from '@ujuz/db';
 import { env, logger } from '@ujuz/config';
 import type { Db } from 'mongodb';
 
-const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
-const provider = (process.env.AI_PROVIDER ?? 'stub').toLowerCase();
+const redisUrl = env.REDIS_URL;
+const provider = env.AI_PROVIDER.toLowerCase();
 
 function stubInquiryMessage(input: any) {
   const institutionName = input.institutionName ?? '기관';
@@ -102,6 +102,16 @@ async function main() {
 
   worker.on('completed', (job) => logger.info({ jobId: job.id }, 'AI job completed'));
   worker.on('failed', (job, err) => logger.error({ jobId: job?.id, err }, 'AI job failed'));
+
+  // Graceful shutdown
+  const shutdown = async (signal: string) => {
+    logger.info({ signal }, 'AI worker shutting down');
+    await worker.close();
+    await closeMongo();
+    process.exit(0);
+  };
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
 
   logger.info('AI worker started');
 }

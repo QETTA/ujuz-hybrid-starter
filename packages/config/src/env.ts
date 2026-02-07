@@ -45,6 +45,11 @@ const envSchema = z.object({
   // data.go.kr
   DATA_GO_KR_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
 
+  // Redis (BullMQ workers)
+  REDIS_URL: z.preprocess(emptyToUndefined, z.string().optional().default('redis://localhost:6379')),
+  // AI worker provider
+  AI_PROVIDER: z.preprocess(emptyToUndefined, z.string().optional().default('stub')),
+
   // Partner / Referral / External ingest (UJUz Hybrid)
   ADMIN_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   PARTNER_KEY_HASH_SALT: z.preprocess(emptyToUndefined, z.string().optional()),

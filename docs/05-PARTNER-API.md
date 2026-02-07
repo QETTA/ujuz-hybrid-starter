@@ -1,6 +1,6 @@
 # Partner API (Starter) – 맘카페 온보딩/위젯/레퍼럴/인입 데이터
 
-> 이 Starter는 Postgres+Prisma 기준입니다. 실제 서버(Mongo)로 옮길 때도 **리소스/필드 구조는 그대로** 가져가면 됩니다.
+> 이 서버는 MongoDB 기준입니다. 리소스/필드 구조는 아래와 같습니다.
 
 ## 인증
 - 관리자 API: `x-admin-key: <ADMIN_API_KEY>`
