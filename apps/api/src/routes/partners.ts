@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { createRateLimiter } from '../middleware/rateLimit.js';
 import { requireAdminKey } from '../middleware/adminKeyAuth.js';
-import { requirePartnerOrg } from '../middleware/partnerAuth.js';
+import { requirePartnerOrg, type PartnerRequest } from '../middleware/partnerAuth.js';
 import {
   PartnerOrgTypeSchema,
   PartnerCafePlatformSchema,
@@ -105,12 +105,12 @@ router.post('/payouts/run', requireAdminKey, async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 
 router.get('/me/cafes', requirePartnerOrg, async (req, res) => {
-  const org_id = (req as any).partnerOrgId as string;
+  const org_id = (req as PartnerRequest).partnerOrgId;
   const db = await getDbOrThrow();
   const cafes = await db.collection('partner_cafes').find({ org_id }).sort({ created_at: -1 }).toArray();
   res.json({
     ok: true,
-    data: cafes.map((c: any) => ({
+    data: cafes.map((c) => ({
       cafe_id: c.cafe_id,
       name: c.name,
       platform: c.platform,
@@ -143,7 +143,7 @@ router.post(
   requirePartnerOrg,
   createRateLimiter({ windowMs: 60_000, max: 60 }), // per partner key
   async (req, res) => {
-    const org_id = (req as any).partnerOrgId as string;
+    const org_id = (req as PartnerRequest).partnerOrgId;
     const cafe_id = z.string().min(3).parse(req.params.cafeId);
     const body = BatchExternalPostsSchema.parse(req.body);
 

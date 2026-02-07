@@ -69,13 +69,13 @@ const WAITLIST_RE = /\ub300\uae30\s*(\d+)\s*\ubc88/;
 const SLOT_RE = /(TO|\uc785\uc18c|\uacb0\uc6d0|\uc790\ub9ac)\s*(\d+)\s*(\uba85|\uac1c)?/i;
 const AGE_RE = /(\ub9cc\s*)?(\d)\s*\uc138/;
 
-function detectTo(text: string): { toMention: boolean; confidence: number; extracted?: any } {
+function detectTo(text: string): { toMention: boolean; confidence: number; extracted?: Record<string, unknown> } {
   const normalized = text.replace(/\s+/g, ' ').trim();
   const hasKeyword = TO_KEYWORDS.some((re) => re.test(normalized));
   if (!hasKeyword) return { toMention: false, confidence: 0 };
 
   let confidence = 0.55;
-  const extracted: any = {};
+  const extracted: Record<string, unknown> = {};
 
   const slotMatch = normalized.match(SLOT_RE);
   if (slotMatch) {
@@ -320,17 +320,17 @@ export async function getWidgetByKey(widget_key: string) {
   const widget = await db.collection('partner_widgets').findOne({ widget_key, is_active: true });
   if (!widget) throw new AppError('Widget not found', 404, 'widget_not_found');
 
-  const cafe = await db.collection('partner_cafes').findOne({ cafe_id: (widget as any).cafe_id });
+  const cafe = await db.collection('partner_cafes').findOne({ cafe_id: widget.cafe_id });
   const latestReferral = await db
     .collection('referral_links')
-    .find({ cafe_id: (widget as any).cafe_id, is_active: true })
+    .find({ cafe_id: widget.cafe_id, is_active: true })
     .sort({ created_at: -1 })
     .limit(1)
     .toArray();
 
   const posts = await db
     .collection('external_posts')
-    .find({ cafe_id: (widget as any).cafe_id, to_mention: true })
+    .find({ cafe_id: widget.cafe_id, to_mention: true })
     .sort({ posted_at: -1 })
     .limit(20)
     .toArray();
@@ -338,13 +338,13 @@ export async function getWidgetByKey(widget_key: string) {
   return {
     widget: {
       widget_key,
-      cafe_id: (widget as any).cafe_id,
-      cafe_name: (cafe as any)?.name,
-      type: (widget as any).type,
-      config: (widget as any).config,
+      cafe_id: widget.cafe_id,
+      cafe_name: cafe?.name,
+      type: widget.type,
+      config: widget.config,
       referral_code: latestReferral[0]?.code,
     },
-    to_mentions: posts.map((p: any) => ({
+    to_mentions: posts.map((p) => ({
       external_id: p.external_id,
       title: p.title,
       url: p.url,

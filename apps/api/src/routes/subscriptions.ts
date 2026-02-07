@@ -50,8 +50,8 @@ router.post('/subscribe', async (req, res) => {
     try {
       const amount =
         body.billing_cycle === 'yearly'
-          ? (subscription as any).plan?.price_yearly
-          : (subscription as any).plan?.price_monthly;
+          ? subscription.plan?.price_yearly
+          : subscription.plan?.price_monthly;
 
       await trackReferralEvent({
         code: referralCode,

@@ -3,7 +3,6 @@
  * 구독 및 요금제 관리
  */
 
-import { ObjectId } from 'mongodb';
 import { getMongoDb, connectMongo } from '@ujuz/db';
 import { env } from '@ujuz/config';
 import { AppError } from '@ujuz/shared';

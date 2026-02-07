@@ -2,12 +2,30 @@ import 'dotenv/config';
 import { Worker } from 'bullmq';
 import { connectMongo, getMongoDb, closeMongo } from '@ujuz/db';
 import { env, logger } from '@ujuz/config';
-import type { Db } from 'mongodb';
+import { ObjectId, type Db } from 'mongodb';
 
 const redisUrl = env.REDIS_URL;
 const provider = env.AI_PROVIDER.toLowerCase();
 
-function stubInquiryMessage(input: any) {
+interface InquiryMessageInput {
+  institutionName?: string;
+  topic?: string;
+  childAge?: string;
+}
+
+interface CompareCandidate {
+  name?: string;
+  distanceMin?: number;
+  pros?: string[];
+  cons?: string[];
+  todos?: string[];
+}
+
+interface CompareTableInput {
+  candidates?: CompareCandidate[];
+}
+
+function stubInquiryMessage(input: InquiryMessageInput) {
   const institutionName = input.institutionName ?? '기관';
   const topic = input.topic ?? '모집/대기/적응';
   const childAge = input.childAge ?? '아이';
@@ -30,8 +48,8 @@ function stubInquiryMessage(input: any) {
   return { variants };
 }
 
-function stubCompareTable(input: any) {
-  const candidates: any[] = Array.isArray(input.candidates) ? input.candidates : [];
+function stubCompareTable(input: CompareTableInput) {
+  const candidates: CompareCandidate[] = Array.isArray(input.candidates) ? input.candidates : [];
   const headers = ['기관', '거리', '장점', '단점', '확인'];
   const rows = candidates.map((c) => [
     String(c.name ?? '-'),
@@ -52,28 +70,28 @@ function stubCompareTable(input: any) {
 
 async function runJob(db: Db, aiJobId: string) {
   const col = db.collection('ai_jobs');
-  const job = await col.findOne({ _id: aiJobId as any });
+  const job = await col.findOne({ _id: new ObjectId(aiJobId) });
   if (!job) return;
 
-  await col.updateOne({ _id: aiJobId as any }, { $set: { status: 'RUNNING', updatedAt: new Date() } });
+  await col.updateOne({ _id: new ObjectId(aiJobId) }, { $set: { status: 'RUNNING', updatedAt: new Date() } });
 
   try {
     if (provider !== 'stub') {
       throw new Error(`AI_PROVIDER=${provider} 는 아직 연결되지 않았습니다. (stub만 제공)`);
     }
 
-    let output: any = null;
-    if (job.type === 'inquiry_message') output = stubInquiryMessage(job.input);
-    if (job.type === 'compare_table') output = stubCompareTable(job.input);
+    let output: Record<string, unknown> | null = null;
+    if (job.type === 'inquiry_message') output = stubInquiryMessage(job.input as InquiryMessageInput);
+    if (job.type === 'compare_table') output = stubCompareTable(job.input as CompareTableInput);
 
     await col.updateOne(
-      { _id: aiJobId as any },
+      { _id: new ObjectId(aiJobId) },
       { $set: { status: 'SUCCEEDED', output, updatedAt: new Date() } },
     );
-  } catch (e: any) {
+  } catch (e) {
     await col.updateOne(
-      { _id: aiJobId as any },
-      { $set: { status: 'FAILED', error: String(e?.message ?? e), updatedAt: new Date() } },
+      { _id: new ObjectId(aiJobId) },
+      { $set: { status: 'FAILED', error: e instanceof Error ? e.message : String(e), updatedAt: new Date() } },
     );
   }
 }

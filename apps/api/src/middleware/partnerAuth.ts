@@ -3,13 +3,18 @@ import { hashPartnerKey } from '@ujuz/shared';
 import { getDbOrThrow } from '../services/partnerDb.js';
 import { AppError } from '@ujuz/shared';
 
+export interface PartnerRequest extends Request {
+  partnerOrgId: string;
+  partnerKeyId: string;
+}
+
 /**
  * Partner API-key auth.
  * Header: x-partner-key: <raw key>
  *
  * Attaches:
- *   (req as any).partnerOrgId
- *   (req as any).partnerKeyId
+ *   req.partnerOrgId
+ *   req.partnerKeyId
  */
 export async function requirePartnerOrg(req: Request, _res: Response, next: NextFunction) {
   const raw = req.header('x-partner-key');
@@ -29,15 +34,15 @@ export async function requirePartnerOrg(req: Request, _res: Response, next: Next
     throw new AppError('Invalid partner key', 401, 'invalid_partner_key');
   }
 
-  const orgId = (keyDoc as any).org_id as string;
+  const orgId = keyDoc.org_id as string;
   const org = await db.collection('partner_orgs').findOne({ org_id: orgId });
 
-  if (!org || (org as any).status === 'disabled') {
+  if (!org || org.status === 'disabled') {
     throw new AppError('Partner org disabled', 403, 'partner_org_disabled');
   }
 
-  (req as any).partnerOrgId = orgId;
-  (req as any).partnerKeyId = (keyDoc as any).key_id;
+  (req as PartnerRequest).partnerOrgId = orgId;
+  (req as PartnerRequest).partnerKeyId = keyDoc.key_id as string;
 
   next();
 }

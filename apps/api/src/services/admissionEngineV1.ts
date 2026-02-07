@@ -196,30 +196,6 @@ function effectiveHorizon(H: number, currentMonth: number): number {
   return H_eff; // 단위: month-equivalent
 }
 
-/**
- * Age-band별 정원 추정 (V1.5.3 SSOT: AGE_BAND_CAPACITY_RATIO)
- */
-function getAgebandCapacity(
-  facility: any,
-  age_band: '0' | '1' | '2' | '3' | '4' | '5'
-): { capacity: number; method: 'by_class' | 'ratio_fallback' } {
-  // 1순위: facility.capacity_by_class (실제 데이터)
-  if (facility.capacity_by_class?.[age_band] != null) {
-    return {
-      capacity: facility.capacity_by_class[age_band],
-      method: 'by_class',
-    };
-  }
-
-  // 2순위: AGE_BAND_CAPACITY_RATIO 테이블 (통계 기반)
-  const totalCapacity = facility.capacity?.total ?? facility.capacity ?? 0;
-  const ratio = AGE_BAND_CAPACITY_RATIO[age_band] ?? 0.15; // fallback 0.15
-  return {
-    capacity: Math.round(totalCapacity * ratio),
-    method: 'ratio_fallback',
-  };
-}
-
 function getCacheKey(input: AdmissionScoreInput, region: string, w_eff: number): string {
   return `${input.facility_id}|${input.child_age_band}|${w_eff}|${ENGINE_VERSION}|${CALIBRATION_VERSION}`;
 }
@@ -296,10 +272,6 @@ export async function calculateAdmissionScoreV1(
   const capacity =
     (facility.capacity as Record<string, number>)?.total ??
     (facility.capacity as number) ??
-    0;
-  const enrolled =
-    (facility.capacity as Record<string, number>)?.currentEnrollment ??
-    (facility.current_enrolled as number) ??
     0;
   const address = (facility.address as string) ?? '';
   const region: RegionKey | 'default' = extractRegionFromAddress(address) ?? 'default';
@@ -588,7 +560,6 @@ export async function calculateAdmissionScoreV1(
   }
 
   const P_6m = admissionProbability(6);
-  const P_12m = admissionProbability(12);
 
   // 9. 시즌성 Evidence
   const currentMonth = new Date().getMonth() + 1;
@@ -634,7 +605,7 @@ export async function calculateAdmissionScoreV1(
       );
       const avgSentiment =
         qualifiedInsights.reduce(
-          (sum, c) => sum + ((c.features as any)?.avg_sentiment ?? 0),
+          (sum, c) => sum + (c.features?.avg_sentiment ?? 0),
           0
         ) / qualifiedInsights.length;
 

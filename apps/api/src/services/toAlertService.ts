@@ -3,7 +3,6 @@
  * TO(자리) 알림 구독 및 감지
  */
 
-import { ObjectId } from 'mongodb';
 import { getMongoDb, connectMongo } from '@ujuz/db';
 import { env } from '@ujuz/config';
 import { AppError } from '@ujuz/shared';

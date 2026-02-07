@@ -11,7 +11,7 @@
  * V1.5.4: 위례 region isolation — HOT_ZONES 우선순위 매칭
  */
 
-import { Db } from 'mongodb';
+import { type AnyBulkWriteOperation, Db, type Document } from 'mongodb';
 import { getMongoDb, connectMongo } from '@ujuz/db';
 import { env, logger } from '@ujuz/config';
 import { AppError, extractRegionFromAddress } from '@ujuz/shared';
@@ -46,12 +46,6 @@ interface TOAlertEvent {
 
 // ─── Constants ────────────────────────────────────────────────────
 
-const SNAPSHOT_INTERVALS = {
-  premium: 5 * 60 * 1000, // 5분 (유료/관심등록 시설)
-  high: 30 * 60 * 1000, // 30분 (핫존: 위례/강남/서초/분당/성남/송파)
-  normal: 60 * 60 * 1000, // 60분 (나머지)
-};
-
 const COOLDOWN_HOURS = 24; // TO 중복 감지 방지 (24시간)
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -64,22 +58,6 @@ const getDbOrThrow = async (): Promise<Db> => {
   if (existing) return existing;
   return connectMongo(env.MONGODB_URI, env.MONGODB_DB_NAME);
 };
-
-function getSnapshotInterval(facility: any): number {
-  // 프리미엄 구독자가 있는 시설
-  if (facility.premium_subscribers?.length > 0) {
-    return SNAPSHOT_INTERVALS.premium;
-  }
-
-  // 핫존: extractRegion이 매칭되면 고빈도 수집
-  const region = extractRegionFromAddress(facility.address as string);
-  if (region) {
-    return SNAPSHOT_INTERVALS.high;
-  }
-
-  // 일반
-  return SNAPSHOT_INTERVALS.normal;
-}
 
 // ─── Snapshot Collection ──────────────────────────────────────────
 
@@ -144,7 +122,7 @@ export async function collectSnapshots(): Promise<{
     const toDetectedFlag = enrolledDelta < 0 ? false : undefined;
 
     // waitlist_by_class: capacity.byClass가 있으면 정원 비율 기반 추정
-    const byClass = (doc.capacity as any)?.byClass as Record<string, number> | undefined;
+    const byClass = doc.capacity?.byClass as Record<string, number> | undefined;
     const waitlistByClass: Record<string, number> = { '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
     if (byClass) {
       for (const [age, classCap] of Object.entries(byClass)) {
@@ -233,7 +211,7 @@ async function detectAndConfirmTO(db: Db, currentTimestamp: Date): Promise<numbe
   ];
   const nextSnapshots = await db.collection('waitlist_snapshots')
     .aggregate(nextSnapshotPipeline).toArray();
-  const nextSnapshotMap = new Map<string, any>();
+  const nextSnapshotMap = new Map<string, Document>();
   for (const snap of nextSnapshots) {
     nextSnapshotMap.set(snap._id as string, snap);
   }
@@ -258,7 +236,7 @@ async function detectAndConfirmTO(db: Db, currentTimestamp: Date): Promise<numbe
     if (fId) facilityNameMap.set(fId, (f.name as string) ?? '어린이집');
   }
 
-  const updateOps: any[] = [];
+  const updateOps: AnyBulkWriteOperation<Document>[] = [];
   const alertDocs: TOAlertEvent[] = [];
 
   for (const candidate of candidates) {
@@ -270,8 +248,8 @@ async function detectAndConfirmTO(db: Db, currentTimestamp: Date): Promise<numbe
     if (!nextSnapshot || new Date(nextSnapshot.snapshot_date) <= candidateDate) continue;
 
     const isConfirmed =
-      (nextSnapshot.change as any).enrolled_delta <= 0 ||
-      (nextSnapshot.source === candidate.source && Math.abs((nextSnapshot.change as any).enrolled_delta) >= 1);
+      nextSnapshot.change?.enrolled_delta <= 0 ||
+      (nextSnapshot.source === candidate.source && Math.abs(nextSnapshot.change?.enrolled_delta ?? 0) >= 1);
 
     if (!isConfirmed) continue;
 
@@ -286,7 +264,7 @@ async function detectAndConfirmTO(db: Db, currentTimestamp: Date): Promise<numbe
       },
     });
 
-    const delta = Math.abs((candidate.change as any).enrolled_delta);
+    const delta = Math.abs(candidate.change?.enrolled_delta ?? 0);
     alertDocs.push({
       facility_id: facilityId,
       facility_name: facilityNameMap.get(facilityId) ?? '어린이집',
@@ -362,7 +340,7 @@ export async function updateTrainingDataBlocks(): Promise<number> {
       .toArray(),
   ]);
 
-  const facilityMap = new Map<string, any>();
+  const facilityMap = new Map<string, Document>();
   for (const f of facilityBatch) {
     const fId = (f.placeId as string) ?? (f.facility_id as string);
     if (fId) facilityMap.set(fId, f);

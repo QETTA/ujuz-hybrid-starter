@@ -88,7 +88,7 @@ export async function computeSettlement(period: string, persist: boolean) {
   const db = await getDbOrThrow();
   const { start, endExclusive } = monthRange(period);
 
-  const pipeline: any[] = [
+  const pipeline = [
     { $match: { created_at: { $gte: start, $lt: endExclusive }, type: { $in: ['SUBSCRIBE', 'DEAL_PURCHASE'] } } },
     { $lookup: { from: 'referral_links', localField: 'code', foreignField: 'code', as: 'link' } },
     { $unwind: '$link' },
@@ -115,7 +115,7 @@ export async function computeSettlement(period: string, persist: boolean) {
   const rows = await db.collection('referral_events').aggregate(pipeline).toArray();
 
   const now = new Date();
-  const ledgers = rows.map((r: any) => {
+  const ledgers = rows.map((r) => {
     const shareSub = Math.round((r.gross_subscription ?? 0) * (r.share_rate_subscription ?? 0));
     const shareCom = Math.round((r.gross_commerce ?? 0) * (r.share_rate_commerce ?? 0));
     return {
