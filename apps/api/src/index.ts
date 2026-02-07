@@ -72,6 +72,11 @@ let server: ReturnType<typeof app.listen> | null = null;
 const mongoConfigured = Boolean(env.MONGODB_URI && env.MONGODB_DB_NAME);
 
 (async function main() {
+  // Security: warn if device auth is off in production
+  if (env.NODE_ENV === 'production' && !env.DEVICE_AUTH_ENABLED) {
+    logger.warn('DEVICE_AUTH_ENABLED is false in production — all deviceAuth routes are unprotected');
+  }
+
   if (mongoConfigured) {
     try {
       await connectMongo(env.MONGODB_URI as string, env.MONGODB_DB_NAME as string, 5);
