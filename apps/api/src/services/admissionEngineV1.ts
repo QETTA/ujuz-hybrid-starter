@@ -161,18 +161,18 @@ const getDbOrThrow = async () => {
   return connectMongo(env.MONGODB_URI, env.MONGODB_DB_NAME);
 };
 
-function clamp(value: number, min: number, max: number): number {
+export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function sigmoid(x: number): number {
+export function sigmoid(x: number): number {
   return 1 / (1 + Math.exp(-x));
 }
 
 // extractRegion is imported from '@ujuz/shared' (shared SSOT)
 
 /** Map probability to letter grade */
-function probabilityToGrade(p: number): AdmissionGrade {
+export function probabilityToGrade(p: number): AdmissionGrade {
   if (p >= 0.8) return 'A';
   if (p >= 0.6) return 'B';
   if (p >= 0.4) return 'C';
@@ -183,7 +183,7 @@ function probabilityToGrade(p: number): AdmissionGrade {
 /**
  * 시즌성을 반영한 유효 기간 계산 (Seat-Month 정규화)
  */
-function effectiveHorizon(H: number, currentMonth: number): number {
+export function effectiveHorizon(H: number, currentMonth: number): number {
   if (H <= 0) return 0; // V1.5.3: 방어 코드
 
   let H_eff = 0;

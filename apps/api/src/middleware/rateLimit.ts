@@ -1,3 +1,5 @@
+// NOTE: In-memory store — works for single-instance only.
+// For horizontal scaling, replace with Redis-backed store (e.g. ioredis + sliding window).
 import type { NextFunction, Request, Response } from 'express';
 import { env } from '@ujuz/config';
 

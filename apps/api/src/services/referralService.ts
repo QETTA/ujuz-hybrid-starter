@@ -16,7 +16,7 @@ export interface TrackReferralEventInput {
   meta?: Record<string, unknown>;
 }
 
-function monthRange(period: string): { start: Date; endExclusive: Date } {
+export function monthRange(period: string): { start: Date; endExclusive: Date } {
   // period: YYYY-MM
   const m = /^\d{4}-\d{2}$/.exec(period);
   if (!m) throw new AppError('Invalid period format. Use YYYY-MM', 400, 'invalid_period');
