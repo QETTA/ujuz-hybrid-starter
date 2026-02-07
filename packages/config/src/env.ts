@@ -50,6 +50,9 @@ const envSchema = z.object({
   // AI worker provider
   AI_PROVIDER: z.preprocess(emptyToUndefined, z.string().optional().default('stub')),
 
+  // Sentry (error tracking, optional)
+  SENTRY_DSN: z.preprocess(emptyToUndefined, z.string().url().optional()),
+
   // Partner / Referral / External ingest (UJUz Hybrid)
   ADMIN_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   PARTNER_KEY_HASH_SALT: z.preprocess(emptyToUndefined, z.string().optional()),

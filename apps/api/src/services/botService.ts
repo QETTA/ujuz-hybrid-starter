@@ -61,7 +61,7 @@ const INTENT_KEYWORDS: Record<string, string[]> = {
   SUBSCRIPTION: ['\uad6c\ub3c5', '\ud504\ub9ac\ubbf8\uc5c4', '\uacb0\uc81c', '\uc694\uae08\uc81c'],
 };
 
-function classifyIntent(message: string): string {
+export function classifyIntent(message: string): string {
   const lower = message.toLowerCase();
   for (const [intent, keywords] of Object.entries(INTENT_KEYWORDS)) {
     if (keywords.some((kw) => lower.includes(kw))) {
@@ -219,7 +219,7 @@ async function generateClaudeResponse(
   return textBlock?.text ?? generateFallbackResponse(intent, dataBlocks);
 }
 
-function generateFallbackResponse(
+export function generateFallbackResponse(
   intent: string,
   dataBlocks: Array<{ type: string; title: string; content: string; confidence: number }>,
 ): string {
@@ -242,7 +242,7 @@ function generateFallbackResponse(
   return responses[intent] ?? responses.GENERAL;
 }
 
-function generateSuggestions(intent: string): string[] {
+export function generateSuggestions(intent: string): string[] {
   const suggestions: Record<string, string[]> = {
     FACILITY_INFO: ['\uadfc\ucc98 \uc5b4\ub9b0\uc774\uc9d1 \ucd94\ucc9c\ud574\uc918', '\uc774 \uc5b4\ub9b0\uc774\uc9d1 \uc785\uc18c \uc810\uc218\ub294?', '\ubcf4\uc721\ub8cc \uc5bc\ub9c8\uc57c?'],
     ADMISSION_INQUIRY: ['\uc785\uc18c \uc810\uc218 \uacc4\uc0b0\ud574\uc918', 'TO \uc54c\ub9bc \uc124\uc815\ud558\uace0 \uc2f6\uc5b4', '\ub2e4\ub978 \uc2dc\uc124\ub3c4 \ube44\uad50\ud574\uc918'],

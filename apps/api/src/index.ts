@@ -1,3 +1,6 @@
+// Sentry must be imported first to instrument modules
+import './sentry.js';
+
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';

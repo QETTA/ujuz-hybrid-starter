@@ -69,7 +69,7 @@ const WAITLIST_RE = /\ub300\uae30\s*(\d+)\s*\ubc88/;
 const SLOT_RE = /(TO|\uc785\uc18c|\uacb0\uc6d0|\uc790\ub9ac)\s*(\d+)\s*(\uba85|\uac1c)?/i;
 const AGE_RE = /(\ub9cc\s*)?(\d)\s*\uc138/;
 
-function detectTo(text: string): { toMention: boolean; confidence: number; extracted?: Record<string, unknown> } {
+export function detectTo(text: string): { toMention: boolean; confidence: number; extracted?: Record<string, unknown> } {
   const normalized = text.replace(/\s+/g, ' ').trim();
   const hasKeyword = TO_KEYWORDS.some((re) => re.test(normalized));
   if (!hasKeyword) return { toMention: false, confidence: 0 };
