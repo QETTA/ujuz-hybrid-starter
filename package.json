@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently -n API,ALERTS,AI -c auto \"npm:dev -w apps/api\" \"npm:dev -w apps/worker-alerts\" \"npm:dev -w apps/worker-ai\"",
     "build": "npm run build -ws",
-    "typecheck": "tsc --noEmit -p apps/api/tsconfig.json && tsc --noEmit -p apps/worker-alerts/tsconfig.json && tsc --noEmit -p packages/db/tsconfig.json && tsc --noEmit -p packages/config/tsconfig.json && tsc --noEmit -p packages/shared/tsconfig.json",
+    "typecheck": "tsc --noEmit -p apps/api/tsconfig.json && tsc --noEmit -p apps/worker-alerts/tsconfig.json && tsc --noEmit -p apps/worker-ai/tsconfig.json && tsc --noEmit -p packages/db/tsconfig.json && tsc --noEmit -p packages/config/tsconfig.json && tsc --noEmit -p packages/shared/tsconfig.json",
     "lint": "npm run lint -ws --if-present"
   },
   "devDependencies": {

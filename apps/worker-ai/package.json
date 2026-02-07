@@ -6,15 +6,18 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
     "lint": "echo 'no lint configured'"
   },
   "dependencies": {
+    "@ujuz/config": "file:../../packages/config",
     "@ujuz/db": "file:../../packages/db",
+    "@ujuz/shared": "file:../../packages/shared",
     "bullmq": "^5.10.0",
-    "dotenv": "^16.4.5"
+    "dotenv": "^17.2.3"
   },
   "devDependencies": {
-    "typescript": "^5.5.4",
-    "tsx": "^4.19.0"
+    "typescript": "~5.9.2",
+    "tsx": "^4.19.2"
   }
 }
