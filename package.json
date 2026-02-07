@@ -1,16 +1,25 @@
 {
   "name": "ujuz-hybrid-starter",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "concurrently -n API,ALERTS,AI -c auto \"npm:dev -w apps/api\" \"npm:dev -w apps/worker-alerts\" \"npm:dev -w apps/worker-ai\"",
     "build": "npm run build -ws",
     "typecheck": "tsc --noEmit -p apps/api/tsconfig.json && tsc --noEmit -p apps/worker-alerts/tsconfig.json && tsc --noEmit -p apps/worker-ai/tsconfig.json && tsc --noEmit -p packages/db/tsconfig.json && tsc --noEmit -p packages/config/tsconfig.json && tsc --noEmit -p packages/shared/tsconfig.json",
-    "lint": "npm run lint -ws --if-present"
+    "lint": "npm run lint -ws --if-present",
+    "test": "vitest run"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "concurrently": "^9.0.0",
+    "eslint": "^9.39.2",
     "tsx": "^4.19.2",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.54.0",
+    "vitest": "^3.2.4"
   }
 }

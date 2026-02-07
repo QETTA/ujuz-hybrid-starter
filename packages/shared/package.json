@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
-    "lint": "echo 'no lint configured'"
+    "lint": "eslint src/"
   },
   "dependencies": {
     "@ujuz/config": "file:../config"
