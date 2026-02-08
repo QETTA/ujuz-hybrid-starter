@@ -24,7 +24,8 @@ Required admin steps
      - Allow GitHub Actions to create and approve pull requests (depends on your org settings)
 
 4. Confirm workflow operation
-   - Add label `auto-merge` to a PR created from the usual process
+   - Add label `auto-merge` or `bypass` to a PR (note: the workflow will act on either label). The workflow is label-driven and applies to PRs targeting any branch by default.
+   - The merge method used by the workflow is `squash`.
    - An authorized admin can run the workflow manually via Actions -> "Auto-approve and merge PRs" -> Run workflow
 
 Security notes
