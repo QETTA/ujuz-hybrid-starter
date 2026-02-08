@@ -181,6 +181,13 @@ export const INDEXES: Record<string, IndexDef[]> = {
     { key: { user_id: 1 }, name: 'idx_children_userid' },
   ],
 
+  // -- User Memories (Serena MCP 영감)
+  user_memories: [
+    { key: { user_id: 1, memory_key: 1 }, name: 'idx_umem_user_key', unique: true },
+    { key: { user_id: 1, is_active: 1, updated_at: -1 }, name: 'idx_umem_user_active_updated' },
+    { key: { user_id: 1, tags: 1 }, name: 'idx_umem_user_tags' },
+  ],
+
   // -- Training Blocks (legacy)
   trainingBlocks: [
     { key: { blockId: 1 }, name: 'idx_tb_blockid', unique: true },

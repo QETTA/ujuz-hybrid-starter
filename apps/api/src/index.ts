@@ -23,6 +23,7 @@ import alertsRouter from './routes/alerts.js';
 import botRouter from './routes/bot.js';
 import subscriptionsRouter from './routes/subscriptions.js';
 import usersRouter from './routes/users.js';
+import memoriesRouter from './routes/memories.js';
 
 // UJUz Hybrid (partners/referrals/external ingest)
 import partnersRouter from './routes/partners.js';
@@ -68,6 +69,7 @@ app.use('/api/ujuz/alerts', deviceAuth, alertsRouter);
 app.use('/api/ujuz/bot', deviceAuth, botRouter);
 app.use('/api/ujuz/subscriptions', deviceAuth, subscriptionsRouter);
 app.use('/api/ujuz/users', deviceAuth, usersRouter);
+app.use('/api/ujuz/memories', deviceAuth, memoriesRouter);
 
 app.use(errorHandler);
 
