@@ -51,7 +51,7 @@ describe('deviceAuth middleware', () => {
     deviceAuth(req as Request, res as Response, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ ok: false, error: 'invalid_device_id' });
+    expect(res.json).toHaveBeenCalledWith({ error: { code: 'invalid_device_id', message: 'Missing or invalid x-device-id header' } });
     expect(next).not.toHaveBeenCalled();
   });
 

@@ -19,10 +19,7 @@ router.get('/health', async (_req, res) => {
     node_env: env.NODE_ENV,
   };
 
-  const gitSha =
-    process.env.GIT_SHA ||
-    process.env.VERCEL_GIT_COMMIT_SHA ||
-    process.env.SOURCE_VERSION;
+  const gitSha = env.GIT_SHA;
 
   if (gitSha) {
     response.gitSha = gitSha;

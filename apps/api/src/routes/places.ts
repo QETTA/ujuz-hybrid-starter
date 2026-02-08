@@ -22,7 +22,7 @@ router.get('/nearby', nearbyLimiter, async (req, res, next) => {
   try {
     const query = nearbyQuerySchema.parse(req.query);
     const data = await fetchNearbyPlaces(query);
-    res.json(data);
+    res.json({ ok: true, data });
   } catch (error) {
     next(error);
   }
@@ -32,7 +32,7 @@ router.get('/search', searchLimiter, async (req, res, next) => {
   try {
     const query = searchQuerySchema.parse(req.query);
     const data = await searchPlaces(query);
-    res.json(data);
+    res.json({ ok: true, data });
   } catch (error) {
     next(error);
   }
@@ -47,7 +47,7 @@ router.get('/:id', detailLimiter, async (req, res, next) => {
       throw new AppError('Place not found', 404, 'place_not_found');
     }
 
-    res.json(data);
+    res.json({ ok: true, data });
   } catch (error) {
     next(error);
   }

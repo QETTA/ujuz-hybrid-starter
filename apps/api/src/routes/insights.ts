@@ -20,7 +20,7 @@ router.get('/', insightsLimiter, async (req, res, next) => {
 
     const query = insightsQuerySchema.parse({ placeIds: placeIdsInput });
     const data = await fetchInsights(query.placeIds as string[]);
-    res.json(data);
+    res.json({ ok: true, data });
   } catch (error) {
     next(error);
   }

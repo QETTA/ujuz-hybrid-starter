@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { Worker } from 'bullmq';
 import { connectMongo, closeMongo, getMongoDb } from '@ujuz/db';
 import { env, logger } from '@ujuz/config';

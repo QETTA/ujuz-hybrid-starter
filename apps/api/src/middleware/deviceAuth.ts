@@ -11,7 +11,7 @@ export function deviceAuth(req: Request, res: Response, next: NextFunction): voi
   const deviceId = req.header('x-device-id');
 
   if (!deviceId || !uuidValidate(deviceId) || uuidVersion(deviceId) !== 4) {
-    res.status(401).json({ ok: false, error: 'invalid_device_id' });
+    res.status(401).json({ error: { code: 'invalid_device_id', message: 'Missing or invalid x-device-id header' } });
     return;
   }
 

@@ -12,6 +12,7 @@ import {
   getConversation,
   deleteConversation,
 } from '../services/botService.js';
+import { AppError } from '@ujuz/shared';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -71,8 +72,7 @@ router.get('/conversations/:id', rateLimit, async (req, res, next) => {
   try {
     const result = await getConversation(String(req.params.id));
     if (!result) {
-      res.status(404).json({ ok: false, error: 'not_found' });
-      return;
+      throw new AppError('Conversation not found', 404, 'not_found');
     }
     res.json({ ok: true, data: result });
   } catch (error) {

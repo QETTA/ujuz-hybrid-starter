@@ -2,11 +2,12 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { getPlans, getUserSubscription, createSubscription, cancelSubscription } from '../services/subscriptionService.js';
 import { trackReferralEvent } from '../services/referralService.js';
+import { AppError } from '@ujuz/shared';
 
 /** Extract device-id from request header (used as pseudo user-id in MVP) */
 function getUserId(req: import('express').Request): string {
   const id = req.header('x-device-id');
-  if (!id) throw Object.assign(new Error('missing x-device-id'), { status: 401 });
+  if (!id) throw new AppError('missing x-device-id', 401, 'missing_device_id');
   return id;
 }
 
@@ -15,7 +16,7 @@ const router = Router();
 // Get available plans
 router.get('/plans', async (_req, res) => {
   const plans = getPlans();
-  res.json(plans);
+  res.json({ ok: true, data: plans });
 });
 
 // Get user's current subscription
@@ -23,9 +24,7 @@ router.get('/me', async (req, res) => {
   const userId = getUserId(req);
   const subscription = await getUserSubscription(userId);
 
-  res.json({
-    subscription,
-  });
+  res.json({ ok: true, data: { subscription } });
 });
 
 // Create/update subscription
@@ -66,9 +65,7 @@ router.post('/subscribe', async (req, res) => {
     }
   }
 
-  res.json({
-    subscription,
-  });
+  res.json({ ok: true, data: { subscription } });
 });
 
 // Cancel subscription
@@ -76,9 +73,7 @@ router.post('/cancel', async (req, res) => {
   const userId = getUserId(req);
   await cancelSubscription(userId);
 
-  res.json({
-    success: true,
-  });
+  res.json({ ok: true });
 });
 
 export default router;

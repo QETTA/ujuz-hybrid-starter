@@ -13,6 +13,7 @@ import {
   leaveGroupBuy,
   getUserJoinedGroupBuys,
 } from '../services/groupBuyService.js';
+import { AppError } from '@ujuz/shared';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -61,8 +62,7 @@ router.get('/:id', rateLimit, async (req, res, next) => {
   try {
     const groupBuy = await getGroupBuyById(String(req.params.id));
     if (!groupBuy) {
-      res.status(404).json({ ok: false, error: 'not_found' });
-      return;
+      throw new AppError('Group buy not found', 404, 'not_found');
     }
     res.json({ ok: true, data: groupBuy });
   } catch (error) {

@@ -7,8 +7,6 @@ import { Router } from 'express';
 import { createRateLimiter } from '../middleware/rateLimit.js';
 import { calculateAdmissionScoreV1, formatBotResponse } from '../services/admissionEngineV1.js';
 import { admissionScoreQuerySchema } from '../validators/admissionV1.validator.js';
-import { AppError } from '@ujuz/shared';
-import { logger } from '@ujuz/config';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -32,42 +30,20 @@ const rateLimit = createRateLimiter();
  *   }
  * }
  */
-router.get('/admission-score', rateLimit, async (req, res) => {
+router.get('/admission-score', rateLimit, async (req, res, next) => {
   try {
-    // Zod 검증
-    const parsed = admissionScoreQuerySchema.safeParse(req.query);
-
-    if (!parsed.success) {
-      res.status(400).json({
-        ok: false,
-        error: 'validation_failed',
-        message: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(', '),
-      });
-      return;
-    }
-
-    const { facility_id, child_age_band, waiting_position, priority_type } = parsed.data;
+    const query = admissionScoreQuerySchema.parse(req.query);
 
     const result = await calculateAdmissionScoreV1({
-      facility_id,
-      child_age_band,
-      waiting_position,
-      priority_type,
+      facility_id: query.facility_id,
+      child_age_band: query.child_age_band,
+      waiting_position: query.waiting_position,
+      priority_type: query.priority_type,
     });
 
     res.json({ ok: true, data: result });
   } catch (error) {
-    if (error instanceof AppError) {
-      res.status(error.statusCode).json({
-        ok: false,
-        error: error.code ?? 'app_error',
-        message: error.message,
-      });
-      return;
-    }
-
-    logger.error({ error }, 'Admission score V1.5.2 calculation failed');
-    res.status(500).json({ ok: false, error: 'calculation_failed' });
+    next(error);
   }
 });
 
@@ -77,42 +53,21 @@ router.get('/admission-score', rateLimit, async (req, res) => {
  *
  * Returns: { ok: true, message: "6개월 내 입학 확률 62%..." }
  */
-router.get('/admission-score/bot-format', rateLimit, async (req, res) => {
+router.get('/admission-score/bot-format', rateLimit, async (req, res, next) => {
   try {
-    const parsed = admissionScoreQuerySchema.safeParse(req.query);
-
-    if (!parsed.success) {
-      res.status(400).json({
-        ok: false,
-        error: 'validation_failed',
-        message: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(', '),
-      });
-      return;
-    }
-
-    const { facility_id, child_age_band, waiting_position, priority_type } = parsed.data;
+    const query = admissionScoreQuerySchema.parse(req.query);
 
     const result = await calculateAdmissionScoreV1({
-      facility_id,
-      child_age_band,
-      waiting_position,
-      priority_type,
+      facility_id: query.facility_id,
+      child_age_band: query.child_age_band,
+      waiting_position: query.waiting_position,
+      priority_type: query.priority_type,
     });
 
     const message = formatBotResponse(result);
-    res.json({ ok: true, message });
+    res.json({ ok: true, data: { message } });
   } catch (error) {
-    if (error instanceof AppError) {
-      res.status(error.statusCode).json({
-        ok: false,
-        error: error.code ?? 'app_error',
-        message: error.message,
-      });
-      return;
-    }
-
-    logger.error({ error }, 'Admission score V1.5.2 bot format failed');
-    res.status(500).json({ ok: false, error: 'calculation_failed' });
+    next(error);
   }
 });
 

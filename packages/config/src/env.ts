@@ -50,6 +50,9 @@ const envSchema = z.object({
   // AI worker provider
   AI_PROVIDER: z.preprocess(emptyToUndefined, z.string().optional().default('stub')),
 
+  // Git SHA (set by CI/CD)
+  GIT_SHA: z.preprocess(emptyToUndefined, z.string().optional()),
+
   // Sentry (error tracking, optional)
   SENTRY_DSN: z.preprocess(emptyToUndefined, z.string().url().optional()),
 
