@@ -459,7 +459,7 @@ export function SubscriptionScreen() {
                       ? Infinity
                       : PLAN_LIMITS[currentTier][item.limitKey]
                   }
-                  icon={
+                  iconName={
                     item.label === '입학 가능성 분석'
                       ? 'school-outline'
                       : item.label === '빈자리 알림'

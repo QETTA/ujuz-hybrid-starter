@@ -697,7 +697,7 @@ export default function AskScreen() {
             label="우주봇"
             used={botQueriesUsed}
             total={botQueriesLimit}
-            icon="chatbubble-outline"
+            iconName="chatbubble-outline"
             showUpgradeCta={botQueriesUsed >= botQueriesLimit}
             onUpgradePress={() => navigation.navigate('Subscription' as any)}
           />

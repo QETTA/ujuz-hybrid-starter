@@ -14,6 +14,10 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
+import type { ComponentProps } from 'react';
+
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 export interface QuotaBarProps {
   /** Feature label */
@@ -22,8 +26,10 @@ export interface QuotaBarProps {
   used: number;
   /** Maximum quota */
   total: number;
-  /** Left icon emoji or component */
+  /** Left icon emoji or text */
   icon?: string;
+  /** Left icon as Ionicons name (type-safe, takes priority over icon) */
+  iconName?: IoniconName;
   /** Show upgrade CTA when exhausted */
   showUpgradeCta?: boolean;
   /** Upgrade press handler */
@@ -35,6 +41,7 @@ export function QuotaBar({
   used,
   total,
   icon,
+  iconName,
   showUpgradeCta = true,
   onUpgradePress,
 }: QuotaBarProps) {
@@ -72,7 +79,11 @@ export function QuotaBar({
     <YStack gap="$1">
       <XStack justifyContent="space-between" alignItems="center">
         <XStack alignItems="center" gap="$1">
-          {icon && <Text fontSize={14}>{icon}</Text>}
+          {iconName ? (
+            <Ionicons name={iconName} size={16} color={theme.textSecondary.val} />
+          ) : icon ? (
+            <Text fontSize={14}>{icon}</Text>
+          ) : null}
           <Text fontSize={13} fontWeight="500" color="$textSecondary">
             {label}
           </Text>

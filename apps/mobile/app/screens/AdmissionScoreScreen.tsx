@@ -625,7 +625,7 @@ export function AdmissionScoreScreen({ testID }: AdmissionScoreScreenProps) {
               label="입학조회"
               used={totalLimit - remaining}
               total={totalLimit}
-              icon="school-outline"
+              iconName="school-outline"
               showUpgradeCta={!canUse}
               onUpgradePress={() => navigation.navigate('Subscription')}
             />
