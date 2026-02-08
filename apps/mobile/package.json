@@ -43,7 +43,7 @@
     "@tamagui/font-inter": "^2.0.0-rc.0",
     "@types/geojson": "^7946.0.16",
     "axios": "^1.13.4",
-    "burnt": "^0.12.2",
+    "burnt": "^0.13.0",
     "date-fns": "^4.1.0",
     "expo": "~54.0.33",
     "expo-blur": "~15.0.8",
