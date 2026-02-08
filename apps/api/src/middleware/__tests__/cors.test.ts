@@ -98,14 +98,14 @@ describe('CORS Middleware', () => {
       await reloadCorsMiddleware();
     });
 
-    it('allows all origins', async () => {
+    it('blocks cross-origin requests when CORS_ORIGIN is not set', async () => {
       const req = mockReq('https://example.com');
       const res = mockRes();
 
       await runCorsMiddleware(req as Request, res as Response);
 
-      expect(res._headers['access-control-allow-origin']).toBe('https://example.com');
-      expect(res._headers['access-control-allow-credentials']).toBe('true');
+      // When allowedOrigins is empty, origin: false blocks all cross-origin requests
+      expect(res._headers['access-control-allow-origin']).toBeUndefined();
     });
 
     it('allows requests without origin header', async () => {

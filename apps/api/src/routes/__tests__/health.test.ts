@@ -6,10 +6,13 @@ import healthRouter from '../health.js';
 
 vi.mock('@ujuz/config', () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
-  env: {
-    NODE_ENV: 'test',
-    MONGODB_URI: 'mongodb://localhost:27017',
-    MONGODB_DB_NAME: 'test-db',
+  get env() {
+    return {
+      NODE_ENV: 'test',
+      MONGODB_URI: 'mongodb://localhost:27017',
+      MONGODB_DB_NAME: 'test-db',
+      GIT_SHA: process.env.GIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA || process.env.SOURCE_VERSION,
+    };
   },
 }));
 

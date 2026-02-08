@@ -8,6 +8,12 @@ import { errorHandler } from '../../middleware/errorHandler.js';
 
 vi.mock('@ujuz/config', () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+  env: {
+    NODE_ENV: 'test',
+    SENTRY_DSN: '',
+    MONGODB_URI: 'mongodb://localhost:27017',
+    MONGODB_DB_NAME: 'test-db',
+  },
 }));
 
 vi.mock('../../services/placesService', () => ({
@@ -66,7 +72,8 @@ describe('Places Routes', () => {
         .query({ lat: 37.5, lng: 127.0, radius: 5000 });
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual(mockPlaces);
+      expect(response.body.ok).toBe(true);
+      expect(response.body.data).toEqual(mockPlaces);
       expect(fetchNearbyPlaces).toHaveBeenCalledWith(
         expect.objectContaining({
           lat: 37.5,
@@ -177,7 +184,8 @@ describe('Places Routes', () => {
       const response = await request(app).get('/places/search').query({ q: 'Seoul' });
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual(mockResults);
+      expect(response.body.ok).toBe(true);
+      expect(response.body.data).toEqual(mockResults);
       expect(searchPlaces).toHaveBeenCalledWith(
         expect.objectContaining({
           q: 'Seoul',
@@ -254,7 +262,8 @@ describe('Places Routes', () => {
       const response = await request(app).get('/places/place-123');
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual(mockPlace);
+      expect(response.body.ok).toBe(true);
+      expect(response.body.data).toEqual(mockPlace);
       expect(fetchPlaceById).toHaveBeenCalledWith('place-123');
     });
 
@@ -275,6 +284,7 @@ describe('Places Routes', () => {
       const response = await request(app).get('/places/507f1f77bcf86cd799439011');
 
       expect(response.status).toBe(200);
+      expect(response.body.ok).toBe(true);
       expect(fetchPlaceById).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
     });
 
@@ -285,6 +295,7 @@ describe('Places Routes', () => {
       const response = await request(app).get('/places/abc-123-xyz');
 
       expect(response.status).toBe(200);
+      expect(response.body.ok).toBe(true);
       expect(fetchPlaceById).toHaveBeenCalledWith('abc-123-xyz');
     });
 

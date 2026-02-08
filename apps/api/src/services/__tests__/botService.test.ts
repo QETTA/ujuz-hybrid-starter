@@ -74,7 +74,7 @@ describe('generateFallbackResponse', () => {
 
   it('returns GENERAL response for unknown intent', () => {
     const result = generateFallbackResponse('UNKNOWN_INTENT', []);
-    expect(result).toContain('우쥬봇');
+    expect(result).toContain('우주봇');
   });
 
   it('appends data block summary when blocks provided', () => {

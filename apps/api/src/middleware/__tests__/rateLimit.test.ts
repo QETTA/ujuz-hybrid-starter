@@ -95,7 +95,7 @@ describe('createRateLimiter', () => {
 
     expect(next).not.toHaveBeenCalled();
     expect(res._status).toBe(429);
-    expect(res._json).toEqual({ ok: false, error: 'rate_limited' });
+    expect(res._json).toEqual({ error: { code: 'rate_limited', message: 'Too many requests' } });
     expect(res._headers['Retry-After']).toBeDefined();
   });
 
@@ -200,7 +200,7 @@ describe('createRateLimiter', () => {
     expect(retryAfter).toBeLessThanOrEqual(windowMs / 1000);
   });
 
-  it('429 response format matches { ok: false, error: "rate_limited" }', () => {
+  it('429 response format matches { error: { code: "rate_limited", message: "Too many requests" } }', () => {
     const limiter = createRateLimiter({ max: 1, windowMs: 60_000 });
     const ip = uniqueIp();
 
@@ -210,6 +210,6 @@ describe('createRateLimiter', () => {
     const res = mockRes();
     limiter(mockReq(ip) as Request, res as unknown as Response, next);
 
-    expect(res._json).toEqual({ ok: false, error: 'rate_limited' });
+    expect(res._json).toEqual({ error: { code: 'rate_limited', message: 'Too many requests' } });
   });
 });

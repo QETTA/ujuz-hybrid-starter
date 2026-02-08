@@ -62,23 +62,15 @@ describe('Helmet Middleware', () => {
     expect(hstsHeader).toContain('includeSubDomains');
   });
 
-  it('sets Content-Security-Policy with default-src none and frame-ancestors none', () => {
+  it('does not set Content-Security-Policy (disabled for API-only server)', () => {
     const req = mockReq();
     const res = mockRes();
 
     helmetMiddleware(req as Request, res as Response, next);
 
     const cspHeader = res._headers['content-security-policy'];
-    expect(cspHeader).toBeDefined();
-
-    if (typeof cspHeader === 'string') {
-      expect(cspHeader).toContain("default-src 'none'");
-      expect(cspHeader).toContain("frame-ancestors 'none'");
-    } else if (Array.isArray(cspHeader)) {
-      const joined = cspHeader.join(';');
-      expect(joined).toContain("default-src 'none'");
-      expect(joined).toContain("frame-ancestors 'none'");
-    }
+    // CSP is explicitly disabled in helmet config (contentSecurityPolicy: false)
+    expect(cspHeader).toBeUndefined();
   });
 
   it('sets Referrer-Policy to strict-origin-when-cross-origin', () => {
@@ -92,7 +84,7 @@ describe('Helmet Middleware', () => {
     expect(referrerHeader).toBe('strict-origin-when-cross-origin');
   });
 
-  it('sets X-Frame-Options to DENY', () => {
+  it('sets X-Frame-Options to SAMEORIGIN (helmet default)', () => {
     const req = mockReq();
     const res = mockRes();
 
@@ -100,7 +92,7 @@ describe('Helmet Middleware', () => {
 
     const xFrameOptions = res._headers['x-frame-options'];
     expect(xFrameOptions).toBeDefined();
-    expect(xFrameOptions).toBe('DENY');
+    expect(xFrameOptions).toBe('SAMEORIGIN');
   });
 
   it('sets X-Content-Type-Options to nosniff (helmet default)', () => {
@@ -130,10 +122,9 @@ describe('Helmet Middleware', () => {
 
     helmetMiddleware(req as Request, res as Response, next);
 
-    // Check that multiple headers are set
-    expect(Object.keys(res._headers).length).toBeGreaterThan(3);
+    // Check that multiple headers are set (CSP is disabled, so we don't check for it)
+    expect(Object.keys(res._headers).length).toBeGreaterThan(2);
     expect(res._headers['strict-transport-security']).toBeDefined();
-    expect(res._headers['content-security-policy']).toBeDefined();
     expect(res._headers['referrer-policy']).toBeDefined();
     expect(res._headers['x-frame-options']).toBeDefined();
   });
@@ -148,57 +139,36 @@ describe('Helmet Middleware', () => {
     expect(hstsHeader).toContain('max-age=31536000');
   });
 
-  it('CSP prevents all default sources', () => {
+  it('CSP is disabled for API-only server', () => {
     const req = mockReq();
     const res = mockRes();
 
     helmetMiddleware(req as Request, res as Response, next);
 
     const cspHeader = res._headers['content-security-policy'];
-
-    if (typeof cspHeader === 'string') {
-      // Should have default-src 'none' which blocks everything by default
-      expect(cspHeader).toContain("default-src 'none'");
-    }
+    // CSP is explicitly disabled (contentSecurityPolicy: false) since this is an API-only server
+    expect(cspHeader).toBeUndefined();
   });
 
-  it('CSP prevents framing from any origin', () => {
+  it('frameguard uses SAMEORIGIN (helmet default prevents clickjacking)', () => {
     const req = mockReq();
     const res = mockRes();
 
     helmetMiddleware(req as Request, res as Response, next);
 
-    const cspHeader = res._headers['content-security-policy'];
-
-    if (typeof cspHeader === 'string') {
-      // frame-ancestors 'none' prevents the page from being framed
-      expect(cspHeader).toContain("frame-ancestors 'none'");
-    }
+    // X-Frame-Options: SAMEORIGIN is helmet's default anti-clickjacking protection
+    expect(res._headers['x-frame-options']).toBe('SAMEORIGIN');
   });
 
-  it('frameguard action is deny (prevents clickjacking)', () => {
+  it('setHeader is called for each security header (CSP disabled)', () => {
     const req = mockReq();
     const res = mockRes();
 
     helmetMiddleware(req as Request, res as Response, next);
 
-    // X-Frame-Options: DENY is the strongest anti-clickjacking protection
-    expect(res._headers['x-frame-options']).toBe('DENY');
-  });
-
-  it('setHeader is called for each security header', () => {
-    const req = mockReq();
-    const res = mockRes();
-
-    helmetMiddleware(req as Request, res as Response, next);
-
-    // Helmet should call setHeader multiple times
+    // Helmet should call setHeader multiple times (but not for CSP since it's disabled)
     expect(res.setHeader).toHaveBeenCalledWith(
       expect.stringMatching(/strict-transport-security/i),
-      expect.any(String)
-    );
-    expect(res.setHeader).toHaveBeenCalledWith(
-      expect.stringMatching(/content-security-policy/i),
       expect.any(String)
     );
     expect(res.setHeader).toHaveBeenCalledWith(

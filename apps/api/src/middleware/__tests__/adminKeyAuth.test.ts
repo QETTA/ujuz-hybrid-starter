@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 
-const mockEnv: Record<string, unknown> = { ADMIN_API_KEY: 'test-admin-key-123' };
+const mockEnv = vi.hoisted(() => ({
+  ADMIN_API_KEY: 'test-admin-key-123' as string | undefined,
+}));
+
 vi.mock('@ujuz/config', () => ({ env: mockEnv }));
 
 import { requireAdminKey } from '../adminKeyAuth.js';
@@ -30,7 +33,7 @@ describe('requireAdminKey', () => {
     mockEnv.ADMIN_API_KEY = 'test-admin-key-123';
   });
 
-  it('throws 503 when ADMIN_API_KEY is not configured', () => {
+  it('throws 401 when ADMIN_API_KEY is not configured', () => {
     mockEnv.ADMIN_API_KEY = undefined;
     const req = mockReq();
 
@@ -39,8 +42,8 @@ describe('requireAdminKey', () => {
       throw new Error('should have thrown');
     } catch (e) {
       expect(e).toBeInstanceOf(AppError);
-      expect((e as AppError).statusCode).toBe(503);
-      expect((e as AppError).code).toBe('admin_key_not_configured');
+      expect((e as AppError).statusCode).toBe(401);
+      expect((e as AppError).code).toBe('unauthorized');
     }
 
     expect(next).not.toHaveBeenCalled();

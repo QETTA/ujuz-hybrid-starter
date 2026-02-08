@@ -8,6 +8,12 @@ import { errorHandler } from '../../middleware/errorHandler.js';
 
 vi.mock('@ujuz/config', () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+  env: {
+    NODE_ENV: 'test',
+    SENTRY_DSN: '',
+    MONGODB_URI: 'mongodb://localhost:27017',
+    MONGODB_DB_NAME: 'test-db',
+  },
 }));
 
 vi.mock('../../services/insightsService', () => ({
@@ -49,7 +55,8 @@ describe('Insights Route', () => {
         .query({ placeIds: ['place-1', 'place-2'] });
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual(mockInsights);
+      expect(response.body.ok).toBe(true);
+      expect(response.body.data).toEqual(mockInsights);
       expect(fetchInsights).toHaveBeenCalledWith(['place-1', 'place-2']);
     });
 
@@ -187,9 +194,9 @@ describe('Insights Route', () => {
         .query({ placeIds: ['place-3', 'place-1', 'place-2'] });
 
       expect(response.status).toBe(200);
-      expect(response.body[0].placeId).toBe('place-3');
-      expect(response.body[1].placeId).toBe('place-1');
-      expect(response.body[2].placeId).toBe('place-2');
+      expect(response.body.data[0].placeId).toBe('place-3');
+      expect(response.body.data[1].placeId).toBe('place-1');
+      expect(response.body.data[2].placeId).toBe('place-2');
     });
 
     it('should handle response format consistency', async () => {
@@ -205,9 +212,10 @@ describe('Insights Route', () => {
         .query({ placeIds: ['place-1', 'place-2'] });
 
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBe(2);
-      response.body.forEach((item: any) => {
+      expect(response.body.ok).toBe(true);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBe(2);
+      response.body.data.forEach((item: any) => {
         expect(item).toHaveProperty('placeId');
       });
     });
