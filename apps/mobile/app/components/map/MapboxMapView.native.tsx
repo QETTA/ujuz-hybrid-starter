@@ -79,9 +79,11 @@ export default function MapboxMapView({
             >
               UJUz
             </TamaguiText>
-            <TamaguiText preset="caption" textColor="secondary" style={styles.headerSubtitle}>
-              {center.lat.toFixed(4)}, {center.lng.toFixed(4)}
-            </TamaguiText>
+            {__DEV__ && (
+              <TamaguiText preset="caption" textColor="secondary" style={styles.headerSubtitle}>
+                {center.lat.toFixed(4)}, {center.lng.toFixed(4)}
+              </TamaguiText>
+            )}
           </View>
         </View>
 
@@ -183,11 +185,7 @@ export default function MapboxMapView({
                     style={styles.placeDetail}
                     numberOfLines={1}
                   >
-                    {props.category ||
-                      props.address ||
-                      (coords.length >= 2
-                        ? `${coords[1].toFixed(4)}, ${coords[0].toFixed(4)}`
-                        : '')}
+                    {props.category || props.address || ''}
                   </TamaguiText>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={Colors.iosTertiaryLabel} />

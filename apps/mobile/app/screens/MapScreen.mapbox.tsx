@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import BottomSheet from '@gorhom/bottom-sheet';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from 'tamagui';
 
 import { MapboxMapView, ThreeSnapBottomSheet } from '@/app/components/map';
@@ -214,15 +215,8 @@ export default function MapScreenMapbox() {
         bottom: 160,
         backgroundColor: theme.textPrimary.val,
         borderRadius: 14,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
+        padding: 12,
         ...Shadows.card,
-      },
-      locationText: {
-        fontSize: 13,
-        fontWeight: '800' as const,
-        color: theme.background.val,
-        letterSpacing: -0.2,
       },
       emptyCard: {
         position: 'absolute' as const,
@@ -278,7 +272,7 @@ export default function MapScreenMapbox() {
             weight="bold"
             style={styles.searchHint}
           >
-            ⌘K
+            시설 검색
           </TamaguiText>
         </TamaguiPressableScale>
       </View>
@@ -350,9 +344,7 @@ export default function MapScreenMapbox() {
         style={styles.locationButton}
         accessibilityLabel="현재 위치로 이동"
       >
-        <TamaguiText preset="caption" textColor="inverse" weight="bold" style={styles.locationText}>
-          locate
-        </TamaguiText>
+        <Ionicons name="locate" size={20} color={theme.background.val} />
       </TamaguiPressableScale>
 
       {/* Bottom Sheet */}

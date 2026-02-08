@@ -88,15 +88,17 @@ export default function MapboxMapViewExpo({ center, layers, onPlacePress }: Prop
             또래
           </TamaguiText>
         </View>
-        <View style={styles.statItem}>
-          <Ionicons name="navigate" size={20} color={Colors.iosSystemGreen} />
-          <TamaguiText preset="body" textColor="primary" weight="semibold" style={styles.statValue}>
-            {center.lat.toFixed(4)}, {center.lng.toFixed(4)}
-          </TamaguiText>
-          <TamaguiText preset="caption" textColor="secondary" style={styles.statLabel}>
-            현재 위치
-          </TamaguiText>
-        </View>
+        {__DEV__ && (
+          <View style={styles.statItem}>
+            <Ionicons name="navigate" size={20} color={Colors.iosSystemGreen} />
+            <TamaguiText preset="body" textColor="primary" weight="semibold" style={styles.statValue}>
+              {center.lat.toFixed(4)}, {center.lng.toFixed(4)}
+            </TamaguiText>
+            <TamaguiText preset="caption" textColor="secondary" style={styles.statLabel}>
+              현재 위치
+            </TamaguiText>
+          </View>
+        )}
       </View>
 
       {/* Place Preview List */}
