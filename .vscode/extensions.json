@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "GitHub.copilot",
+    "GitHub.copilot-chat",
+    "GitHub.vscode-pull-request-github",
+    "mongodb.mongodb-vscode",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-azuretools.vscode-docker",
+    "eamodio.gitlens",
+    "EditorConfig.EditorConfig",
+    "usernamehw.errorlens",
+    "christian-kohler.path-intellisense",
+    "yoavbls.pretty-ts-errors"
+  ]
+}
