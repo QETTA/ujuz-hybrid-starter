@@ -108,7 +108,7 @@ function HomeHeroScore({
               우리 아이,{'\n'}들어갈 수 있을까?
             </TamaguiText>
             <TamaguiButton variant="primary" size="md" onPress={onPress}>
-              무료로 확인하기
+              입학 가능성 1분 진단(무료)
             </TamaguiButton>
           </YStack>
         </TamaguiGlassCard>
@@ -141,6 +141,56 @@ function HomeHeroScore({
         </YStack>
       </TamaguiGlassCard>
     </TamaguiPressableScale>
+  );
+}
+
+const TODAY_PICKS = [
+  { id: 'pick-wait', icon: 'time-outline' as const, label: '대기 짧은 곳', desc: '지금 바로 갈 수 있어요', filter: 'all' as const },
+  { id: 'pick-age', icon: 'people-outline' as const, label: '3세 인기', desc: '비슷한 연령대가 많이 간 곳', filter: 'peers' as const },
+  { id: 'pick-indoor', icon: 'home-outline' as const, label: '실내 놀이', desc: '날씨 걱정 없는 실내 공간', filter: 'all' as const },
+  { id: 'pick-free', icon: 'gift-outline' as const, label: '무료 체험', desc: '무료로 이용할 수 있어요', filter: 'deals' as const },
+  { id: 'pick-new', icon: 'sparkles-outline' as const, label: '새로 오픈', desc: '최근 오픈한 시설', filter: 'all' as const },
+];
+
+function HomeTodayPicks({ onPickPress }: { onPickPress: (filter: string) => void }) {
+  const theme = useTheme();
+  return (
+    <YStack gap="$3">
+      <XStack paddingHorizontal="$5" alignItems="center" gap="$2">
+        <TamaguiText fontSize={18} fontWeight="700" color="$textPrimary" letterSpacing={-0.5}>
+          오늘 추천
+        </TamaguiText>
+        <TamaguiText fontSize={13} color="$textTertiary" fontWeight="500">
+          TOP {TODAY_PICKS.length}
+        </TamaguiText>
+      </XStack>
+      <FlatList
+        data={TODAY_PICKS}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TamaguiPressableScale
+            hapticType="light"
+            onPress={() => onPickPress(item.filter)}
+            style={{ width: 140 }}
+          >
+            <TamaguiGlassCard intensity="light" padding="md">
+              <YStack gap="$2" alignItems="flex-start">
+                <Ionicons name={item.icon} size={22} color={theme.primary.val} />
+                <TamaguiText fontSize={14} fontWeight="700" color="$textPrimary" letterSpacing={-0.3}>
+                  {item.label}
+                </TamaguiText>
+                <TamaguiText fontSize={12} fontWeight="400" color="$textTertiary" numberOfLines={2}>
+                  {item.desc}
+                </TamaguiText>
+              </YStack>
+            </TamaguiGlassCard>
+          </TamaguiPressableScale>
+        )}
+      />
+    </YStack>
   );
 }
 
@@ -186,15 +236,15 @@ function HomeQuotaWidget({
           onUpgradePress={onUpgrade}
         />
         <TamaguiText
-          fontSize={13}
-          fontWeight="600"
-          color="$primary"
+          fontSize={12}
+          fontWeight="500"
+          color="$textTertiary"
           textAlign="center"
           onPress={onUpgrade}
           pressStyle={{ opacity: 0.7 }}
           marginTop="$1"
         >
-          Basic으로 더 많이 이용하기 →
+          더 많이 이용하기
         </TamaguiText>
       </YStack>
     </TamaguiGlassCard>
@@ -463,6 +513,13 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
     [navigation],
   );
 
+  const handlePickPress = useCallback(
+    (_filter: string) => {
+      navigation.navigate('Map');
+    },
+    [navigation],
+  );
+
   // ─── Render ────────────────────────────────────────
   return (
     <View testID={testID} style={{ flex: 1, backgroundColor: theme.background.val }}>
@@ -594,8 +651,13 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
           />
         </Animated.View>
 
+        {/* ── 오늘 추천 TOP 5 ────────────────────── */}
+        <Animated.View entering={stagger(3)} style={{ marginTop: 24 }}>
+          <HomeTodayPicks onPickPress={handlePickPress} />
+        </Animated.View>
+
         {/* ── QuotaBar 위젯 ───────────────────────── */}
-        <Animated.View entering={stagger(3)} style={{ paddingHorizontal: 20, marginTop: 20 }}>
+        <Animated.View entering={stagger(4)} style={{ paddingHorizontal: 20, marginTop: 20 }}>
           <HomeQuotaWidget
             admissionUsed={admissionUsed}
             admissionTotal={admissionTotal}
@@ -609,14 +671,14 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
 
         {/* ── 공동구매 캐러셀 ──────────────────────── */}
         {deals && deals.length > 0 && (
-          <Animated.View entering={stagger(4)} style={{ marginTop: 32 }}>
+          <Animated.View entering={stagger(5)} style={{ marginTop: 32 }}>
             <HomeDealCarousel deals={deals} onDealPress={handleDealPress} />
           </Animated.View>
         )}
 
         {/* ── 트렌드 ──────────────────────────────── */}
         {trends && (
-          <Animated.View entering={stagger(5)} style={{ marginTop: 32 }}>
+          <Animated.View entering={stagger(6)} style={{ marginTop: 32 }}>
             <PeerTrendWidget
               trends={trends}
               onPlacePress={(id) => navigation.navigate('PlaceDetail', { id })}
@@ -626,7 +688,7 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
         )}
 
         {/* ── 또래 피드 ───────────────────────────── */}
-        <Animated.View entering={stagger(6)} style={{ marginTop: 36 }}>
+        <Animated.View entering={stagger(7)} style={{ marginTop: 36 }}>
           <HomePeerFeed
             activities={activities}
             isLoading={isLoading}
