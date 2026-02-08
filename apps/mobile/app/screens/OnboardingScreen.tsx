@@ -144,7 +144,7 @@ export default function OnboardingScreen() {
           아이에게 맞는 하루를 시작해요
         </TamaguiText>
         <TamaguiText preset="caption" textColor="secondary" style={styles.subtitleMargin}>
-          Trust → Recommend → Execute
+          오늘 갈 곳·입학·대기 알림까지
         </TamaguiText>
       </View>
 

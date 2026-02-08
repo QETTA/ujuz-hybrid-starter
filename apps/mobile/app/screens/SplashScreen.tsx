@@ -148,14 +148,14 @@ export default function SplashScreen() {
             weight="semibold"
             style={styles.tagline}
           >
-            Trust → Recommend → Execute
+            우리 아이 입학 지도
           </TamaguiText>
         </Animated.View>
       </View>
 
       <View style={styles.footer}>
         <TamaguiText preset="caption" textColor="tertiary" style={styles.footerText}>
-          mobile-only intelligence
+          오늘 갈 곳·입학·대기 알림까지
         </TamaguiText>
       </View>
     </LinearGradient>
