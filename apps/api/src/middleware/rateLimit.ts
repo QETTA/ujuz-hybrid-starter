@@ -45,7 +45,7 @@ export function createRateLimiter(
     if (current && current.count > max) {
       const retryAfter = Math.ceil((current.resetAt - now) / 1000);
       res.setHeader('Retry-After', retryAfter.toString());
-      res.status(429).json({ ok: false, error: 'rate_limited' });
+      res.status(429).json({ error: { code: 'rate_limited', message: 'Too many requests' } });
       return;
     }
 

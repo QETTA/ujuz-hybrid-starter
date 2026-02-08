@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { createRateLimiter } from '../middleware/rateLimit.js';
 import { getMongoDb, connectMongo } from '@ujuz/db';
 import { env } from '@ujuz/config';
+import { AppError } from '@ujuz/shared';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -75,8 +76,7 @@ router.patch('/me', rateLimit, async (req, res, next) => {
     const userId = req.header('x-user-id') ?? 'anonymous';
     const db = await getDb();
     if (!db) {
-      res.status(503).json({ ok: false, error: 'db_not_configured' });
-      return;
+      throw new AppError('Database not configured', 503, 'db_not_configured');
     }
 
     const body = UpdateProfileSchema.parse(req.body);
@@ -98,8 +98,7 @@ router.post('/me/children', rateLimit, async (req, res, next) => {
     const userId = req.header('x-user-id') ?? 'anonymous';
     const db = await getDb();
     if (!db) {
-      res.status(503).json({ ok: false, error: 'db_not_configured' });
-      return;
+      throw new AppError('Database not configured', 503, 'db_not_configured');
     }
 
     const body = AddChildSchema.parse(req.body);

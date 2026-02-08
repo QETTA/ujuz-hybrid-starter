@@ -10,9 +10,9 @@ export function requireAdminKey(req: Request, _res: Response, next: NextFunction
   }
 
   const provided = req.header('x-admin-key') ?? '';
-  const a = Buffer.from(provided);
-  const b = Buffer.from(configured);
-  const isValid = a.length === b.length && crypto.timingSafeEqual(a, b);
+  const a = crypto.createHash('sha256').update(provided).digest();
+  const b = crypto.createHash('sha256').update(configured).digest();
+  const isValid = crypto.timingSafeEqual(a, b);
 
   if (!isValid) {
     throw new AppError('Unauthorized', 401, 'unauthorized');
