@@ -60,7 +60,8 @@ router.get('/joined', rateLimit, async (req, res, next) => {
 // GET /group-buys/:id
 router.get('/:id', rateLimit, async (req, res, next) => {
   try {
-    const groupBuy = await getGroupBuyById(String(req.params.id));
+    const id = z.string().min(1).max(200).parse(req.params.id);
+    const groupBuy = await getGroupBuyById(id);
     if (!groupBuy) {
       throw new AppError('Group buy not found', 404, 'not_found');
     }
@@ -74,7 +75,8 @@ router.get('/:id', rateLimit, async (req, res, next) => {
 router.post('/:id/join', rateLimit, async (req, res, next) => {
   try {
     const userId = req.header('x-user-id') ?? 'anonymous';
-    const result = await joinGroupBuy(String(req.params.id), userId);
+    const id = z.string().min(1).max(200).parse(req.params.id);
+    const result = await joinGroupBuy(id, userId);
     res.json({ ok: true, data: result });
   } catch (error) {
     next(error);
@@ -85,7 +87,8 @@ router.post('/:id/join', rateLimit, async (req, res, next) => {
 router.delete('/:id/leave', rateLimit, async (req, res, next) => {
   try {
     const userId = req.header('x-user-id') ?? 'anonymous';
-    await leaveGroupBuy(String(req.params.id), userId);
+    const id = z.string().min(1).max(200).parse(req.params.id);
+    await leaveGroupBuy(id, userId);
     res.json({ ok: true });
   } catch (error) {
     next(error);

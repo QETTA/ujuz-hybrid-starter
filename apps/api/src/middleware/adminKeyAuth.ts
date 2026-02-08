@@ -6,7 +6,8 @@ import { AppError } from '@ujuz/shared';
 export function requireAdminKey(req: Request, _res: Response, next: NextFunction) {
   const configured = env.ADMIN_API_KEY;
   if (!configured) {
-    throw new AppError('ADMIN_API_KEY is not configured', 503, 'admin_key_not_configured');
+    // Return generic 401 — never reveal whether the key is configured
+    throw new AppError('Unauthorized', 401, 'unauthorized');
   }
 
   const provided = req.header('x-admin-key') ?? '';

@@ -7,7 +7,8 @@ export const requestLogger = pinoHttp({
   logger,
   genReqId(req, res) {
     const existing = req.headers['x-request-id'];
-    const id = (typeof existing === 'string' && existing) || crypto.randomUUID();
+    // Accept client-provided request ID only if it's a reasonable length
+    const id = (typeof existing === 'string' && existing.length <= 128 && existing) || crypto.randomUUID();
     res.setHeader('x-request-id', id);
     return id;
   },

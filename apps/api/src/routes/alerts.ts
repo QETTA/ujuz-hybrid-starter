@@ -63,7 +63,8 @@ router.post('/to', rateLimit, async (req, res, next) => {
 router.delete('/to/:facilityId', rateLimit, async (req, res, next) => {
   try {
     const userId = req.header('x-user-id') ?? 'anonymous';
-    await deleteSubscription(userId, String(req.params.facilityId));
+    const facilityId = z.string().min(1).max(200).parse(req.params.facilityId);
+    await deleteSubscription(userId, facilityId);
     res.json({ ok: true });
   } catch (error) {
     next(error);

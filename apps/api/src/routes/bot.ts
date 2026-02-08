@@ -70,7 +70,8 @@ router.get('/conversations', rateLimit, async (req, res, next) => {
 // GET /bot/conversations/:id - Get single conversation
 router.get('/conversations/:id', rateLimit, async (req, res, next) => {
   try {
-    const result = await getConversation(String(req.params.id));
+    const id = z.string().min(1).max(200).parse(req.params.id);
+    const result = await getConversation(id);
     if (!result) {
       throw new AppError('Conversation not found', 404, 'not_found');
     }
@@ -84,7 +85,8 @@ router.get('/conversations/:id', rateLimit, async (req, res, next) => {
 router.delete('/conversations/:id', rateLimit, async (req, res, next) => {
   try {
     const userId = req.header('x-user-id') ?? 'anonymous';
-    await deleteConversation(String(req.params.id), userId);
+    const id = z.string().min(1).max(200).parse(req.params.id);
+    await deleteConversation(id, userId);
     res.json({ ok: true });
   } catch (error) {
     next(error);
