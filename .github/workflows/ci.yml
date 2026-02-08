@@ -21,8 +21,11 @@ jobs:
 
       - run: npm ci
 
-      - name: TypeScript typecheck
+      - name: TypeScript typecheck (server)
         run: npm run typecheck
+
+      - name: TypeScript typecheck (mobile)
+        run: npm run typecheck:mobile
 
       - name: Lint
         run: npm run lint

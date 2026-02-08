@@ -8,10 +8,18 @@
   ],
   "scripts": {
     "dev": "concurrently -n API,ALERTS,AI -c auto \"npm:dev -w apps/api\" \"npm:dev -w apps/worker-alerts\" \"npm:dev -w apps/worker-ai\"",
-    "build": "npm run build -ws",
+    "dev:mobile": "npm run start:lan -w apps/mobile",
+    "dev:emu": "npm run dev:emu -w apps/mobile",
+    "dev:all": "concurrently -n API,ALERTS,AI,MOBILE -c auto \"npm:dev -w apps/api\" \"npm:dev -w apps/worker-alerts\" \"npm:dev -w apps/worker-ai\" \"npm:start:lan -w apps/mobile\"",
+    "build": "npm run build -ws --if-present",
     "typecheck": "tsc --noEmit -p apps/api/tsconfig.json && tsc --noEmit -p apps/worker-alerts/tsconfig.json && tsc --noEmit -p apps/worker-ai/tsconfig.json && tsc --noEmit -p packages/db/tsconfig.json && tsc --noEmit -p packages/config/tsconfig.json && tsc --noEmit -p packages/shared/tsconfig.json",
+    "typecheck:mobile": "tsc --noEmit -p apps/mobile/tsconfig.json",
+    "typecheck:all": "npm run typecheck && npm run typecheck:mobile",
     "lint": "npm run lint -ws --if-present",
     "test": "vitest run"
+  },
+  "overrides": {
+    "react-test-renderer": "19.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
