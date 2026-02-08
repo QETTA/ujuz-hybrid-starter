@@ -196,7 +196,7 @@ export function effectiveHorizon(H: number, currentMonth: number): number {
   return H_eff; // 단위: month-equivalent
 }
 
-function getCacheKey(input: AdmissionScoreInput, region: string, w_eff: number): string {
+function getCacheKey(input: AdmissionScoreInput, _region: string, w_eff: number): string {
   return `${input.facility_id}|${input.child_age_band}|${w_eff}|${ENGINE_VERSION}|${CALIBRATION_VERSION}`;
 }
 
