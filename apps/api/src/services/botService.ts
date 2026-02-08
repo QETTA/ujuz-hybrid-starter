@@ -51,14 +51,14 @@ interface BotMessage {
 }
 
 const INTENT_KEYWORDS: Record<string, string[]> = {
-  FACILITY_INFO: ['\uc5b4\ub9b0\uc774\uc9d1', '\uc720\uce58\uc6d0', '\uc2dc\uc124', '\uc815\ubcf4', '\uc54c\ub824\uc918', '\uc5b4\ub514'],
-  ADMISSION_INQUIRY: ['\uc785\uc18c', '\uc785\ud559', '\uc810\uc218', '\ub300\uae30', '\uc21c\ubc88', '\uac00\ub2a5\uc131'],
-  COST_INQUIRY: ['\ube44\uc6a9', '\ubcf4\uc721\ub8cc', '\uae08\uc561', '\uc5bc\ub9c8', '\uac00\uaca9', '\uc694\uae08'],
-  REVIEW_INQUIRY: ['\ud6c4\uae30', '\ub9ac\ubdf0', '\ud3c9\uac00', '\uc5b4\ub54c', '\uc88b\uc544'],
-  TO_ALERT: ['TO', '\uc790\ub9ac', '\ube48\uc790\ub9ac', '\uc54c\ub9bc', '\ub098\uba74'],
-  COMPARISON: ['\ube44\uad50', 'vs', '\uc5b4\ub514\uac00', '\ubb50\uac00 \ub098\uc544'],
-  RECOMMENDATION: ['\ucd94\ucc9c', '\uc88b\uc740', '\uad1c\ucc2e\uc740', '\uc5b4\ub514'],
-  SUBSCRIPTION: ['\uad6c\ub3c5', '\ud504\ub9ac\ubbf8\uc5c4', '\uacb0\uc81c', '\uc694\uae08\uc81c'],
+  FACILITY_INFO: ['어린이집', '유치원', '시설', '정보', '알려줘', '어디'],
+  ADMISSION_INQUIRY: ['입소', '입학', '점수', '대기', '순번', '가능성'],
+  COST_INQUIRY: ['비용', '보육료', '금액', '얼마', '가격', '요금'],
+  REVIEW_INQUIRY: ['후기', '리뷰', '평가', '어때', '좋아'],
+  TO_ALERT: ['TO', '자리', '빈자리', '알림', '나면'],
+  COMPARISON: ['비교', 'vs', '어디가', '뭐가 나아'],
+  RECOMMENDATION: ['추천', '좋은', '괜찮은', '어디'],
+  SUBSCRIPTION: ['구독', '프리미엄', '결제', '요금제'],
 };
 
 export function classifyIntent(message: string): string {
@@ -157,21 +157,21 @@ async function generateResponse(
   return generateFallbackResponse(intent, dataBlocks);
 }
 
-const SYSTEM_PROMPT = `\ub2f9\uc2e0\uc740 "\uc6b0\uc96c\ubd07"\uc785\ub2c8\ub2e4. \ub300\ud55c\ubbfc\uad6d \uc5b4\ub9b0\uc774\uc9d1 \uc785\uc18c\ub97c \ub3d5\ub294 AI \uc0c1\ub2f4\uc0ac\uc785\ub2c8\ub2e4.
+const SYSTEM_PROMPT = `당신은 "우주봇"입니다. 대한민국 어린이집 입소를 돕는 AI 상담사입니다.
 
-\uc5ed\ud560:
-- \uc5b4\ub9b0\uc774\uc9d1/\uc720\uce58\uc6d0 \uc815\ubcf4 \uc548\ub0b4 (\uc704\uce58, \uc2dc\uc124, \ubcf4\uc721\ub8cc)
-- \uc785\uc18c \uc810\uc218 \uacc4\uc0b0 \ubc0f \uc608\uce21 \uc124\uba85
-- TO(\ucda9\uc6d0) \uc54c\ub9bc \uc11c\ube44\uc2a4 \uc548\ub0b4
-- \ubcf4\uc721 \uc815\ucc45 \ubc0f \uc9c0\uc6d0\uae08 \uc548\ub0b4
-- \uc2dc\uc124 \ube44\uad50 \ubc0f \ucd94\ucc9c
+역할:
+- 어린이집/유치원 정보 안내 (위치, 시설, 보육료)
+- 입소 점수 계산 및 예측 설명
+- TO(충원) 알림 서비스 안내
+- 보육 정책 및 지원금 안내
+- 시설 비교 및 추천
 
-\uaddc\uce59:
-- \ud55c\uad6d\uc5b4\ub85c \ub2f5\ubcc0\ud558\uc138\uc694
-- \uce5c\uc808\ud558\uace0 \uac04\uacb0\ud558\uac8c \ub2f5\ubcc0\ud558\uc138\uc694 (300\uc790 \uc774\ub0b4 \uad8c\uc7a5)
-- \ud655\uc2e4\ud558\uc9c0 \uc54a\uc740 \uc815\ubcf4\ub294 \ud655\uc778\uc774 \ud544\uc694\ud558\ub2e4\uace0 \uc548\ub0b4\ud558\uc138\uc694
-- \uc5b4\ub9b0\uc774\uc9d1/\ubcf4\uc721 \uad00\ub828 \uc9c8\ubb38\uc774 \uc544\ub2cc \uacbd\uc6b0 \uc815\uc911\ud788 \uc548\ub0b4 \ubc94\uc704\ub97c \uc124\uba85\ud558\uc138\uc694
-- \uac1c\uc778\uc815\ubcf4(\uc8fc\ubbfc\ubc88\ud638, \uce74\ub4dc\ubc88\ud638 \ub4f1)\ub294 \uc808\ub300 \uc694\uccad\ud558\uc9c0 \ub9c8\uc138\uc694`;
+규칙:
+- 한국어로 답변하세요
+- 친절하고 간결하게 답변하세요 (300자 이내 권장)
+- 확실하지 않은 정보는 확인이 필요하다고 안내하세요
+- 어린이집/보육 관련 질문이 아닌 경우 정중히 안내 범위를 설명하세요
+- 개인정보(주민번호, 카드번호 등)는 절대 요청하지 마세요`;
 
 async function generateClaudeResponse(
   client: Anthropic,
@@ -186,16 +186,16 @@ async function generateClaudeResponse(
 
   if (dataBlocks.length > 0) {
     const blockContext = dataBlocks
-      .map((b) => `[${b.type}] ${b.title}: ${b.content} (\uc2e0\ub8b0\ub3c4: ${(b.confidence * 100).toFixed(0)}%)`)
+      .map((b) => `[${b.type}] ${b.title}: ${b.content} (신뢰도: ${(b.confidence * 100).toFixed(0)}%)`)
       .join('\n');
-    systemPrompt += `\n\n\ucc38\uace0 \ub370\uc774\ud130:\n${blockContext}`;
+    systemPrompt += `\n\n참고 데이터:\n${blockContext}`;
   }
 
   if (context?.facility_id) {
-    systemPrompt += `\n\n\ud604\uc7ac \ucee8\ud14d\uc2a4\ud2b8: \uc2dc\uc124 ID ${context.facility_id}`;
+    systemPrompt += `\n\n현재 컨텍스트: 시설 ID ${context.facility_id}`;
   }
 
-  systemPrompt += `\n\n\ubd84\ub958\ub41c \uc758\ub3c4: ${intent}`;
+  systemPrompt += `\n\n분류된 의도: ${intent}`;
 
   // Build messages array from conversation history
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
@@ -224,19 +224,19 @@ export function generateFallbackResponse(
   dataBlocks: Array<{ type: string; title: string; content: string; confidence: number }>,
 ): string {
   const blockSummary = dataBlocks.length > 0
-    ? `\n\n\ucc38\uace0 \ub370\uc774\ud130:\n${dataBlocks.map((b) => `- ${b.title}: ${b.content}`).join('\n')}`
+    ? `\n\n참고 데이터:\n${dataBlocks.map((b) => `- ${b.title}: ${b.content}`).join('\n')}`
     : '';
 
   const responses: Record<string, string> = {
-    FACILITY_INFO: `\uc5b4\ub9b0\uc774\uc9d1 \uc815\ubcf4\ub97c \ucc3e\uc544\ubcf4\uaca0\uc2b5\ub2c8\ub2e4. \uac80\uc0c9\uc5b4\ub098 \uc9c0\uc5ed\uc744 \uc54c\ub824\uc8fc\uc2dc\uba74 \ub354 \uc815\ud655\ud55c \uc815\ubcf4\ub97c \ub4dc\ub9b4 \uc218 \uc788\uc5b4\uc694.${blockSummary}`,
-    ADMISSION_INQUIRY: `\uc785\uc18c \uc810\uc218\ub97c \ud655\uc778\ud574 \ubcf4\uaca0\uc2b5\ub2c8\ub2e4. '\uc785\uc18c \uc810\uc218 \uc608\uce21' \uae30\ub2a5\uc5d0\uc11c \uc790\ub140 \uc815\ubcf4\uc640 \ud76c\ub9dd \uc2dc\uc124\uc744 \uc785\ub825\ud558\uc2dc\uba74 \uc0c1\uc138\ud55c \ubd84\uc11d \uacb0\uacfc\ub97c \ubc1b\uc73c\uc2e4 \uc218 \uc788\uc5b4\uc694.${blockSummary}`,
-    COST_INQUIRY: `\ubcf4\uc721\ub8cc \uc815\ubcf4\ub97c \uc548\ub0b4\ud574 \ub4dc\ub9ac\uaca0\uc2b5\ub2c8\ub2e4. \uc815\ubd80 \uc9c0\uc6d0\uae08\uacfc \ucd94\uac00 \ube44\uc6a9\uc744 \ud3ec\ud568\ud55c \uc0c1\uc138 \uc548\ub0b4\uac00 \ud544\uc694\ud558\uc2dc\uba74 \uc2dc\uc124\uba85\uc744 \uc54c\ub824\uc8fc\uc138\uc694.${blockSummary}`,
-    REVIEW_INQUIRY: `\uc2dc\uc124 \ud6c4\uae30\ub97c \ucc3e\uc544\ubcf4\uaca0\uc2b5\ub2c8\ub2e4. \ud2b9\uc815 \uc2dc\uc124\uc758 \ub9ac\ubdf0\uac00 \uad81\uae08\ud558\uc2dc\uba74 \uc2dc\uc124\uba85\uc744 \uc54c\ub824\uc8fc\uc138\uc694.${blockSummary}`,
-    TO_ALERT: `TO \uc54c\ub9bc \uc11c\ube44\uc2a4\ub97c \uc548\ub0b4\ud574 \ub4dc\ub9ac\uaca0\uc2b5\ub2c8\ub2e4. \uad00\uc2ec \uc2dc\uc124\uc758 TO \uc54c\ub9bc\uc744 \uc124\uc815\ud558\uba74 \uc790\ub9ac\uac00 \ub098\ub294 \uc989\uc2dc \uc54c\ub824\ub4dc\ub824\uc694. \uc124\uc815 \ud654\uba74\uc5d0\uc11c \uc2dc\uc124\uc744 \ucd94\uac00\ud574 \ubcf4\uc138\uc694.${blockSummary}`,
-    COMPARISON: `\uc2dc\uc124 \ube44\uad50\ub97c \ub3c4\uc640\ub4dc\ub9ac\uaca0\uc2b5\ub2c8\ub2e4. \ube44\uad50\ud558\uace0 \uc2f6\uc740 \uc2dc\uc124\ub4e4\uc758 \uc774\ub984\uc744 \uc54c\ub824\uc8fc\uc138\uc694.${blockSummary}`,
-    RECOMMENDATION: `\ub9de\ucda4 \ucd94\ucc9c\uc744 \ud574\ub4dc\ub9ac\uaca0\uc2b5\ub2c8\ub2e4. \uc790\ub140\uc758 \ub098\uc774\uc640 \uc6d0\ud558\uc2dc\ub294 \uc9c0\uc5ed\uc744 \uc54c\ub824\uc8fc\uc2dc\uba74 \ucd5c\uc801\uc758 \uc2dc\uc124\uc744 \ucd94\ucc9c\ud574 \ub4dc\ub9b4\uac8c\uc694.${blockSummary}`,
-    SUBSCRIPTION: `\ud504\ub9ac\ubbf8\uc5c4 \uc694\uae08\uc81c\ub97c \uc548\ub0b4\ud574 \ub4dc\ub9ac\uaca0\uc2b5\ub2c8\ub2e4.\n\n\ud83c\udd93 \ubb34\ub8cc: \uc785\uc18c \uc810\uc218 1\ud68c/\uc6d4, TO \uc54c\ub9bc 1\uac1c, AI \uc0c1\ub2f4 5\ud68c/\uc77c\n\ud83d\udc8e \uae30\ubcf8 (\u20a94,900/\uc6d4): \uc785\uc18c \uc810\uc218 5\ud68c, TO 5\uac1c, AI 30\ud68c\n\ud83d\udc51 \ud504\ub9ac\ubbf8\uc5c4 (\u20a99,900/\uc6d4): \ubb34\uc81c\ud55c \uc774\uc6a9`,
-    GENERAL: `\uc548\ub155\ud558\uc138\uc694! \uc6b0\uc96c\ubd07\uc774\uc5d0\uc694. \uc5b4\ub9b0\uc774\uc9d1 \uad00\ub828 \uad81\uae08\ud55c \uc810\uc774 \uc788\uc73c\uc2dc\uba74 \ubb34\uc5c7\uc774\ub4e0 \ubb3c\uc5b4\ubcf4\uc138\uc694. \uc785\uc18c \uc810\uc218, TO \uc54c\ub9bc, \uc2dc\uc124 \uc815\ubcf4, \ube44\uc6a9 \uc548\ub0b4 \ub4f1\uc744 \ub3c4\uc640\ub4dc\ub9b4 \uc218 \uc788\uc5b4\uc694.${blockSummary}`,
+    FACILITY_INFO: `어린이집 정보를 찾아보겠습니다. 검색어나 지역을 알려주시면 더 정확한 정보를 드릴 수 있어요.${blockSummary}`,
+    ADMISSION_INQUIRY: `입소 점수를 확인해 보겠습니다. '입소 점수 예측' 기능에서 자녀 정보와 희망 시설을 입력하시면 상세한 분석 결과를 받으실 수 있어요.${blockSummary}`,
+    COST_INQUIRY: `보육료 정보를 안내해 드리겠습니다. 정부 지원금과 추가 비용을 포함한 상세 안내가 필요하시면 시설명을 알려주세요.${blockSummary}`,
+    REVIEW_INQUIRY: `시설 후기를 찾아보겠습니다. 특정 시설의 리뷰가 궁금하시면 시설명을 알려주세요.${blockSummary}`,
+    TO_ALERT: `TO 알림 서비스를 안내해 드리겠습니다. 관심 시설의 TO 알림을 설정하면 자리가 나는 즉시 알려드려요. 설정 화면에서 시설을 추가해 보세요.${blockSummary}`,
+    COMPARISON: `시설 비교를 도와드리겠습니다. 비교하고 싶은 시설들의 이름을 알려주세요.${blockSummary}`,
+    RECOMMENDATION: `맞춤 추천을 해드리겠습니다. 자녀의 나이와 원하시는 지역을 알려주시면 최적의 시설을 추천해 드릴게요.${blockSummary}`,
+    SUBSCRIPTION: `프리미엄 요금제를 안내해 드리겠습니다.\n\n🆓 무료: 입소 점수 1회/월, TO 알림 1개, AI 상담 5회/일\n💎 기본 (₩4,900/월): 입소 점수 5회, TO 5개, AI 30회\n👑 프리미엄 (₩9,900/월): 무제한 이용`,
+    GENERAL: `안녕하세요! 우주봇이에요. 어린이집 관련 궁금한 점이 있으시면 무엇이든 물어보세요. 입소 점수, TO 알림, 시설 정보, 비용 안내 등을 도와드릴 수 있어요.${blockSummary}`,
   };
 
   return responses[intent] ?? responses.GENERAL;
@@ -244,11 +244,11 @@ export function generateFallbackResponse(
 
 export function generateSuggestions(intent: string): string[] {
   const suggestions: Record<string, string[]> = {
-    FACILITY_INFO: ['\uadfc\ucc98 \uc5b4\ub9b0\uc774\uc9d1 \ucd94\ucc9c\ud574\uc918', '\uc774 \uc5b4\ub9b0\uc774\uc9d1 \uc785\uc18c \uc810\uc218\ub294?', '\ubcf4\uc721\ub8cc \uc5bc\ub9c8\uc57c?'],
-    ADMISSION_INQUIRY: ['\uc785\uc18c \uc810\uc218 \uacc4\uc0b0\ud574\uc918', 'TO \uc54c\ub9bc \uc124\uc815\ud558\uace0 \uc2f6\uc5b4', '\ub2e4\ub978 \uc2dc\uc124\ub3c4 \ube44\uad50\ud574\uc918'],
-    COST_INQUIRY: ['\uc815\ubd80 \uc9c0\uc6d0\uae08 \uc54c\ub824\uc918', '\ucd94\uac00 \ube44\uc6a9\uc740 \ubb50\uac00 \uc788\uc5b4?', '\ube44\uc6a9 \ube44\uad50\ud574\uc918'],
-    TO_ALERT: ['TO \uc54c\ub9bc \uc124\uc815\ud574\uc918', '\uc785\uc18c \uc810\uc218 \ud655\uc778\ud574\uc918', '\ucd94\ucc9c \uc2dc\uc124 \uc54c\ub824\uc918'],
-    GENERAL: ['\uc5b4\ub9b0\uc774\uc9d1 \ucd94\ucc9c\ud574\uc918', '\uc785\uc18c \uc810\uc218 \uc54c\uc544\ubcf4\uae30', 'TO \uc54c\ub9bc \uc124\uc815', '\ud504\ub9ac\ubbf8\uc5c4 \uc548\ub0b4'],
+    FACILITY_INFO: ['근처 어린이집 추천해줘', '이 어린이집 입소 점수는?', '보육료 얼마야?'],
+    ADMISSION_INQUIRY: ['입소 점수 계산해줘', 'TO 알림 설정하고 싶어', '다른 시설도 비교해줘'],
+    COST_INQUIRY: ['정부 지원금 알려줘', '추가 비용은 뭐가 있어?', '비용 비교해줘'],
+    TO_ALERT: ['TO 알림 설정해줘', '입소 점수 확인해줘', '추천 시설 알려줘'],
+    GENERAL: ['어린이집 추천해줘', '입소 점수 알아보기', 'TO 알림 설정', '프리미엄 안내'],
   };
 
   return suggestions[intent] ?? suggestions.GENERAL;
@@ -269,8 +269,9 @@ export async function processQuery(input: BotQueryInput): Promise<{
   let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
   if (input.conversation_id) {
     try {
+      // C2: Fixed IDOR - added user_id filter
       const existingConv = await db.collection('conversations').findOne(
-        { _id: new ObjectId(input.conversation_id) },
+        { _id: new ObjectId(input.conversation_id), user_id: input.user_id },
         { projection: { messages: { $slice: -10 } } },
       );
       if (existingConv?.messages) {
@@ -356,10 +357,12 @@ export async function getConversations(userId: string) {
   };
 }
 
-export async function getConversation(conversationId: string) {
+// C2: Fixed IDOR - added userId parameter and filtering
+export async function getConversation(conversationId: string, userId: string) {
   const db = await getDbOrThrow();
   const doc = await db.collection('conversations').findOne({
     _id: new ObjectId(conversationId),
+    user_id: userId, // C2: Added user_id filter to prevent IDOR
   });
 
   if (!doc) return null;

@@ -14,6 +14,10 @@ if (enabled) {
         delete event.request.headers['x-partner-key'];
         delete event.request.headers['x-admin-key'];
         delete event.request.headers['authorization'];
+        // M2: Additional sensitive headers
+        delete event.request.headers['x-user-id'];
+        delete event.request.headers['x-device-id'];
+        delete event.request.headers['x-referral-code'];
       }
       return event;
     },

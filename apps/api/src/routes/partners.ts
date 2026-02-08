@@ -17,6 +17,7 @@ import { computeSettlement } from '../services/referralService.js';
 import { getDbOrThrow } from '../services/partnerDb.js';
 
 const router = Router();
+const rateLimit = createRateLimiter(); // H4: Added rate limiter
 
 // ─────────────────────────────────────────────────────────────
 // Admin routes (protected by x-admin-key)
@@ -29,7 +30,7 @@ const CreateOrgSchema = z.object({
   contact_email: z.string().email().optional(),
 });
 
-router.post('/orgs', requireAdminKey, async (req, res) => {
+router.post('/orgs', requireAdminKey, rateLimit, async (req, res) => {
   const body = CreateOrgSchema.parse(req.body);
   const data = await createPartnerOrg(body);
   res.json({ ok: true, data });
@@ -46,7 +47,7 @@ const CreateCafeSchema = z.object({
   share_rate_commerce: z.number().min(0).max(1).optional(),
 });
 
-router.post('/cafes', requireAdminKey, async (req, res) => {
+router.post('/cafes', requireAdminKey, rateLimit, async (req, res) => {
   const body = CreateCafeSchema.parse(req.body);
   const data = await createPartnerCafe(body);
   res.json({ ok: true, data });
@@ -56,7 +57,7 @@ const IssueKeySchema = z.object({
   name: z.string().optional(),
 });
 
-router.post('/orgs/:orgId/api-keys', requireAdminKey, async (req, res) => {
+router.post('/orgs/:orgId/api-keys', requireAdminKey, rateLimit, async (req, res) => {
   const org_id = z.string().min(3).parse(req.params.orgId);
   const body = IssueKeySchema.parse(req.body);
   const data = await issuePartnerApiKey({ org_id, name: body.name });
@@ -69,7 +70,7 @@ const CreateReferralLinkSchema = z.object({
   landing_path: z.string().optional(),
 });
 
-router.post('/cafes/:cafeId/referral-links', requireAdminKey, async (req, res) => {
+router.post('/cafes/:cafeId/referral-links', requireAdminKey, rateLimit, async (req, res) => {
   const cafe_id = z.string().min(3).parse(req.params.cafeId);
   const body = CreateReferralLinkSchema.parse(req.body);
   const data = await createReferralLink({ cafe_id, channel: body.channel, landing_path: body.landing_path });
@@ -81,20 +82,20 @@ const CreateWidgetSchema = z.object({
   config: z.record(z.any()).optional(),
 });
 
-router.post('/cafes/:cafeId/widgets', requireAdminKey, async (req, res) => {
+router.post('/cafes/:cafeId/widgets', requireAdminKey, rateLimit, async (req, res) => {
   const cafe_id = z.string().min(3).parse(req.params.cafeId);
   const body = CreateWidgetSchema.parse(req.body);
   const data = await createWidget({ cafe_id, type: body.type, config: body.config });
   res.json({ ok: true, data });
 });
 
-router.get('/payouts/preview', requireAdminKey, async (req, res) => {
+router.get('/payouts/preview', requireAdminKey, rateLimit, async (req, res) => {
   const period = z.string().regex(/^\d{4}-\d{2}$/).parse(req.query.period);
   const data = await computeSettlement(period, false);
   res.json({ ok: true, data });
 });
 
-router.post('/payouts/run', requireAdminKey, async (req, res) => {
+router.post('/payouts/run', requireAdminKey, rateLimit, async (req, res) => {
   const body = z.object({ period: z.string().regex(/^\d{4}-\d{2}$/) }).parse(req.body);
   const data = await computeSettlement(body.period, true);
   res.json({ ok: true, data });
@@ -104,7 +105,7 @@ router.post('/payouts/run', requireAdminKey, async (req, res) => {
 // Partner routes (protected by x-partner-key)
 // ─────────────────────────────────────────────────────────────
 
-router.get('/me/cafes', requirePartnerOrg, async (req, res) => {
+router.get('/me/cafes', requirePartnerOrg, rateLimit, async (req, res) => {
   const org_id = (req as PartnerRequest).partnerOrgId;
   const db = await getDbOrThrow();
   const cafes = await db.collection('partner_cafes').find({ org_id }).sort({ created_at: -1 }).toArray();

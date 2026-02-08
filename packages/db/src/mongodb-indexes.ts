@@ -186,6 +186,7 @@ export const INDEXES: Record<string, IndexDef[]> = {
     { key: { user_id: 1, memory_key: 1 }, name: 'idx_umem_user_key', unique: true },
     { key: { user_id: 1, is_active: 1, updated_at: -1 }, name: 'idx_umem_user_active_updated' },
     { key: { user_id: 1, tags: 1 }, name: 'idx_umem_user_tags' },
+    { key: { content: 'text', memory_key: 'text' }, name: 'idx_umem_text' },
   ],
 
   // -- Training Blocks (legacy)

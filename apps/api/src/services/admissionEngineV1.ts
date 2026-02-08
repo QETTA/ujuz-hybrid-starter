@@ -248,21 +248,24 @@ export async function calculateAdmissionScoreV1(
   const db = await getDbOrThrow();
   const evidence: EvidenceCard[] = [];
 
-  // 1. 시설 정보 조회 (projection: 필요한 필드만)
-  const facility = await db.collection(env.MONGODB_PLACES_COLLECTION).findOne(
-    {
-      $or: [
-        { placeId: input.facility_id },
-        { facility_id: input.facility_id },
-      ],
-    },
-    {
-      projection: {
-        name: 1, capacity: 1, capacity_by_class: 1, address: 1,
-        current_enrolled: 1, premium_subscribers: 1,
+  // 1. Parallelize facility query and prebuilt blocks query (independent)
+  const [facility, prebuiltBlocks] = await Promise.all([
+    db.collection(env.MONGODB_PLACES_COLLECTION).findOne(
+      {
+        $or: [
+          { placeId: input.facility_id },
+          { facility_id: input.facility_id },
+        ],
       },
-    }
-  );
+      {
+        projection: {
+          name: 1, capacity: 1, capacity_by_class: 1, address: 1,
+          current_enrolled: 1, premium_subscribers: 1,
+        },
+      }
+    ),
+    readAdmissionBlocks(input.facility_id),
+  ]);
 
   if (!facility) {
     throw new AppError('\uc2dc\uc124\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4', 404, 'facility_not_found');
@@ -355,7 +358,6 @@ export async function calculateAdmissionScoreV1(
   }
 
   // 5. Prebuilt admission blocks 확인 (크롤러 파이프라인에서 미리 계산)
-  const prebuiltBlocks = await readAdmissionBlocks(input.facility_id);
   const vacancyBlock = prebuiltBlocks?.get('admission_vacancy_to');
 
   let N: number;

@@ -7,7 +7,7 @@ let client: MongoClient | null = null;
 let db: Db | null = null;
 let connecting: Promise<MongoClient> | null = null;
 
-const DEFAULT_POOL_SIZE = 15;
+const DEFAULT_POOL_SIZE = 30;
 const MIN_POOL_SIZE = 3;
 const MAX_IDLE_TIME_MS = 30_000; // 30s idle before closing surplus connections
 

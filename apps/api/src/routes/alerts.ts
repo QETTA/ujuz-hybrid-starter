@@ -12,6 +12,7 @@ import {
   deleteSubscription,
   getAlertHistory,
 } from '../services/toAlertService.js';
+import { getUserId } from '../utils/getUserId.js';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -31,7 +32,9 @@ const CreateTOSubscriptionSchema = z.object({
 // GET /alerts/to - Get user's TO subscriptions
 router.get('/to', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const result = await getUserSubscriptions(userId);
     res.json({ ok: true, data: result });
   } catch (error) {
@@ -42,7 +45,9 @@ router.get('/to', rateLimit, async (req, res, next) => {
 // POST /alerts/to - Subscribe to TO alerts
 router.post('/to', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const body = CreateTOSubscriptionSchema.parse(req.body);
 
     const subscription = await createSubscription({
@@ -62,7 +67,9 @@ router.post('/to', rateLimit, async (req, res, next) => {
 // DELETE /alerts/to/:facilityId - Unsubscribe from TO alerts
 router.delete('/to/:facilityId', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const facilityId = z.string().min(1).max(200).parse(req.params.facilityId);
     await deleteSubscription(userId, facilityId);
     res.json({ ok: true });
@@ -74,7 +81,9 @@ router.delete('/to/:facilityId', rateLimit, async (req, res, next) => {
 // GET /alerts/to/history - Get TO alert history
 router.get('/to/history', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const result = await getAlertHistory(userId);
     res.json({ ok: true, data: result });
   } catch (error) {

@@ -12,6 +12,7 @@ import {
   getTrendingPlaces,
   recordActivity,
 } from '../services/peerService.js';
+import { getUserId } from '../utils/getUserId.js';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -65,7 +66,9 @@ router.get('/trending/places', rateLimit, async (req, res, next) => {
 // POST /peer/activity
 router.post('/activity', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const body = RecordActivitySchema.parse(req.body);
 
     const result = await recordActivity({

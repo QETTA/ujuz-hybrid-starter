@@ -14,6 +14,7 @@ import {
   deleteMemory,
   searchMemories,
 } from '../services/userMemoryService.js';
+import { getUserId } from '../utils/getUserId.js';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -23,7 +24,7 @@ const SaveMemorySchema = z.object({
   memory_key: z.string().min(1).max(100).regex(/^[a-zA-Z0-9가-힣_-]+$/),
   content: z.string().min(1).max(5000),
   tags: z.array(z.string().max(30)).max(10).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.string().max(500)).optional(),
 });
 
 const ListMemoriesQuery = z.object({
@@ -40,7 +41,9 @@ const UpdateMemorySchema = z.object({
 // POST / - Save memory (upsert)
 router.post('/', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const body = SaveMemorySchema.parse(req.body);
 
     const memory = await saveMemory(
@@ -60,7 +63,9 @@ router.post('/', rateLimit, async (req, res, next) => {
 // GET / - List or search memories
 router.get('/', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const query = ListMemoriesQuery.parse(req.query);
 
     if (query.q) {
@@ -78,7 +83,9 @@ router.get('/', rateLimit, async (req, res, next) => {
 // GET /:key - Get single memory
 router.get('/:key', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const memory = await getMemory(userId, String(req.params.key));
 
     if (!memory) {
@@ -95,7 +102,9 @@ router.get('/:key', rateLimit, async (req, res, next) => {
 // PUT /:key - Update memory
 router.put('/:key', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const body = UpdateMemorySchema.parse(req.body);
 
     const memory = await updateMemory(userId, String(req.params.key), body.content, body.tags);
@@ -114,7 +123,9 @@ router.put('/:key', rateLimit, async (req, res, next) => {
 // DELETE /:key - Soft delete memory
 router.delete('/:key', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const deleted = await deleteMemory(userId, String(req.params.key));
 
     if (!deleted) {

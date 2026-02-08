@@ -135,10 +135,11 @@ export async function computeSettlement(period: string, persist: boolean) {
   });
 
   if (persist) {
-    for (const l of ledgers) {
-      await db.collection('payout_ledgers').updateOne(
-        { cafe_id: l.cafe_id, period: l.period },
-        {
+    // Use bulkWrite instead of sequential updateOne
+    const bulkOps = ledgers.map((l) => ({
+      updateOne: {
+        filter: { cafe_id: l.cafe_id, period: l.period },
+        update: {
           $set: {
             cafe_name: l.cafe_name,
             gross_subscription: l.gross_subscription,
@@ -152,8 +153,12 @@ export async function computeSettlement(period: string, persist: boolean) {
           },
           $setOnInsert: { created_at: now },
         },
-        { upsert: true },
-      );
+        upsert: true,
+      },
+    }));
+
+    if (bulkOps.length > 0) {
+      await db.collection('payout_ledgers').bulkWrite(bulkOps, { ordered: false });
     }
   }
 

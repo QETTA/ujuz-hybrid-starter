@@ -14,6 +14,7 @@ import {
   getUserJoinedGroupBuys,
 } from '../services/groupBuyService.js';
 import { AppError } from '@ujuz/shared';
+import { getUserId } from '../utils/getUserId.js';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -49,7 +50,9 @@ router.get('/', rateLimit, async (req, res, next) => {
 // GET /group-buys/joined
 router.get('/joined', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const result = await getUserJoinedGroupBuys(userId);
     res.json({ ok: true, data: result });
   } catch (error) {
@@ -74,7 +77,9 @@ router.get('/:id', rateLimit, async (req, res, next) => {
 // POST /group-buys/:id/join
 router.post('/:id/join', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const id = z.string().min(1).max(200).parse(req.params.id);
     const result = await joinGroupBuy(id, userId);
     res.json({ ok: true, data: result });
@@ -86,7 +91,9 @@ router.post('/:id/join', rateLimit, async (req, res, next) => {
 // DELETE /group-buys/:id/leave
 router.delete('/:id/leave', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const id = z.string().min(1).max(200).parse(req.params.id);
     await leaveGroupBuy(id, userId);
     res.json({ ok: true });

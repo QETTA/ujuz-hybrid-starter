@@ -8,6 +8,39 @@ export interface PartnerRequest extends Request {
   partnerKeyId: string;
 }
 
+// ─── TTL Cache ────────────────────────────────────────────────────
+
+interface CachedAuth {
+  org: { org_id: string; status: string };
+  keyId: string;
+  expiresAt: number;
+}
+
+const authCache = new Map<string, CachedAuth>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedAuth(keyHash: string): CachedAuth | null {
+  const cached = authCache.get(keyHash);
+  if (!cached) return null;
+
+  if (Date.now() > cached.expiresAt) {
+    authCache.delete(keyHash);
+    return null;
+  }
+
+  return cached;
+}
+
+function setCachedAuth(keyHash: string, org: { org_id: string; status: string }, keyId: string) {
+  authCache.set(keyHash, {
+    org,
+    keyId,
+    expiresAt: Date.now() + CACHE_TTL,
+  });
+}
+
+// ─── Middleware ───────────────────────────────────────────────────
+
 /**
  * Partner API-key auth.
  * Header: x-partner-key: <raw key>
@@ -22,8 +55,21 @@ export async function requirePartnerOrg(req: Request, _res: Response, next: Next
     throw new AppError('Missing x-partner-key', 401, 'missing_partner_key');
   }
 
-  const db = await getDbOrThrow();
   const keyHash = hashPartnerKey(raw);
+
+  // Check cache first
+  const cached = getCachedAuth(keyHash);
+  if (cached) {
+    if (cached.org.status === 'disabled') {
+      throw new AppError('Partner org disabled', 403, 'partner_org_disabled');
+    }
+    (req as PartnerRequest).partnerOrgId = cached.org.org_id;
+    (req as PartnerRequest).partnerKeyId = cached.keyId;
+    return next();
+  }
+
+  // Cache miss - fetch from DB
+  const db = await getDbOrThrow();
 
   const keyDoc = await db.collection('partner_api_keys').findOne({
     key_hash: keyHash,
@@ -41,8 +87,13 @@ export async function requirePartnerOrg(req: Request, _res: Response, next: Next
     throw new AppError('Partner org disabled', 403, 'partner_org_disabled');
   }
 
+  const keyId = keyDoc.key_id as string;
+
+  // Cache the result
+  setCachedAuth(keyHash, { org_id: orgId, status: org.status as string }, keyId);
+
   (req as PartnerRequest).partnerOrgId = orgId;
-  (req as PartnerRequest).partnerKeyId = keyDoc.key_id as string;
+  (req as PartnerRequest).partnerKeyId = keyId;
 
   next();
 }

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { createRateLimiter } from '../middleware/rateLimit.js';
 import { getPlans, getUserSubscription, createSubscription, cancelSubscription } from '../services/subscriptionService.js';
 import { trackReferralEvent } from '../services/referralService.js';
 import { AppError } from '@ujuz/shared';
@@ -12,15 +13,16 @@ function getUserId(req: import('express').Request): string {
 }
 
 const router = Router();
+const rateLimit = createRateLimiter(); // H3: Added rate limiter
 
 // Get available plans
-router.get('/plans', async (_req, res) => {
+router.get('/plans', rateLimit, async (_req, res) => {
   const plans = getPlans();
   res.json({ ok: true, data: plans });
 });
 
 // Get user's current subscription
-router.get('/me', async (req, res) => {
+router.get('/me', rateLimit, async (req, res) => {
   const userId = getUserId(req);
   const subscription = await getUserSubscription(userId);
 
@@ -36,7 +38,7 @@ const CreateSubscriptionSchema = z.object({
   device_id: z.string().optional(), // optional when client cannot pass x-device-id
 });
 
-router.post('/subscribe', async (req, res) => {
+router.post('/subscribe', rateLimit, async (req, res) => {
   const userId = getUserId(req);
   const body = CreateSubscriptionSchema.parse(req.body);
 
@@ -69,7 +71,7 @@ router.post('/subscribe', async (req, res) => {
 });
 
 // Cancel subscription
-router.post('/cancel', async (req, res) => {
+router.post('/cancel', rateLimit, async (req, res) => {
   const userId = getUserId(req);
   await cancelSubscription(userId);
 

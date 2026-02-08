@@ -9,6 +9,7 @@ import { createRateLimiter } from '../middleware/rateLimit.js';
 import { getMongoDb, connectMongo } from '@ujuz/db';
 import { env } from '@ujuz/config';
 import { AppError } from '@ujuz/shared';
+import { getUserId } from '../utils/getUserId.js';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -39,7 +40,9 @@ const getDb = async () => {
 // GET /users/me - Get profile
 router.get('/me', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const db = await getDb();
     if (!db) {
       res.json({ ok: true, data: { id: userId, display_name: null, children: [] } });
@@ -73,7 +76,9 @@ router.get('/me', rateLimit, async (req, res, next) => {
 // PATCH /users/me - Update profile
 router.patch('/me', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const db = await getDb();
     if (!db) {
       throw new AppError('Database not configured', 503, 'db_not_configured');
@@ -95,7 +100,9 @@ router.patch('/me', rateLimit, async (req, res, next) => {
 // POST /users/me/children - Add child
 router.post('/me/children', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const db = await getDb();
     if (!db) {
       throw new AppError('Database not configured', 503, 'db_not_configured');
@@ -130,7 +137,9 @@ router.post('/me/children', rateLimit, async (req, res, next) => {
 // POST /users/me/push-token - Register push token
 router.post('/me/push-token', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const db = await getDb();
     if (!db) {
       res.json({ ok: true });

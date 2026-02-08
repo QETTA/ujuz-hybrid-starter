@@ -53,6 +53,7 @@ const SNAPSHOT_INTERVALS = {
 };
 
 const COOLDOWN_HOURS = 24; // TO 중복 감지 방지 (24시간)
+const BATCH_SIZE = 500; // Cursor batch size
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
@@ -88,6 +89,7 @@ function getSnapshotInterval(facility: any): number {
  * 대상: 어린이집(daycare) 카테고리 중 정원 정보가 있는 시설.
  *
  * V1.5.2: waitlist_by_class, change.to_detected (1단계) 추가
+ * V1.6.0: Cursor-based processing to prevent memory overflow
  */
 export async function collectSnapshots(): Promise<{
   collected: number;
@@ -98,8 +100,8 @@ export async function collectSnapshots(): Promise<{
   let collected = 0;
   let toDetected = 0;
 
-  // Batch-load all facilities first
-  const facilities = await db.collection(env.MONGODB_PLACES_COLLECTION).find(
+  // Cursor-based processing to prevent loading all facilities into memory
+  const cursor = db.collection(env.MONGODB_PLACES_COLLECTION).find(
     {
       $or: [
         { category: 'daycare' },
@@ -108,8 +110,35 @@ export async function collectSnapshots(): Promise<{
       'capacity.total': { $gt: 0 },
     },
     { projection: { placeId: 1, facility_id: 1, capacity: 1, address: 1 } }
-  ).toArray();
+  ).batchSize(BATCH_SIZE);
 
+  let facilitiesChunk: any[] = [];
+
+  // Process facilities in batches
+  for await (const doc of cursor) {
+    facilitiesChunk.push(doc);
+
+    if (facilitiesChunk.length >= BATCH_SIZE) {
+      const processed = await processFacilityBatch(db, facilitiesChunk, now);
+      collected += processed;
+      facilitiesChunk = [];
+    }
+  }
+
+  // Process remaining facilities
+  if (facilitiesChunk.length > 0) {
+    const processed = await processFacilityBatch(db, facilitiesChunk, now);
+    collected += processed;
+  }
+
+  // 2단계 TO 검증 + to_alerts 생성
+  toDetected = await detectAndConfirmTO(db, now);
+
+  logger.info({ collected, toDetected }, 'Snapshot collection complete');
+  return { collected, toDetected };
+}
+
+async function processFacilityBatch(db: Db, facilities: any[], now: Date): Promise<number> {
   // Build facility ID list
   const facilityIdList = facilities.map((doc) =>
     (doc.placeId as string) ?? (doc.facility_id as string) ?? doc._id.toString()
@@ -167,24 +196,13 @@ export async function collectSnapshots(): Promise<{
       source: 'places_sync',
       confidence: 0.7, // places 동기화 기반
     });
-
-    if (batch.length >= 500) {
-      await db.collection('waitlist_snapshots').insertMany(batch);
-      collected += batch.length;
-      batch.length = 0;
-    }
   }
 
   if (batch.length > 0) {
     await db.collection('waitlist_snapshots').insertMany(batch);
-    collected += batch.length;
   }
 
-  // 2단계 TO 검증 + to_alerts 생성
-  toDetected = await detectAndConfirmTO(db, now);
-
-  logger.info({ collected, toDetected }, 'Snapshot collection complete');
-  return { collected, toDetected };
+  return batch.length;
 }
 
 // ─── TO Detection (2-Stage Verification) ──────────────────────────
@@ -195,17 +213,19 @@ export async function collectSnapshots(): Promise<{
  * 2단계: 다음 스냅샷에서 재확인 or 2개 소스 일치 → to_detected=true → to_alerts 생성
  *
  * V1.5.2: 24시간 cooldown window로 중복 감지 방지
+ * V1.6.0: Add limit to prevent unbounded loads
  */
 async function detectAndConfirmTO(db: Db, currentTimestamp: Date): Promise<number> {
   let detected = 0;
 
-  // 1단계 후보 (to_detected=false) 조회
+  // 1단계 후보 (to_detected=false) 조회 - limit to prevent runaway queries
   const candidates = await db
     .collection('waitlist_snapshots')
     .find({
       'change.to_detected': false,
       'change.enrolled_delta': { $lt: 0 },
     })
+    .limit(1000)
     .toArray();
 
   if (candidates.length === 0) return 0;
@@ -318,6 +338,8 @@ async function detectAndConfirmTO(db: Db, currentTimestamp: Date): Promise<numbe
 /**
  * 시설별로 최근 6개월 스냅샷을 집계하여
  * dataBlocks에 block_type='to_pattern' 블록을 upsert한다.
+ *
+ * V1.6.0: Use bulkWrite instead of sequential updateOne
  */
 export async function updateTrainingDataBlocks(): Promise<number> {
   const db = await getDbOrThrow();
@@ -372,6 +394,14 @@ export async function updateTrainingDataBlocks(): Promise<number> {
     toCountMap.set(tc._id as string, tc.count as number);
   }
 
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const quarter = `Q${Math.ceil(month / 3)}`;
+
+  // Collect all operations for bulkWrite
+  const bulkOps: any[] = [];
+
   for (const agg of aggregated) {
     const facilityId = agg._id as string;
     const enrolledRange = (agg.maxEnrolled as number) - (agg.minEnrolled as number);
@@ -386,7 +416,6 @@ export async function updateTrainingDataBlocks(): Promise<number> {
     const avgWaitingMonths =
       capacity > 0 ? Math.round(((avgEnrolled / capacity) * 12) * 10) / 10 : 12;
 
-    const month = new Date().getMonth() + 1;
     const season =
       month >= 3 && month <= 5
         ? 'spring'
@@ -399,40 +428,45 @@ export async function updateTrainingDataBlocks(): Promise<number> {
     const admissionProbability =
       capacity > 0 ? Math.min(1, (enrolledRange + toCount) / (capacity * 0.3)) : 0.1;
 
-    const quarter = `Q${Math.ceil(month / 3)}`;
-    const year = new Date().getFullYear();
     const blockId = `to_${facilityId}_${year}${quarter}`;
 
-    await db.collection('dataBlocks').updateOne(
-      { block_id: blockId },
-      {
-        $set: {
-          block_id: blockId,
-          block_type: 'to_pattern',
-          facility_id: facilityId,
-          features: {
-            avg_waiting_months: avgWaitingMonths,
-            to_count_6m: toCount,
-            season,
-            region: extractRegionFromAddress(facility?.address as string) ?? '',
-            enrolled_range: enrolledRange,
-            avg_capacity: capacity,
-            avg_enrolled: avgEnrolled,
+    bulkOps.push({
+      updateOne: {
+        filter: { block_id: blockId },
+        update: {
+          $set: {
+            block_id: blockId,
+            block_type: 'to_pattern',
+            facility_id: facilityId,
+            features: {
+              avg_waiting_months: avgWaitingMonths,
+              to_count_6m: toCount,
+              season,
+              region: extractRegionFromAddress(facility?.address as string) ?? '',
+              enrolled_range: enrolledRange,
+              avg_capacity: capacity,
+              avg_enrolled: avgEnrolled,
+            },
+            label: {
+              expected_vacancies_6m: Math.round(enrolledRange * 0.6 + toCount * 0.5),
+              admission_probability: Math.round(admissionProbability * 100) / 100,
+            },
+            confidence: Math.min(0.95, 0.3 + (agg.snapshots as number) * 0.05),
+            source_count: agg.snapshots as number,
+            last_updated: now,
+            isActive: true,
           },
-          label: {
-            expected_vacancies_6m: Math.round(enrolledRange * 0.6 + toCount * 0.5),
-            admission_probability: Math.round(admissionProbability * 100) / 100,
-          },
-          confidence: Math.min(0.95, 0.3 + (agg.snapshots as number) * 0.05),
-          source_count: agg.snapshots as number,
-          last_updated: new Date(),
-          isActive: true,
         },
+        upsert: true,
       },
-      { upsert: true }
-    );
+    });
 
     updated++;
+  }
+
+  // Execute all updates in a single bulkWrite operation
+  if (bulkOps.length > 0) {
+    await db.collection('dataBlocks').bulkWrite(bulkOps, { ordered: false });
   }
 
   logger.info({ updated }, 'Training data blocks updated');

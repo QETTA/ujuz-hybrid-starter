@@ -7,6 +7,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { createRateLimiter } from '../middleware/rateLimit.js';
 import { calculateAdmissionScore, fetchAdmissionHistory } from '../services/admissionService.js';
+import { getUserId } from '../utils/getUserId.js';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -44,7 +45,9 @@ router.post('/calculate', rateLimit, async (req, res, next) => {
 // GET /admission/history
 router.get('/history', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const result = await fetchAdmissionHistory(userId);
     res.json({ ok: true, data: result });
   } catch (error) {

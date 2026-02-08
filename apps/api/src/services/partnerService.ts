@@ -227,6 +227,11 @@ export async function batchExternalPosts(params: { cafe_id: string; org_id: stri
   let detectionsCreated = 0;
   let alertsCreated = 0;
 
+  // Collect all operations for bulkWrite
+  const externalPostOps: any[] = [];
+  const detectionDocs: any[] = [];
+  const alertDocs: any[] = [];
+
   for (const p of params.posts) {
     const text = `${p.title}\n${p.body ?? ''}`;
     const det = detectTo(text);
@@ -251,64 +256,111 @@ export async function batchExternalPosts(params: { cafe_id: string; org_id: stri
       created_at: now,
     };
 
-    const result = await db.collection('external_posts').updateOne(
-      { cafe_id: params.cafe_id, external_id: p.external_id },
-      { $set: doc, $setOnInsert: { created_at: now } },
-      { upsert: true },
-    );
+    externalPostOps.push({
+      updateOne: {
+        filter: { cafe_id: params.cafe_id, external_id: p.external_id },
+        update: { $set: doc, $setOnInsert: { created_at: now } },
+        upsert: true,
+      },
+    });
 
-    if (result.upsertedCount === 1) created += 1;
-    else if (result.modifiedCount === 1) updated += 1;
+    // If TO mention detected, prepare detection record
+    if (det.toMention) {
+      detectionDocs.push({
+        // Note: external_post_id will be set after bulk upsert
+        cafe_id: params.cafe_id,
+        org_id: params.org_id,
+        external_id: p.external_id, // Store external_id to match later
+        detected_at: postedAt,
+        title: p.title,
+        url: p.url,
+        extracted: det.extracted,
+        confidence: det.confidence,
+        created_at: now,
+      });
+    }
 
-    const externalPostId = result.upsertedId
-      ? result.upsertedId
-      : (await db.collection('external_posts').findOne({ cafe_id: params.cafe_id, external_id: p.external_id }, { projection: { _id: 1 } }))?._id;
-
-    // If TO mention detected, store a detection record (idempotent per post)
-    if (det.toMention && externalPostId) {
-      try {
-        await db.collection('to_detections').insertOne({
-          external_post_id: externalPostId,
-          cafe_id: params.cafe_id,
-          org_id: params.org_id,
-          detected_at: postedAt,
-          title: p.title,
-          url: p.url,
+    // Optional: if facility_id is provided, prepare TO alert
+    if (det.toMention && p.facility_id) {
+      alertDocs.push({
+        facility_id: p.facility_id,
+        facility_name: p.facility_name,
+        detected_at: postedAt,
+        source: 'community_report',
+        confidence: det.confidence,
+        estimated_slots: det.extracted?.estimated_slots,
+        age_class: det.extracted?.age_class,
+        details: {
+          external_post: {
+            cafe_id: params.cafe_id,
+            external_id: p.external_id,
+            url: p.url,
+          },
           extracted: det.extracted,
-          confidence: det.confidence,
-          created_at: now,
+        },
+        created_at: now,
+      });
+    }
+  }
+
+  // Execute bulk operations
+  if (externalPostOps.length > 0) {
+    const result = await db.collection('external_posts').bulkWrite(externalPostOps, { ordered: false });
+    created = result.upsertedCount;
+    updated = result.modifiedCount;
+  }
+
+  // Insert detections (with external_post_id lookup)
+  if (detectionDocs.length > 0) {
+    // Fetch external_post_ids for all external_ids
+    const externalIds = detectionDocs.map((d) => d.external_id);
+    const externalPosts = await db.collection('external_posts')
+      .find({ cafe_id: params.cafe_id, external_id: { $in: externalIds } }, { projection: { _id: 1, external_id: 1 } })
+      .toArray();
+    const externalPostMap = new Map<string, any>();
+    for (const ep of externalPosts) {
+      externalPostMap.set(ep.external_id as string, ep._id);
+    }
+
+    const detectionOps: any[] = [];
+    for (const det of detectionDocs) {
+      const externalPostId = externalPostMap.get(det.external_id);
+      if (externalPostId) {
+        detectionOps.push({
+          insertOne: {
+            document: {
+              external_post_id: externalPostId,
+              cafe_id: det.cafe_id,
+              org_id: det.org_id,
+              detected_at: det.detected_at,
+              title: det.title,
+              url: det.url,
+              extracted: det.extracted,
+              confidence: det.confidence,
+              created_at: det.created_at,
+            },
+          },
         });
-        detectionsCreated += 1;
-      } catch {
-        // likely duplicate (unique index on external_post_id)
       }
     }
 
-    // Optional: if facility_id is provided, immediately create a TO alert for subscribed users
-    if (det.toMention && p.facility_id) {
+    if (detectionOps.length > 0) {
       try {
-        await db.collection('to_alerts').insertOne({
-          facility_id: p.facility_id,
-          facility_name: p.facility_name,
-          detected_at: postedAt,
-          source: 'community_report',
-          confidence: det.confidence,
-          estimated_slots: det.extracted?.estimated_slots,
-          age_class: det.extracted?.age_class,
-          details: {
-            external_post: {
-              cafe_id: params.cafe_id,
-              external_id: p.external_id,
-              url: p.url,
-            },
-            extracted: det.extracted,
-          },
-          created_at: now,
-        });
-        alertsCreated += 1;
+        const detResult = await db.collection('to_detections').bulkWrite(detectionOps, { ordered: false });
+        detectionsCreated = detResult.insertedCount;
       } catch {
-        // ignore duplicates / validation
+        // Ignore duplicates (unique index on external_post_id)
       }
+    }
+  }
+
+  // Insert alerts
+  if (alertDocs.length > 0) {
+    try {
+      await db.collection('to_alerts').insertMany(alertDocs, { ordered: false });
+      alertsCreated = alertDocs.length;
+    } catch {
+      // Ignore duplicates / validation
     }
   }
 

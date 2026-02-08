@@ -13,6 +13,7 @@ import {
   deleteConversation,
 } from '../services/botService.js';
 import { AppError } from '@ujuz/shared';
+import { getUserId } from '../utils/getUserId.js';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -40,7 +41,9 @@ const BotQuerySchema = z.object({
 // POST /bot/query - Ask the bot
 router.post('/query', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const body = BotQuerySchema.parse(req.body);
 
     const result = await processQuery({
@@ -59,7 +62,9 @@ router.post('/query', rateLimit, async (req, res, next) => {
 // GET /bot/conversations - List conversations
 router.get('/conversations', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const result = await getConversations(userId);
     res.json({ ok: true, data: result });
   } catch (error) {
@@ -67,11 +72,14 @@ router.get('/conversations', rateLimit, async (req, res, next) => {
   }
 });
 
-// GET /bot/conversations/:id - Get single conversation
+// GET /bot/conversations/:id - Get single conversation (C2: Fixed IDOR)
 router.get('/conversations/:id', rateLimit, async (req, res, next) => {
   try {
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const id = z.string().min(1).max(200).parse(req.params.id);
-    const result = await getConversation(id);
+    const result = await getConversation(id, userId);
     if (!result) {
       throw new AppError('Conversation not found', 404, 'not_found');
     }
@@ -84,7 +92,9 @@ router.get('/conversations/:id', rateLimit, async (req, res, next) => {
 // DELETE /bot/conversations/:id - Delete conversation
 router.delete('/conversations/:id', rateLimit, async (req, res, next) => {
   try {
-    const userId = req.header('x-user-id') ?? 'anonymous';
+    const userId = getUserId(req, res);
+    if (!userId) return;
+
     const id = z.string().min(1).max(200).parse(req.params.id);
     await deleteConversation(id, userId);
     res.json({ ok: true });
