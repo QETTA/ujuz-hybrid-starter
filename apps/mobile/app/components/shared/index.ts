@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - Shared Components
+ * UJUz Mobile - Shared Components
  */
 
 export { default as ErrorView } from './ErrorView.ios26';

@@ -16,8 +16,9 @@
  */
 
 import { memo, useCallback, useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from 'tamagui';
 import { Colors } from '@/app/constants';
 import { COPY } from '@/app/copy/copy.ko';
 import { formatDistance } from '@/app/utils/distance';
@@ -51,6 +52,7 @@ function PlaceCard({
   isFavorite = false,
 }: PlaceCardProps) {
   const { groupBuys } = useGroupBuyStore();
+  const theme = useTheme();
 
   const handlePress = useCallback(() => {
     onPress?.();
@@ -115,6 +117,161 @@ function PlaceCard({
       { key: 'crowd', label: '혼잡', block: insights.crowdLevel },
     ].filter((item) => item.block);
   }, [insights]);
+
+  const styles = useMemo(() => ({
+    card: {
+      backgroundColor: theme.surface.val,
+      borderRadius: 16,
+      marginHorizontal: 16,
+      marginVertical: 8,
+      overflow: 'hidden' as const,
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
+    },
+    imageContainer: {
+      width: '100%' as const,
+      height: 200,
+      position: 'relative' as const,
+      backgroundColor: theme.surfaceElevated.val,
+    },
+    image: {
+      width: '100%' as const,
+      height: '100%' as const,
+    },
+    imagePlaceholder: {
+      backgroundColor: theme.surfaceElevated.val,
+    },
+    videoIndicator: {
+      position: 'absolute' as const,
+      top: '50%' as const,
+      left: '50%' as const,
+      marginTop: -16,
+      marginLeft: -16,
+      opacity: 0.9,
+    },
+    topBadges: {
+      position: 'absolute' as const,
+      top: 12,
+      left: 12,
+      flexDirection: 'column' as const,
+      gap: 6,
+    },
+    groupBuyBadge: {
+      backgroundColor: Colors.iosSystemOrange,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 12,
+    },
+    groupBuyBadgeText: {
+      color: theme.background.val,
+      fontSize: 11,
+      fontWeight: '700' as const,
+    },
+    favoriteButton: {
+      position: 'absolute' as const,
+      top: 12,
+      right: 12,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: Colors.blackAlpha40,
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
+      borderWidth: 0.5,
+      borderColor: Colors.whiteAlpha10,
+    },
+    favoriteIcon: {
+      textShadowColor: Colors.blackAlpha30,
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    },
+    content: {
+      padding: 16,
+    },
+    name: {
+      fontSize: 18,
+      fontWeight: '600' as const,
+      letterSpacing: -0.3,
+      color: theme.textPrimary.val,
+      marginBottom: 8,
+    },
+    ratingRow: {
+      marginBottom: 6,
+    },
+    address: {
+      fontSize: 14,
+      fontWeight: '400' as const,
+      color: theme.textTertiary.val,
+      marginBottom: 12,
+    },
+    bottomRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 8,
+      marginBottom: 8,
+    },
+    distanceBadge: {
+      backgroundColor: theme.surfaceElevated.val,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    distanceBadgeText: {
+      fontSize: 12,
+      fontWeight: '500' as const,
+      color: theme.textSecondary.val,
+    },
+    freeBadge: {
+      backgroundColor: Colors.primaryAlpha10,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    freeText: {
+      color: Colors.primary,
+    },
+    socialProof: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 4,
+    },
+    socialProofText: {
+      fontSize: 12,
+      fontWeight: '500' as const,
+      color: theme.textTertiary.val,
+    },
+    amenitiesRow: {
+      marginTop: 4,
+    },
+    amenities: {
+      fontSize: 12,
+      fontWeight: '400' as const,
+      color: theme.textTertiary.val,
+    },
+    insightsRow: {
+      marginTop: 12,
+      flexDirection: 'row' as const,
+      gap: 10,
+    },
+    insightItem: {
+      paddingVertical: 8,
+      paddingHorizontal: 10,
+      backgroundColor: theme.surfaceElevated.val,
+      borderRadius: 10,
+      alignItems: 'center' as const,
+      gap: 4,
+    },
+    insightValue: {
+      fontSize: 13,
+      fontWeight: '700' as const,
+      color: theme.textPrimary.val,
+    },
+    insightLabel: {
+      fontSize: 11,
+      fontWeight: '500' as const,
+      color: theme.textTertiary.val,
+    },
+  }), [theme]);
 
   return (
     <TamaguiPressableScale
@@ -266,161 +423,6 @@ function PlaceCard({
     </TamaguiPressableScale>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 16,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  imageContainer: {
-    width: '100%',
-    height: 200,
-    position: 'relative',
-    backgroundColor: Colors.darkSurfaceElevated,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  imagePlaceholder: {
-    backgroundColor: Colors.darkSurfaceElevated,
-  },
-  videoIndicator: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginTop: -16,
-    marginLeft: -16,
-    opacity: 0.9,
-  },
-  topBadges: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    flexDirection: 'column',
-    gap: 6,
-  },
-  groupBuyBadge: {
-    backgroundColor: Colors.iosSystemOrange,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  groupBuyBadgeText: {
-    color: Colors.darkBg,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.blackAlpha40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 0.5,
-    borderColor: Colors.whiteAlpha10,
-  },
-  favoriteIcon: {
-    textShadowColor: Colors.blackAlpha30,
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  content: {
-    padding: 16,
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: '600',
-    letterSpacing: -0.3,
-    color: Colors.darkTextPrimary,
-    marginBottom: 8,
-  },
-  ratingRow: {
-    marginBottom: 6,
-  },
-  address: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    marginBottom: 12,
-  },
-  bottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  distanceBadge: {
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  distanceBadgeText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: Colors.darkTextSecondary,
-  },
-  freeBadge: {
-    backgroundColor: Colors.primaryAlpha10,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  freeText: {
-    color: Colors.primary,
-  },
-  socialProof: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  socialProofText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: Colors.darkTextTertiary,
-  },
-  amenitiesRow: {
-    marginTop: 4,
-  },
-  amenities: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-  },
-  insightsRow: {
-    marginTop: 12,
-    flexDirection: 'row',
-    gap: 10,
-  },
-  insightItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 10,
-    alignItems: 'center',
-    gap: 4,
-  },
-  insightValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-  },
-  insightLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: Colors.darkTextTertiary,
-  },
-});
 
 export default memo(PlaceCard, (prevProps, nextProps) => {
   return (

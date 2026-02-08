@@ -78,9 +78,24 @@ export const Colors = {
   badgeRecommended: ujuzColors.badgeRecommended,
   badgeRecommendedBg: ujuzColors.badgeRecommendedBg,
 
-  // Premium (공동구매 등)
-  premium: ujuzColors.warning,
-  premiumDark: ujuzColors.warningDark,
+  // Premium (구독/프리미엄)
+  premium: ujuzColors.premium,
+  premiumLight: ujuzColors.premiumLight,
+  premiumDark: ujuzColors.premiumDark,
+  premiumBg: ujuzColors.premiumBg,
+
+  // Deal (공동구매/할인)
+  deal: ujuzColors.deal,
+  dealLight: ujuzColors.dealLight,
+  dealDark: ujuzColors.dealDark,
+  dealBg: ujuzColors.dealBg,
+
+  // Admission Score Grades
+  scoreA: ujuzColors.scoreA,
+  scoreB: ujuzColors.scoreB,
+  scoreC: ujuzColors.scoreC,
+  scoreD: ujuzColors.scoreD,
+  scoreF: ujuzColors.scoreF,
 
   // Filter Categories
   outdoor: ujuzColors.categoryOutdoor,

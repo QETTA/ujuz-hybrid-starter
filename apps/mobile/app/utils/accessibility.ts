@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - Accessibility Utilities
+ * UJUz Mobile - Accessibility Utilities
  *
  * Helper functions for creating accessible labels, hints, and announcements
  * for screen readers (VoiceOver on iOS, TalkBack on Android)

@@ -41,6 +41,21 @@ const ChipContainer = styled(XStack, {
       soft: {
         backgroundColor: '$primaryLight',
       },
+      glass: {
+        backgroundColor: '$glassMedium',
+        borderWidth: 1,
+        borderColor: '$glassDark',
+      },
+      premium: {
+        backgroundColor: '$premiumBg',
+        borderWidth: 1,
+        borderColor: '$premium',
+      },
+      deal: {
+        backgroundColor: '$dealBg',
+        borderWidth: 1,
+        borderColor: '$deal',
+      },
     },
 
     // Size variants
@@ -101,6 +116,15 @@ const ChipText = styled(Text, {
       soft: {
         color: '$primary',
       },
+      glass: {
+        color: '$textPrimary',
+      },
+      premium: {
+        color: '$premium',
+      },
+      deal: {
+        color: '$deal',
+      },
     },
 
     size: {
@@ -123,7 +147,7 @@ const ChipText = styled(Text, {
 });
 
 // Props types
-export type ChipVariant = 'filled' | 'outlined' | 'soft';
+export type ChipVariant = 'filled' | 'outlined' | 'soft' | 'glass' | 'premium' | 'deal';
 export type ChipSize = 'sm' | 'md' | 'lg';
 
 export interface TamaguiChipProps {

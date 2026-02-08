@@ -6,18 +6,19 @@
  */
 
 import { useMemo, useState } from 'react';
-import { StyleSheet, View, Pressable, ScrollView, Share } from 'react-native';
-import { Text } from 'tamagui';
+import { View, Pressable, ScrollView, Share } from 'react-native';
+import { Text, useTheme, YStack, XStack } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { TamaguiPressableScale, TamaguiEmptyState } from '@/app/design-system';
+import { TamaguiPressableScale, TamaguiEmptyState, ScoreRing, PremiumGate } from '@/app/design-system';
 import { ConfidenceBadge } from '@/app/components/dataBlock';
 import { useAdmissionStore } from '@/app/stores/admissionStore';
-import { Colors, Layout } from '@/app/constants';
+import { usePayment } from '@/app/hooks/usePayment';
+import { Layout } from '@/app/constants';
 import { COPY } from '@/app/copy/copy.ko';
 import type { AdmissionFactors, ScoreGrade, SimilarCase } from '@/app/types/admission';
 
@@ -28,21 +29,17 @@ const stagger = (i: number) =>
     .stiffness(120)
     .mass(0.8);
 
-const GRADE_COLORS: Record<ScoreGrade, string> = {
-  A: Colors.success,
-  B: Colors.info,
-  C: Colors.warning,
-  D: Colors.iosSystemOrange,
-  F: Colors.error,
+/** Theme token keys for grade colors (resolved via useTheme) */
+const GRADE_THEME_KEY: Record<ScoreGrade, string> = {
+  A: 'scoreA',
+  B: 'scoreB',
+  C: 'scoreC',
+  D: 'scoreD',
+  F: 'scoreF',
 };
 
-const GRADE_BG: Record<ScoreGrade, string> = {
-  A: Colors.gradeBgA,
-  B: Colors.gradeBgB,
-  C: Colors.gradeBgC,
-  D: Colors.gradeBgD,
-  F: Colors.gradeBgF,
-};
+/** Grade BG suffix: appended to resolved gradeColor for semi-transparent BG */
+const GRADE_BG_ALPHA = '18'; // ~10% opacity — works in both light/dark
 
 const FACTOR_LABELS: Record<keyof AdmissionFactors, string> = {
   turnover_rate: COPY.VACANCY_FACTOR,
@@ -68,21 +65,31 @@ const REASSURANCE: Record<ScoreGrade, string> = {
 };
 
 export default function AdmissionResultScreen() {
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const result = useAdmissionStore((s) => s.lastResult);
+  const { getRemainingQuota } = usePayment();
   const [showDetails, setShowDetails] = useState(false);
 
   const gradeColor = useMemo(
-    () => (result ? GRADE_COLORS[result.grade] : Colors.darkTextTertiary),
-    [result]
+    () =>
+      result
+        ? (theme as any)[GRADE_THEME_KEY[result.grade]]?.val ?? theme.primary.val
+        : theme.textTertiary.val,
+    [result, theme],
   );
 
-  const gradeBg = useMemo(() => (result ? GRADE_BG[result.grade] : Colors.darkSurface), [result]);
+  const gradeBg = useMemo(
+    () => (result ? `${gradeColor}${GRADE_BG_ALPHA}` : theme.surface.val),
+    [result, gradeColor, theme.surface.val],
+  );
+
+  const isQuotaExhausted = getRemainingQuota('admission_score_limit') <= 0;
 
   if (!result) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top + 60 }]}>
+      <View style={{ flex: 1, backgroundColor: theme.background.val, paddingTop: insets.top + 60 }}>
         <TamaguiEmptyState
           icon="bar-chart-outline"
           title="결과 없음"
@@ -112,202 +119,397 @@ export default function AdmissionResultScreen() {
       ? result.recommendations
       : [COPY.ACTION_DEFAULT_1, COPY.ACTION_DEFAULT_2];
 
-  const confidencePercent = Math.round(result.confidence * 100);
-  const dateStr = new Date(result.calculated_at).toLocaleDateString('ko-KR');
-
   return (
     <ScrollView
-      style={styles.container}
+      style={{ flex: 1, backgroundColor: theme.background.val }}
       contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 60 }}
       showsVerticalScrollIndicator={false}
     >
       {/* ── Nav Bar ── */}
-      <Animated.View entering={FadeIn.duration(200)} style={styles.nav}>
+      <Animated.View
+        entering={FadeIn.duration(200)}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: Layout.screenPadding,
+          paddingVertical: 12,
+        }}
+      >
         <Pressable
           onPress={() => navigation.goBack()}
           hitSlop={Layout.hitSlop}
           accessibilityLabel="뒤로 가기"
         >
-          <Ionicons name="chevron-back" size={24} color={Colors.darkTextPrimary} />
+          <Ionicons name="chevron-back" size={24} color={theme.textPrimary.val} />
         </Pressable>
-        <Text style={styles.navTitle}>{COPY.ADMISSION_HEADER}</Text>
+        <Text fontSize={17} fontWeight="600" color="$textPrimary" letterSpacing={-0.3}>
+          {COPY.ADMISSION_HEADER}
+        </Text>
         <Pressable
           onPress={handleShare}
           hitSlop={Layout.hitSlop}
           accessibilityLabel={COPY.ACTION_SHARE}
         >
-          <Ionicons name="share-outline" size={22} color={Colors.darkTextSecondary} />
+          <Ionicons name="share-outline" size={22} color={theme.textSecondary.val} />
         </Pressable>
       </Animated.View>
 
-      {/* ── HERO: 등급 + 확률 (1스크린 핵심) ── */}
-      <Animated.View entering={stagger(0)} style={[styles.heroCard, { backgroundColor: gradeBg }]}>
-        <View style={styles.heroTop}>
-          <View style={[styles.gradeCircle, { borderColor: gradeColor }]}>
-            <Text style={[styles.gradeLetterBig, { color: gradeColor }]}>{result.grade}</Text>
-          </View>
-          <View style={styles.heroInfo}>
-            <Text style={styles.facilityName}>{result.facility_name}</Text>
-            <View style={styles.heroRow}>
-              <Text style={[styles.probabilityBig, { color: gradeColor }]}>
+      {/* ── HERO: ScoreRing + 확률 (1스크린 핵심) ── */}
+      <Animated.View
+        entering={stagger(0)}
+        style={{
+          marginHorizontal: Layout.screenPadding,
+          borderRadius: 20,
+          padding: 20,
+          backgroundColor: gradeBg,
+        }}
+      >
+        <XStack alignItems="center" gap="$4" marginBottom="$4">
+          <ScoreRing score={result.probability} grade={result.grade} size="md" showLabel />
+          <YStack flex={1}>
+            <Text fontSize={15} fontWeight="500" color="$textSecondary" marginBottom={4}>
+              {result.facility_name}
+            </Text>
+            <XStack alignItems="baseline" gap="$2.5">
+              <Text fontSize={36} fontWeight="800" letterSpacing={-2} color={gradeColor}>
                 {Math.round(result.probability)}%
               </Text>
-              <View style={[styles.gradePill, { backgroundColor: gradeColor }]}>
-                <Text style={styles.gradePillText}>{COPY.GRADE[result.grade]}</Text>
+              <View
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  borderRadius: 10,
+                  backgroundColor: gradeColor,
+                }}
+              >
+                <Text fontSize={13} fontWeight="700" color="$textInverse">
+                  {COPY.GRADE[result.grade]}
+                </Text>
               </View>
-            </View>
-          </View>
-        </View>
+            </XStack>
+          </YStack>
+        </XStack>
 
         {/* 핵심 수치 2개 */}
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{Math.round(result.probability)}%</Text>
-            <Text style={styles.statLabel}>{COPY.ADMISSION_PROBABILITY_LABEL}</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{result.estimated_months}개월</Text>
-            <Text style={styles.statLabel}>{COPY.ADMISSION_WAIT_LABEL}</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
+        <XStack
+          alignItems="center"
+          backgroundColor="$surfaceElevated"
+          borderRadius={14}
+          paddingVertical={14}
+          paddingHorizontal={8}
+        >
+          <YStack flex={1} alignItems="center">
+            <Text fontSize={18} fontWeight="700" color="$textPrimary" letterSpacing={-0.5}>
+              {Math.round(result.probability)}%
+            </Text>
+            <Text fontSize={11} color="$textTertiary" marginTop={2}>
+              {COPY.ADMISSION_PROBABILITY_LABEL}
+            </Text>
+          </YStack>
+          <View style={{ width: 1, height: 28, backgroundColor: theme.borderColor.val }} />
+          <YStack flex={1} alignItems="center">
+            <Text fontSize={18} fontWeight="700" color="$textPrimary" letterSpacing={-0.5}>
+              {result.estimated_months}개월
+            </Text>
+            <Text fontSize={11} color="$textTertiary" marginTop={2}>
+              {COPY.ADMISSION_WAIT_LABEL}
+            </Text>
+          </YStack>
+          <View style={{ width: 1, height: 28, backgroundColor: theme.borderColor.val }} />
+          <YStack flex={1} alignItems="center">
             <ConfidenceBadge confidence={result.confidence} />
-          </View>
-        </View>
+          </YStack>
+        </XStack>
       </Animated.View>
 
-      {/* ── 신뢰도 + 날짜 ── */}
-      <Animated.View entering={stagger(1)} style={styles.trustLine}>
-        <Ionicons name="shield-checkmark-outline" size={14} color={Colors.darkTextTertiary} />
-        <Text style={styles.trustText}>{COPY.TRUST_META(confidencePercent, dateStr)}</Text>
+      {/* ── 신뢰도 shield badge ── */}
+      <Animated.View entering={stagger(1)}>
+        <XStack alignItems="center" gap="$2" justifyContent="center" marginTop="$3">
+          <Ionicons name="shield-checkmark" size={16} color={theme.textTertiary.val} />
+          <Text fontSize={13} fontWeight="500" color="$textSecondary">
+            {result.similar_cases.length}개 유사사례 기반
+          </Text>
+          <View
+            style={{
+              backgroundColor: `${gradeColor}20`,
+              paddingHorizontal: 8,
+              paddingVertical: 2,
+              borderRadius: 6,
+            }}
+          >
+            <Text fontSize={11} fontWeight="600" color={gradeColor}>
+              높은 신뢰도
+            </Text>
+          </View>
+        </XStack>
       </Animated.View>
 
       {/* ── 안심 문구 ── */}
-      <Animated.View entering={stagger(2)} style={styles.reassurance}>
-        <Text style={styles.reassuranceText}>{REASSURANCE[result.grade]}</Text>
+      <Animated.View
+        entering={stagger(2)}
+        style={{
+          marginHorizontal: Layout.screenPadding,
+          marginTop: 20,
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+          backgroundColor: theme.surface.val,
+          borderRadius: 12,
+          borderLeftWidth: 3,
+          borderLeftColor: theme.primary.val,
+        }}
+      >
+        <Text fontSize={14} fontWeight="500" color="$textSecondary" lineHeight={20}>
+          {REASSURANCE[result.grade]}
+        </Text>
       </Animated.View>
 
       {/* ── 지금 할 일 (above the fold) ── */}
-      <Animated.View entering={stagger(3)} style={styles.section}>
-        <Text style={styles.sectionTitle}>{COPY.ACTION_NEXT_TITLE}</Text>
+      <Animated.View
+        entering={stagger(3)}
+        style={{ marginTop: 24, paddingHorizontal: Layout.screenPadding }}
+      >
+        <Text
+          fontSize={15}
+          fontWeight="700"
+          color="$textPrimary"
+          marginBottom={12}
+          letterSpacing={-0.3}
+        >
+          {COPY.ACTION_NEXT_TITLE}
+        </Text>
         {actionItems.map((item, i) => (
-          <View key={i} style={styles.checkRow}>
-            <View style={[styles.checkCircle, { borderColor: gradeColor }]}>
-              <Text style={[styles.checkNum, { color: gradeColor }]}>{i + 1}</Text>
+          <XStack
+            key={i}
+            alignItems="center"
+            gap="$3"
+            marginBottom={10}
+            paddingVertical={8}
+            paddingHorizontal={12}
+            backgroundColor="$surface"
+            borderRadius={12}
+          >
+            <View
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 13,
+                borderWidth: 2,
+                borderColor: gradeColor,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text fontSize={13} fontWeight="700" color={gradeColor}>
+                {i + 1}
+              </Text>
             </View>
-            <Text style={styles.checkText}>{item}</Text>
-          </View>
+            <Text flex={1} fontSize={14} fontWeight="500" color="$textSecondary" lineHeight={20}>
+              {item}
+            </Text>
+          </XStack>
         ))}
       </Animated.View>
 
       {/* ── 주요 CTA ── */}
-      <Animated.View entering={stagger(4)} style={styles.ctaArea}>
+      <Animated.View
+        entering={stagger(4)}
+        style={{ marginTop: 20, paddingHorizontal: Layout.screenPadding, gap: 10 }}
+      >
         <TamaguiPressableScale
-          style={[styles.ctaPrimary, { backgroundColor: gradeColor }]}
+          style={{
+            height: 50,
+            borderRadius: 14,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            backgroundColor: gradeColor,
+          }}
           onPress={() => navigation.navigate('TOAlertSettings')}
           hapticType="medium"
           accessibilityLabel={COPY.VACANCY_ALERT_CTA}
         >
-          <Ionicons name="notifications-outline" size={18} color={Colors.darkBg} />
-          <Text style={styles.ctaPrimaryText}>{COPY.VACANCY_ALERT_CTA}</Text>
+          <Ionicons name="notifications-outline" size={18} color={theme.background.val} />
+          <Text fontSize={16} fontWeight="700" color="$background">
+            {COPY.VACANCY_ALERT_CTA}
+          </Text>
         </TamaguiPressableScale>
 
         <TamaguiPressableScale
-          style={styles.ctaSecondary}
+          style={{
+            height: 44,
+            borderRadius: 12,
+            backgroundColor: theme.surface.val,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 0.5,
+            borderColor: theme.borderColor.val,
+          }}
           onPress={() => navigation.navigate('AdmissionScore')}
           hapticType="light"
           accessibilityLabel={COPY.ADMISSION_CTA_RETRY}
         >
-          <Text style={styles.ctaSecondaryText}>{COPY.ADMISSION_CTA_RETRY}</Text>
+          <Text fontSize={14} fontWeight="600" color="$textSecondary">
+            {COPY.ADMISSION_CTA_RETRY}
+          </Text>
         </TamaguiPressableScale>
       </Animated.View>
 
+      {/* ── PremiumGate (quota exhausted) ── */}
+      {isQuotaExhausted && (
+        <YStack marginTop="$4" paddingHorizontal={Layout.screenPadding}>
+          <PremiumGate
+            visible
+            featureName="더 많은 시설을 분석하세요"
+            inline
+            onUpgradePress={() => navigation.navigate('Subscription')}
+          >
+            <></>
+          </PremiumGate>
+        </YStack>
+      )}
+
       {/* ── 상세 분석 펼치기 ── */}
       <Pressable
-        style={styles.expandToggle}
         onPress={() => setShowDetails(!showDetails)}
         hitSlop={Layout.hitSlop}
         accessibilityLabel={showDetails ? '상세 분석 접기' : '상세 분석 펼치기'}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+          marginTop: 28,
+          paddingVertical: 12,
+          borderTopWidth: 0.5,
+          borderTopColor: theme.borderColor.val,
+          marginHorizontal: Layout.screenPadding,
+        }}
       >
-        <Text style={styles.expandText}>{showDetails ? '상세 분석 접기' : '상세 분석 보기'}</Text>
+        <Text fontSize={14} fontWeight="600" color="$textTertiary">
+          {showDetails ? '상세 분석 접기' : '상세 분석 보기'}
+        </Text>
         <Ionicons
           name={showDetails ? 'chevron-up' : 'chevron-down'}
           size={18}
-          color={Colors.darkTextTertiary}
+          color={theme.textTertiary.val}
         />
       </Pressable>
 
       {showDetails && (
         <>
           {/* 5요인 분석 */}
-          <Animated.View entering={FadeInDown.duration(250)} style={styles.section}>
-            <Text style={styles.sectionTitle}>5요인 분석</Text>
+          <Animated.View
+            entering={FadeInDown.duration(250)}
+            style={{ marginTop: 24, paddingHorizontal: Layout.screenPadding }}
+          >
+            <Text
+              fontSize={15}
+              fontWeight="700"
+              color="$textPrimary"
+              marginBottom={12}
+              letterSpacing={-0.3}
+            >
+              5요인 분석
+            </Text>
             {factors.map(([key, factor]) => (
-              <View key={key} style={styles.factorRow}>
-                <View style={styles.factorHeader}>
-                  <Text style={styles.factorName}>{FACTOR_LABELS[key]}</Text>
-                  <Text style={styles.factorScore}>{Math.round(factor.score)}점</Text>
-                </View>
-                <View style={styles.factorBarBg}>
+              <YStack key={key} marginBottom={14}>
+                <XStack justifyContent="space-between" marginBottom={5}>
+                  <Text fontSize={13} fontWeight="600" color="$textSecondary">
+                    {FACTOR_LABELS[key]}
+                  </Text>
+                  <Text fontSize={13} fontWeight="600" color="$textTertiary">
+                    {Math.round(factor.score)}점
+                  </Text>
+                </XStack>
+                <View
+                  style={{
+                    height: 6,
+                    backgroundColor: theme.surfaceElevated.val,
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                  }}
+                >
                   <View
-                    style={[
-                      styles.factorBarFill,
-                      {
-                        width: `${factor.score}%` as any,
-                        backgroundColor:
-                          factor.score >= 70
-                            ? Colors.success
-                            : factor.score >= 40
-                              ? Colors.warning
-                              : Colors.error,
-                      },
-                    ]}
+                    style={{
+                      height: 6,
+                      borderRadius: 3,
+                      width: `${factor.score}%` as any,
+                      backgroundColor:
+                        factor.score >= 70
+                          ? (theme as any).scoreA?.val
+                          : factor.score >= 40
+                            ? (theme as any).scoreC?.val
+                            : (theme as any).scoreF?.val,
+                    }}
                   />
                 </View>
-              </View>
+              </YStack>
             ))}
           </Animated.View>
 
           {/* 유사 사례 */}
           {result.similar_cases.length > 0 && (
-            <Animated.View entering={FadeInDown.duration(250).delay(60)} style={styles.section}>
-              <Text style={styles.sectionTitle}>유사 사례</Text>
+            <Animated.View
+              entering={FadeInDown.duration(250).delay(60)}
+              style={{ marginTop: 24, paddingHorizontal: Layout.screenPadding }}
+            >
+              <Text
+                fontSize={15}
+                fontWeight="700"
+                color="$textPrimary"
+                marginBottom={12}
+                letterSpacing={-0.3}
+              >
+                유사 사례
+              </Text>
               {result.similar_cases.map((c, i) => (
-                <View key={i} style={styles.caseRow}>
-                  <Text style={styles.casePriority}>{c.priority_type}</Text>
-                  <Text style={styles.caseWait}>대기 {c.waiting_months}개월</Text>
+                <XStack
+                  key={i}
+                  alignItems="center"
+                  gap="$2.5"
+                  paddingVertical={10}
+                  borderBottomWidth={0.5}
+                  borderBottomColor="$borderColor"
+                >
+                  <Text fontSize={13} fontWeight="600" color="$textSecondary" flex={1}>
+                    {c.priority_type}
+                  </Text>
+                  <Text fontSize={13} color="$textTertiary">
+                    대기 {c.waiting_months}개월
+                  </Text>
                   <View
-                    style={[
-                      styles.caseChip,
-                      {
-                        backgroundColor:
-                          c.result === 'admitted'
-                            ? Colors.badgeVerifiedBg
-                            : c.result === 'waiting'
-                              ? Colors.badgePopularBg
-                              : Colors.badgeNewBg,
-                      },
-                    ]}
+                    style={{
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      borderRadius: 6,
+                      backgroundColor:
+                        c.result === 'admitted'
+                          ? (theme as any).successBg?.val ?? theme.success.val + '20'
+                          : c.result === 'waiting'
+                            ? (theme as any).warningBg?.val ?? theme.warning.val + '20'
+                            : (theme as any).infoBg?.val ?? theme.info.val + '20',
+                    }}
                   >
                     <Text
-                      style={[
-                        styles.caseChipText,
-                        {
-                          color:
-                            c.result === 'admitted'
-                              ? Colors.badgeVerified
-                              : c.result === 'waiting'
-                                ? Colors.badgePopular
-                                : Colors.badgeNew,
-                        },
-                      ]}
+                      fontSize={11}
+                      fontWeight="600"
+                      color={
+                        c.result === 'admitted'
+                          ? theme.success.val
+                          : c.result === 'waiting'
+                            ? (theme as any).like?.val ?? theme.warning.val
+                            : theme.info.val
+                      }
                     >
                       {RESULT_LABELS[c.result]}
                     </Text>
                   </View>
-                  <Text style={styles.caseYear}>{c.year}년</Text>
-                </View>
+                  <Text fontSize={12} color="$textTertiary" width={40} textAlign="right">
+                    {c.year}년
+                  </Text>
+                </XStack>
               ))}
             </Animated.View>
           )}
@@ -315,264 +517,16 @@ export default function AdmissionResultScreen() {
       )}
 
       {/* ── 면책 ── */}
-      <Text style={styles.disclaimer}>{COPY.DISCLAIMER}</Text>
+      <Text
+        fontSize={11}
+        color="$textTertiary"
+        textAlign="center"
+        marginTop={24}
+        marginHorizontal={Layout.screenPadding}
+        lineHeight={16}
+      >
+        {COPY.DISCLAIMER}
+      </Text>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.darkBg },
-
-  // Nav
-  nav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.screenPadding,
-    paddingVertical: 12,
-  },
-  navTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-  },
-
-  // Hero Card
-  heroCard: {
-    marginHorizontal: Layout.screenPadding,
-    borderRadius: 20,
-    padding: 20,
-  },
-  heroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginBottom: 20,
-  },
-  gradeCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.darkBg,
-  },
-  gradeLetterBig: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -1,
-  },
-  heroInfo: { flex: 1 },
-  facilityName: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: Colors.darkTextSecondary,
-    marginBottom: 4,
-  },
-  heroRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 10,
-  },
-  probabilityBig: {
-    fontSize: 36,
-    fontWeight: '800',
-    letterSpacing: -2,
-  },
-  gradePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  gradePillText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.white,
-  },
-
-  // Stats row inside hero
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-  },
-  statItem: { flex: 1, alignItems: 'center' },
-  statValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.5,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: Colors.darkTextTertiary,
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: Colors.darkBorder,
-  },
-
-  // Trust line
-  trustLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 12,
-  },
-  trustText: {
-    fontSize: 12,
-    color: Colors.darkTextTertiary,
-  },
-
-  // Reassurance
-  reassurance: {
-    marginHorizontal: Layout.screenPadding,
-    marginTop: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.primary,
-  },
-  reassuranceText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.darkTextSecondary,
-    lineHeight: 20,
-  },
-
-  // Section
-  section: { marginTop: 24, paddingHorizontal: Layout.screenPadding },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    marginBottom: 12,
-    letterSpacing: -0.3,
-  },
-
-  // Action checklist
-  checkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 12,
-  },
-  checkCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkNum: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  checkText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.darkTextSecondary,
-    lineHeight: 20,
-  },
-
-  // CTA
-  ctaArea: {
-    marginTop: 20,
-    paddingHorizontal: Layout.screenPadding,
-    gap: 10,
-  },
-  ctaPrimary: {
-    height: 50,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  ctaPrimaryText: { fontSize: 16, fontWeight: '700', color: Colors.darkBg },
-  ctaSecondary: {
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: Colors.darkSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  ctaSecondaryText: { fontSize: 14, fontWeight: '600', color: Colors.darkTextSecondary },
-
-  // Expand toggle
-  expandToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 28,
-    paddingVertical: 12,
-    borderTopWidth: 0.5,
-    borderTopColor: Colors.darkBorder,
-    marginHorizontal: Layout.screenPadding,
-  },
-  expandText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.darkTextTertiary,
-  },
-
-  // Factor bars (compact)
-  factorRow: { marginBottom: 14 },
-  factorHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
-  factorName: { fontSize: 13, fontWeight: '600', color: Colors.darkTextSecondary },
-  factorScore: { fontSize: 13, fontWeight: '600', color: Colors.darkTextTertiary },
-  factorBarBg: {
-    height: 6,
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  factorBarFill: { height: 6, borderRadius: 3 },
-
-  // Similar cases (compact row)
-  caseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-  },
-  casePriority: { fontSize: 13, fontWeight: '600', color: Colors.darkTextSecondary, flex: 1 },
-  caseWait: { fontSize: 13, color: Colors.darkTextTertiary },
-  caseChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  caseChipText: { fontSize: 11, fontWeight: '600' },
-  caseYear: { fontSize: 12, color: Colors.darkTextTertiary, width: 40, textAlign: 'right' },
-
-  disclaimer: {
-    fontSize: 11,
-    color: Colors.darkTextTertiary,
-    textAlign: 'center',
-    marginTop: 24,
-    marginHorizontal: Layout.screenPadding,
-    lineHeight: 16,
-  },
-});

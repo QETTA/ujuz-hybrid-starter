@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - Timing Constants
+ * UJUz Mobile - Timing Constants
  *
  * Centralized timing values for animations, caching, and debouncing
  */

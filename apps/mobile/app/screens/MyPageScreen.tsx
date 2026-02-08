@@ -8,8 +8,9 @@
  * - 신뢰도/최신성 표시
  */
 
-import { StyleSheet, View, Pressable, ScrollView, Alert } from 'react-native';
-import { Text } from 'tamagui';
+import { useMemo } from 'react';
+import { View, Pressable, ScrollView, Alert } from 'react-native';
+import { Text, useTheme } from 'tamagui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
@@ -43,6 +44,7 @@ export default function MyPageScreen() {
   const { reset: resetFilters } = useFilterStore();
   const childName = useProfileStore((s) => s.childName);
   const childAgeMonths = useProfileStore((s) => s.getChildAgeMonths());
+  const theme = useTheme();
 
   // Mock data for demonstration (would come from data blocks)
   const dataBlocks = {
@@ -75,6 +77,281 @@ export default function MyPageScreen() {
       },
     ]);
   };
+
+  // ============================================
+  // Styles (Theme-Aware)
+  // ============================================
+  const styles = useMemo(() => ({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background.val,
+    },
+
+    // Header
+    header: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      paddingHorizontal: Layout.screenPadding,
+      marginBottom: 20,
+    },
+    logoText: {
+      fontSize: 28,
+      fontWeight: '800' as const,
+      fontStyle: 'italic' as const,
+      color: theme.textPrimary.val,
+      letterSpacing: -1.5,
+    },
+    profileChip: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 8,
+      paddingVertical: 6,
+      paddingLeft: 6,
+      paddingRight: 12,
+      backgroundColor: theme.surface.val,
+      borderRadius: 20,
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
+    },
+    profileAvatar: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: Colors.primary,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    profileAvatarText: {
+      fontSize: 11,
+      fontWeight: '700' as const,
+      color: theme.background.val,
+    },
+    profileInfo: {
+      fontSize: 13,
+      fontWeight: '600' as const,
+      color: theme.textPrimary.val,
+    },
+
+    // Intelligence Card
+    intelCard: {
+      marginHorizontal: 20,
+      padding: 18,
+      backgroundColor: theme.surfaceElevated.val,
+      borderRadius: 16,
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
+    },
+    intelHeader: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      marginBottom: 16,
+    },
+    intelLogo: {
+      fontSize: 15,
+      fontWeight: '700' as const,
+      fontStyle: 'italic' as const,
+      color: theme.textPrimary.val,
+      letterSpacing: -0.3,
+    },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    intelStats: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+    },
+    intelStat: {
+      flex: 1,
+      alignItems: 'center' as const,
+    },
+    intelStatValue: {
+      fontSize: 20,
+      fontWeight: '700' as const,
+      color: theme.textPrimary.val,
+      letterSpacing: -0.5,
+    },
+    intelStatLabel: {
+      fontSize: 11,
+      color: theme.textTertiary.val,
+      marginTop: 2,
+    },
+    intelDivider: {
+      width: 1,
+      height: 28,
+      backgroundColor: theme.borderColor.val,
+    },
+
+    // Section
+    section: {
+      marginTop: 28,
+      paddingHorizontal: Layout.screenPadding,
+    },
+    sectionTitle: {
+      fontSize: 14,
+      fontWeight: '700' as const,
+      fontStyle: 'italic' as const,
+      color: theme.textPrimary.val,
+      letterSpacing: -0.2,
+      marginBottom: 12,
+    },
+
+    // Data Sources
+    sourceRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      paddingVertical: 10,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.borderColor.val,
+    },
+    sourceInfo: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 10,
+    },
+    sourceStatus: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    sourceName: {
+      fontSize: 14,
+      color: theme.textSecondary.val,
+    },
+    sourceCount: {
+      fontSize: 14,
+      fontWeight: '600' as const,
+      color: theme.textPrimary.val,
+    },
+    sourceNote: {
+      fontSize: 11,
+      color: theme.textTertiary.val,
+      marginTop: 10,
+      fontStyle: 'italic' as const,
+    },
+
+    // Insight Card
+    insightCard: {
+      marginTop: 20,
+      marginHorizontal: 20,
+      padding: 18,
+      backgroundColor: theme.surface.val,
+      borderRadius: 16,
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
+    },
+    insightHeader: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      marginBottom: 14,
+    },
+    insightTitle: {
+      fontSize: 14,
+      fontWeight: '700' as const,
+      fontStyle: 'italic' as const,
+      color: theme.textPrimary.val,
+      letterSpacing: -0.2,
+    },
+    insightUpdated: {
+      fontSize: 11,
+      color: theme.textTertiary.val,
+    },
+    insightBody: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 20,
+    },
+    insightMetric: {
+      alignItems: 'center' as const,
+    },
+    insightValue: {
+      fontSize: 36,
+      fontWeight: '700' as const,
+      color: Colors.primary,
+      letterSpacing: -1,
+    },
+    insightUnit: {
+      fontSize: 12,
+      color: theme.textTertiary.val,
+    },
+    insightDetail: {
+      flex: 1,
+      gap: 4,
+    },
+    insightDetailText: {
+      fontSize: 12,
+      color: theme.textSecondary.val,
+    },
+
+    // Stats
+    statsRow: {
+      flexDirection: 'row' as const,
+      gap: 12,
+      marginTop: 24,
+      paddingHorizontal: Layout.screenPadding,
+    },
+    statBox: {
+      flex: 1,
+      alignItems: 'center' as const,
+      paddingVertical: 16,
+      backgroundColor: theme.surface.val,
+      borderRadius: 14,
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
+    },
+    statValue: {
+      fontSize: 24,
+      fontWeight: '700' as const,
+      color: theme.textPrimary.val,
+      letterSpacing: -0.5,
+    },
+    statLabel: {
+      fontSize: 12,
+      color: theme.textTertiary.val,
+      marginTop: 2,
+    },
+
+    // Settings
+    settingItem: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      paddingVertical: 14,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.borderColor.val,
+    },
+    settingText: {
+      fontSize: 14,
+      color: theme.textPrimary.val,
+    },
+    settingArrow: {
+      fontSize: 18,
+      color: theme.textTertiary.val,
+      fontWeight: '300' as const,
+    },
+
+    // Footer
+    footer: {
+      alignItems: 'center' as const,
+      paddingTop: 40,
+      paddingBottom: 20,
+    },
+    footerText: {
+      fontSize: 12,
+      color: theme.textTertiary.val,
+    },
+    footerSubtext: {
+      fontSize: 11,
+      color: theme.textTertiary.val,
+      fontStyle: 'italic' as const,
+      marginTop: 2,
+    },
+  }), [theme]);
 
   return (
     <ScrollView
@@ -251,279 +528,3 @@ export default function MyPageScreen() {
     </ScrollView>
   );
 }
-
-// ============================================
-// Styles (Dark-First Toss 2026)
-// ============================================
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.darkBg,
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.screenPadding,
-    marginBottom: 20,
-  },
-  logoText: {
-    fontSize: 28,
-    fontWeight: '800',
-    fontStyle: 'italic',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -1.5,
-  },
-  profileChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 6,
-    paddingLeft: 6,
-    paddingRight: 12,
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 20,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  profileAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  profileAvatarText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.darkBg,
-  },
-  profileInfo: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-  },
-
-  // Intelligence Card
-  intelCard: {
-    marginHorizontal: 20,
-    padding: 18,
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 16,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  intelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  intelLogo: {
-    fontSize: 15,
-    fontWeight: '700',
-    fontStyle: 'italic',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  intelStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  intelStat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  intelStatValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.5,
-  },
-  intelStatLabel: {
-    fontSize: 11,
-    color: Colors.darkTextTertiary,
-    marginTop: 2,
-  },
-  intelDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: Colors.darkBorder,
-  },
-
-  // Section
-  section: {
-    marginTop: 28,
-    paddingHorizontal: Layout.screenPadding,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    fontStyle: 'italic',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.2,
-    marginBottom: 12,
-  },
-
-  // Data Sources
-  sourceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-  },
-  sourceInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  sourceStatus: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  sourceName: {
-    fontSize: 14,
-    color: Colors.darkTextSecondary,
-  },
-  sourceCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-  },
-  sourceNote: {
-    fontSize: 11,
-    color: Colors.darkTextTertiary,
-    marginTop: 10,
-    fontStyle: 'italic',
-  },
-
-  // Insight Card
-  insightCard: {
-    marginTop: 20,
-    marginHorizontal: 20,
-    padding: 18,
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 16,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  insightHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  insightTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    fontStyle: 'italic',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.2,
-  },
-  insightUpdated: {
-    fontSize: 11,
-    color: Colors.darkTextTertiary,
-  },
-  insightBody: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
-  },
-  insightMetric: {
-    alignItems: 'center',
-  },
-  insightValue: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: Colors.primary,
-    letterSpacing: -1,
-  },
-  insightUnit: {
-    fontSize: 12,
-    color: Colors.darkTextTertiary,
-  },
-  insightDetail: {
-    flex: 1,
-    gap: 4,
-  },
-  insightDetailText: {
-    fontSize: 12,
-    color: Colors.darkTextSecondary,
-  },
-
-  // Stats
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
-    paddingHorizontal: Layout.screenPadding,
-  },
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 16,
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 14,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.5,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: Colors.darkTextTertiary,
-    marginTop: 2,
-  },
-
-  // Settings
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-  },
-  settingText: {
-    fontSize: 14,
-    color: Colors.darkTextPrimary,
-  },
-  settingArrow: {
-    fontSize: 18,
-    color: Colors.darkTextTertiary,
-    fontWeight: '300',
-  },
-
-  // Footer
-  footer: {
-    alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 20,
-  },
-  footerText: {
-    fontSize: 12,
-    color: Colors.darkTextTertiary,
-  },
-  footerSubtext: {
-    fontSize: 11,
-    color: Colors.darkTextTertiary,
-    fontStyle: 'italic',
-    marginTop: 2,
-  },
-});

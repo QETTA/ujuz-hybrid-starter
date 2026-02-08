@@ -11,8 +11,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
-  StyleSheet,
-  TextInput,
   ScrollView,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -22,13 +20,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
-import { Colors, Layout } from '@/app/constants';
+import { useTheme, YStack, XStack, Text } from 'tamagui';
+import { Layout } from '@/app/constants';
 import { ConfidenceBadge, InsightCard, ProvenanceFooter } from '@/app/components/dataBlock';
-import { TamaguiText, TamaguiPressableScale } from '@/app/design-system';
+import {
+  TamaguiText,
+  TamaguiPressableScale,
+  ProactiveAICard,
+  TamaguiChip,
+  TamaguiInput,
+  QuotaBar,
+} from '@/app/design-system';
 import { useAskEngine } from '@/app/hooks/useAskEngine';
 import { useAnalytics } from '@/app/hooks/useAnalytics';
+import { usePayment } from '@/app/hooks/usePayment';
 import { usePlaceStore } from '@/app/stores/placeStore';
 import { COPY } from '@/app/copy/copy.ko';
+import { PLAN_LIMITS } from '@/app/types/subscription';
 import type { RootStackNavigationProp } from '@/app/types/navigation';
 
 const SUGGESTIONS = [
@@ -47,6 +55,7 @@ interface ChatMessage {
 export default function AskScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<RootStackNavigationProp>();
+  const theme = useTheme();
   const scrollRef = useRef<ScrollView>(null);
   const [draft, setDraft] = useState('');
   const [query, setQuery] = useState('');
@@ -57,6 +66,10 @@ export default function AskScreen() {
   const blocks = useMemo(() => answer?.blocks ?? [], [answer]);
   const { selectPlace } = usePlaceStore();
   const isSubmitDisabled = draft.trim().length < 2;
+
+  const { subscription, currentTier } = usePayment();
+  const botQueriesLimit = PLAN_LIMITS[currentTier].bot_query_daily_limit;
+  const botQueriesUsed = subscription?.usage.bot_queries_today ?? 0;
 
   const evidence = useMemo(() => {
     const blockCount = blocks.length;
@@ -100,66 +113,148 @@ export default function AskScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+      style={{ flex: 1, backgroundColor: theme.background.val }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={0}
     >
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.headerLeft}>
-          <TamaguiText preset="h3" textColor="primary" weight="bold" style={styles.headerTitle}>
+      <XStack
+        alignItems="center"
+        justifyContent="space-between"
+        paddingHorizontal={Layout.screenPadding}
+        paddingBottom={12}
+        borderBottomWidth={0.5}
+        borderBottomColor="$borderColor"
+        backgroundColor="$background"
+        style={{ paddingTop: insets.top + 8 }}
+      >
+        <XStack alignItems="center" gap="$2">
+          <TamaguiText
+            preset="h3"
+            textColor="primary"
+            weight="bold"
+            style={{
+              fontSize: 20,
+              fontWeight: '800',
+              color: theme.textPrimary.val,
+              letterSpacing: -0.8,
+            }}
+          >
             {COPY.SCREEN_ASK}
           </TamaguiText>
-          <View style={styles.headerBadge}>
-            <Ionicons name="sparkles" size={10} color={Colors.primary} />
+          <XStack
+            alignItems="center"
+            gap="$1"
+            backgroundColor="$surfaceElevated"
+            paddingHorizontal="$2"
+            paddingVertical="$1"
+            borderRadius={6}
+          >
+            <Ionicons name="sparkles" size={10} color={theme.primary.val} />
             <TamaguiText
               preset="caption"
               textColor="secondary"
               weight="semibold"
-              style={styles.headerBadgeText}
+              style={{
+                fontSize: 10,
+                fontWeight: '600',
+                color: theme.textSecondary.val,
+              }}
             >
               근거 우선
             </TamaguiText>
-          </View>
-        </View>
+          </XStack>
+        </XStack>
         <TamaguiPressableScale
-          style={styles.peerGroupBtn}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: theme.surfaceElevated.val,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
           onPress={handleOpenPeerGroups}
           hapticType="light"
           accessibilityLabel="또래 모임"
         >
-          <Ionicons name="people" size={18} color={Colors.darkTextPrimary} />
+          <Ionicons name="people" size={18} color={theme.textPrimary.val} />
         </TamaguiPressableScale>
-      </View>
+      </XStack>
 
       {/* Chat Messages */}
       <ScrollView
         ref={scrollRef}
-        style={styles.chatArea}
-        contentContainerStyle={styles.chatContent}
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: Layout.screenPadding,
+          paddingTop: 16,
+          paddingBottom: 16,
+        }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* ProactiveAICard */}
+        {messages.length === 0 && !loading && (
+          <ProactiveAICard
+            type="recommendation"
+            message="서윤이 또래 부모들이 많이 찾는 곳을 알려드릴까요?"
+            ctaText="추천 받기"
+            onCtaPress={() => handleSuggestion('이 동네 키즈카페 추천해줘')}
+            onDismiss={() => {}}
+          />
+        )}
+
         {/* Empty State */}
         {showEmptyState && (
-          <Animated.View entering={FadeIn.delay(200)} style={styles.emptyContainer}>
-            <View style={styles.emptyIcon}>
-              <Ionicons name="chatbubbles-outline" size={48} color={Colors.darkTextTertiary} />
-            </View>
+          <Animated.View
+            entering={FadeIn.delay(200)}
+            style={{ alignItems: 'center', paddingTop: 60 }}
+          >
+            <YStack
+              width={80}
+              height={80}
+              borderRadius={40}
+              backgroundColor="$surfaceElevated"
+              alignItems="center"
+              justifyContent="center"
+              marginBottom={16}
+            >
+              <Ionicons
+                name="chatbubbles-outline"
+                size={48}
+                color={theme.textTertiary.val}
+              />
+            </YStack>
             <TamaguiText
               preset="body"
               textColor="secondary"
               weight="semibold"
-              style={styles.emptyTitle}
+              style={{
+                fontSize: 17,
+                fontWeight: '700',
+                color: theme.textPrimary.val,
+                letterSpacing: -0.3,
+                marginBottom: 6,
+              }}
             >
               무엇이든 물어보세요
             </TamaguiText>
-            <TamaguiText preset="caption" textColor="tertiary" style={styles.emptyDesc}>
+            <TamaguiText
+              preset="caption"
+              textColor="tertiary"
+              style={{
+                fontSize: 13,
+                color: theme.textTertiary.val,
+                letterSpacing: -0.2,
+                marginBottom: 28,
+              }}
+            >
               근거 기반 답변과 장소 추천을 드려요
             </TamaguiText>
 
             {/* Suggestion Grid */}
-            <View style={styles.suggestionGrid}>
+            <YStack width="100%" gap="$2">
               {SUGGESTIONS.map((item, i) => (
                 <Animated.View
                   key={item}
@@ -168,7 +263,16 @@ export default function AskScreen() {
                     .damping(16)}
                 >
                   <TamaguiPressableScale
-                    style={styles.suggestionCard}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: theme.surface.val,
+                      borderRadius: 14,
+                      paddingVertical: 14,
+                      paddingHorizontal: 16,
+                      borderWidth: 0.5,
+                      borderColor: theme.borderColor.val,
+                    }}
                     hapticType="light"
                     onPress={() => handleSuggestion(item)}
                     accessibilityLabel={`질문 제안: ${item}`}
@@ -184,21 +288,26 @@ export default function AskScreen() {
                               : 'pricetag-outline'
                       }
                       size={18}
-                      color={Colors.darkTextSecondary}
-                      style={styles.suggestionIcon}
+                      color={theme.textSecondary.val}
+                      style={{ marginRight: 12 }}
                     />
                     <TamaguiText
                       preset="caption"
                       textColor="primary"
                       weight="medium"
-                      style={styles.suggestionCardText}
+                      style={{
+                        fontSize: 14,
+                        fontWeight: '500',
+                        color: theme.textPrimary.val,
+                        letterSpacing: -0.2,
+                      }}
                     >
                       {item}
                     </TamaguiText>
                   </TamaguiPressableScale>
                 </Animated.View>
               ))}
-            </View>
+            </YStack>
           </Animated.View>
         )}
 
@@ -207,17 +316,58 @@ export default function AskScreen() {
           <Animated.View
             key={msg.id}
             entering={FadeInDown.duration(300).springify().damping(16)}
-            style={msg.type === 'user' ? styles.userBubbleWrap : styles.aiBubbleWrap}
+            style={
+              msg.type === 'user'
+                ? { alignItems: 'flex-end' as const, marginBottom: 12 }
+                : {
+                    flexDirection: 'row' as const,
+                    alignItems: 'flex-start' as const,
+                    marginBottom: 12,
+                    gap: 8,
+                  }
+            }
           >
             {msg.type === 'ai' && (
-              <View style={styles.aiAvatar}>
-                <Ionicons name="sparkles" size={14} color={Colors.primary} />
-              </View>
+              <YStack
+                width={28}
+                height={28}
+                borderRadius={14}
+                backgroundColor="$surfaceElevated"
+                alignItems="center"
+                justifyContent="center"
+                marginTop={2}
+              >
+                <Ionicons name="sparkles" size={14} color={theme.primary.val} />
+              </YStack>
             )}
-            <View style={msg.type === 'user' ? styles.userBubble : styles.aiBubble}>
+            <View
+              style={
+                msg.type === 'user'
+                  ? {
+                      maxWidth: '80%',
+                      backgroundColor: theme.primary.val,
+                      borderRadius: 18,
+                      borderBottomRightRadius: 4,
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                    }
+                  : {
+                      maxWidth: '80%',
+                      backgroundColor: theme.surface.val,
+                      borderRadius: 18,
+                      borderBottomLeftRadius: 4,
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                    }
+              }
+            >
               <TamaguiText
                 preset="body"
-                style={msg.type === 'user' ? styles.userBubbleText : styles.aiBubbleText}
+                style={
+                  msg.type === 'user'
+                    ? { fontSize: 15, color: theme.background.val, lineHeight: 21 }
+                    : { fontSize: 15, color: theme.textPrimary.val, lineHeight: 21 }
+                }
               >
                 {msg.text}
               </TamaguiText>
@@ -227,16 +377,44 @@ export default function AskScreen() {
 
         {/* Loading Indicator */}
         {loading && (
-          <Animated.View entering={FadeIn} style={styles.aiBubbleWrap}>
-            <View style={styles.aiAvatar}>
-              <Ionicons name="sparkles" size={14} color={Colors.primary} />
-            </View>
-            <View style={styles.loadingBubble}>
-              <ActivityIndicator color={Colors.darkTextSecondary} size="small" />
-              <TamaguiText preset="caption" textColor="secondary" style={styles.loadingText}>
+          <Animated.View
+            entering={FadeIn}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              marginBottom: 12,
+              gap: 8,
+            }}
+          >
+            <YStack
+              width={28}
+              height={28}
+              borderRadius={14}
+              backgroundColor="$surfaceElevated"
+              alignItems="center"
+              justifyContent="center"
+              marginTop={2}
+            >
+              <Ionicons name="sparkles" size={14} color={theme.primary.val} />
+            </YStack>
+            <XStack
+              alignItems="center"
+              gap="$2"
+              backgroundColor="$surface"
+              borderRadius={18}
+              borderBottomLeftRadius={4}
+              paddingHorizontal={16}
+              paddingVertical={12}
+            >
+              <ActivityIndicator color={theme.textSecondary.val} size="small" />
+              <TamaguiText
+                preset="caption"
+                textColor="secondary"
+                style={{ fontSize: 13, color: theme.textSecondary.val }}
+              >
                 답변 생성 중...
               </TamaguiText>
-            </View>
+            </XStack>
           </Animated.View>
         )}
 
@@ -244,114 +422,198 @@ export default function AskScreen() {
         {answer && !loading && (
           <Animated.View
             entering={FadeInUp.delay(100).springify().damping(16)}
-            style={styles.answerSection}
+            style={{ marginTop: 4, gap: 10 }}
           >
             {/* Answer Summary Card */}
-            <View style={styles.answerCard}>
-              <View style={styles.answerHeader}>
-                <View style={styles.answerHeaderLeft}>
-                  <Ionicons name="sparkles" size={16} color={Colors.primary} />
+            <YStack
+              backgroundColor="$surface"
+              borderRadius={16}
+              padding={16}
+              borderWidth={0.5}
+              borderColor="$borderColor"
+            >
+              <XStack
+                alignItems="center"
+                justifyContent="space-between"
+                marginBottom={8}
+              >
+                <XStack alignItems="center" gap="$1.5">
+                  <Ionicons name="sparkles" size={16} color={theme.primary.val} />
                   <TamaguiText
                     preset="body"
                     textColor="primary"
                     weight="bold"
-                    style={styles.answerTitle}
+                    style={{
+                      fontSize: 15,
+                      fontWeight: '700',
+                      color: theme.textPrimary.val,
+                      letterSpacing: -0.3,
+                    }}
                   >
                     추천 요약
                   </TamaguiText>
-                </View>
+                </XStack>
                 <ConfidenceBadge confidence={answer.confidence} size="sm" />
-              </View>
+              </XStack>
 
-              {/* Evidence Trust Line */}
-              <View style={styles.trustLine}>
-                <Ionicons name="shield-checkmark" size={12} color={Colors.darkTextTertiary} />
-                <TamaguiText
-                  preset="caption"
-                  textColor="tertiary"
-                  weight="medium"
-                  style={styles.trustText}
+              {/* Evidence Trust Line - Shield Badge */}
+              <XStack
+                alignItems="center"
+                gap="$1.5"
+                paddingVertical="$1.5"
+                paddingHorizontal="$2.5"
+                backgroundColor="$surfaceElevated"
+                borderRadius={8}
+                marginBottom={10}
+              >
+                <Ionicons
+                  name="shield-checkmark"
+                  size={12}
+                  color={theme.textTertiary.val}
+                />
+                <Text fontSize={11} fontWeight="600" color="$textTertiary">
+                  {evidence.blockCount}개 소스 기반
+                </Text>
+                <View
+                  style={{
+                    backgroundColor: 'rgba(93, 219, 158, 0.15)',
+                    paddingHorizontal: 6,
+                    paddingVertical: 1,
+                    borderRadius: 4,
+                  }}
                 >
-                  {evidence.blockCount > 0
-                    ? COPY.TRUST_ROW(
-                        evidence.blockCount,
-                        evidence.sourceCount,
-                        evidence.avgConfidence
-                      )
-                    : COPY.EVIDENCE_EMPTY}
-                </TamaguiText>
-              </View>
+                  <Text fontSize={10} fontWeight="600" color="$primary">
+                    높은 신뢰도
+                  </Text>
+                </View>
+              </XStack>
 
-              <TamaguiText preset="body" textColor="secondary" style={styles.answerBody}>
+              <TamaguiText
+                preset="body"
+                textColor="secondary"
+                style={{
+                  fontSize: 14,
+                  color: theme.textSecondary.val,
+                  lineHeight: 21,
+                }}
+              >
                 {error
                   ? COPY.ASK_FAILED
                   : (answer.summary ?? '질문을 입력하면 근거 기반 답변을 보여드려요.')}
               </TamaguiText>
 
               {blocks[0] && (
-                <View style={styles.answerProvenance}>
+                <YStack marginTop={10}>
                   <ProvenanceFooter block={blocks[0]} compact />
-                </View>
+                </YStack>
               )}
-            </View>
+            </YStack>
 
             {/* Place Card */}
             {answer.place && (
               <TamaguiPressableScale
-                style={styles.placeCard}
+                style={{
+                  backgroundColor: theme.surface.val,
+                  borderRadius: 14,
+                  padding: 14,
+                  borderWidth: 0.5,
+                  borderColor: theme.borderColor.val,
+                }}
                 onPress={handleOpenPlace}
                 hapticType="light"
                 accessibilityLabel={`추천 장소: ${answer.place.name}`}
               >
-                <View style={styles.placeCardInner}>
-                  <View style={styles.placeCardLeft}>
-                    <View style={styles.placeCardIcon}>
-                      <Ionicons name="location" size={16} color={Colors.primary} />
-                    </View>
-                    <View style={styles.placeCardInfo}>
+                <XStack alignItems="center" justifyContent="space-between">
+                  <XStack alignItems="center" flex={1} gap="$2.5">
+                    <YStack
+                      width={36}
+                      height={36}
+                      borderRadius={10}
+                      backgroundColor="$surfaceElevated"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <Ionicons
+                        name="location"
+                        size={16}
+                        color={theme.primary.val}
+                      />
+                    </YStack>
+                    <YStack flex={1}>
                       <TamaguiText
                         preset="body"
                         textColor="primary"
                         weight="bold"
-                        style={styles.placeName}
+                        style={{
+                          fontSize: 15,
+                          fontWeight: '700',
+                          color: theme.textPrimary.val,
+                          letterSpacing: -0.3,
+                        }}
                       >
                         {answer.place.name}
                       </TamaguiText>
-                      <TamaguiText preset="caption" textColor="secondary" style={styles.placeMeta}>
-                        {answer.place.distance ? `${Math.round(answer.place.distance)}m · ` : ''}
+                      <TamaguiText
+                        preset="caption"
+                        textColor="secondary"
+                        style={{
+                          fontSize: 12,
+                          color: theme.textSecondary.val,
+                          marginTop: 2,
+                        }}
+                      >
+                        {answer.place.distance
+                          ? `${Math.round(answer.place.distance)}m · `
+                          : ''}
                         {answer.place.category ?? '추천 장소'}
                       </TamaguiText>
-                    </View>
-                  </View>
-                  <View style={styles.placeCardRight}>
+                    </YStack>
+                  </XStack>
+                  <XStack alignItems="center" gap="$1.5">
                     <ConfidenceBadge confidence={answer.confidence} size="sm" />
-                    <Ionicons name="chevron-forward" size={16} color={Colors.darkTextTertiary} />
-                  </View>
-                </View>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={theme.textTertiary.val}
+                    />
+                  </XStack>
+                </XStack>
               </TamaguiPressableScale>
             )}
 
             {/* Evidence Blocks */}
             {blocks.length > 0 && (
-              <View style={styles.evidenceSection}>
+              <YStack marginTop={4}>
                 <TamaguiText
                   preset="caption"
                   textColor="primary"
                   weight="bold"
-                  style={styles.evidenceSectionTitle}
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '700',
+                    color: theme.textPrimary.val,
+                    letterSpacing: -0.2,
+                    marginBottom: 8,
+                  }}
                 >
                   {COPY.EVIDENCE_TITLE}
                 </TamaguiText>
-                <View style={styles.blockGrid}>
+                <YStack gap="$2">
                   {blocks.map((block, index) => (
                     <InsightCard
                       key={`${block.source}-${index}`}
-                      label={index === 0 ? '대기 시간' : index === 1 ? '딜' : COPY.SAFETY_LABEL}
+                      label={
+                        index === 0
+                          ? '대기 시간'
+                          : index === 1
+                            ? '딜'
+                            : COPY.SAFETY_LABEL
+                      }
                       block={block}
                     />
                   ))}
-                </View>
-              </View>
+                </YStack>
+              </YStack>
             )}
           </Animated.View>
         )}
@@ -360,407 +622,87 @@ export default function AskScreen() {
       {/* Floating Input Bar */}
       <Animated.View
         entering={FadeInUp.delay(200).springify().damping(18)}
-        style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 12) }]}
+        style={{
+          backgroundColor: theme.background.val,
+          borderTopWidth: 0.5,
+          borderTopColor: theme.borderColor.val,
+          paddingHorizontal: Layout.screenPadding,
+          paddingTop: 8,
+          paddingBottom: Math.max(insets.bottom, 12),
+        }}
       >
-        {/* Quick Suggestion Chips (when no messages) */}
+        {/* Quick Suggestion Chips (when has messages) */}
         {messages.length > 0 && !loading && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={styles.chipScroll}
-            contentContainerStyle={styles.chipScrollContent}
+            style={{ marginBottom: 8 }}
+            contentContainerStyle={{ gap: 6 }}
           >
             {SUGGESTIONS.map((item) => (
-              <TamaguiPressableScale
+              <TamaguiChip
                 key={item}
-                style={styles.chipBtn}
-                hapticType="light"
+                label={item}
+                variant="glass"
                 onPress={() => handleSuggestion(item)}
-                accessibilityLabel={`질문 제안: ${item}`}
-              >
-                <TamaguiText preset="caption" textColor="secondary" style={styles.chipText}>
-                  {item}
-                </TamaguiText>
-              </TamaguiPressableScale>
+              />
             ))}
           </ScrollView>
         )}
 
-        <View style={styles.inputRow}>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder="질문을 입력하세요"
-            placeholderTextColor={Colors.darkTextTertiary}
-            style={styles.input}
-            returnKeyType="send"
-            onSubmitEditing={handleSubmit}
-            multiline={false}
-            accessibilityLabel="메시지 입력"
-            accessibilityHint="우주봇에게 질문을 입력하세요"
-          />
+        <XStack alignItems="center" gap="$2">
+          <YStack flex={1}>
+            <TamaguiInput
+              variant="chat"
+              placeholder="질문을 입력하세요"
+              value={draft}
+              onChangeText={setDraft}
+              onSubmitEditing={handleSubmit}
+              rightIcon="mic-outline"
+              onRightIconPress={() => {
+                /* voice input placeholder */
+              }}
+              returnKeyType="send"
+              multiline={false}
+              accessibilityLabel="메시지 입력"
+              accessibilityHint="우주봇에게 질문을 입력하세요"
+            />
+          </YStack>
           <TamaguiPressableScale
-            style={[styles.sendBtn, (isSubmitDisabled || loading) && styles.sendBtnDisabled]}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: theme.primary.val,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: isSubmitDisabled || loading ? 0.4 : 1,
+            }}
             hapticType="medium"
             onPress={handleSubmit}
             disabled={isSubmitDisabled || loading}
             accessibilityLabel="질문 보내기"
           >
             {loading ? (
-              <ActivityIndicator color={Colors.darkBg} size="small" />
+              <ActivityIndicator color={theme.background.val} size="small" />
             ) : (
-              <Ionicons name="arrow-up" size={18} color={Colors.darkBg} />
+              <Ionicons name="arrow-up" size={18} color={theme.background.val} />
             )}
           </TamaguiPressableScale>
-        </View>
+        </XStack>
+
+        {/* QuotaBar */}
+        {botQueriesUsed >= botQueriesLimit * 0.8 && (
+          <QuotaBar
+            label="우주봇"
+            used={botQueriesUsed}
+            total={botQueriesLimit}
+            icon="chatbubble-outline"
+            showUpgradeCta={botQueriesUsed >= botQueriesLimit}
+            onUpgradePress={() => navigation.navigate('Subscription' as any)}
+          />
+        )}
       </Animated.View>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.darkBg,
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.screenPadding,
-    paddingBottom: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-    backgroundColor: Colors.darkBg,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.8,
-  },
-  headerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.darkSurfaceElevated,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  headerBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: Colors.darkTextSecondary,
-  },
-  peerGroupBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.darkSurfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Chat Area
-  chatArea: {
-    flex: 1,
-  },
-  chatContent: {
-    paddingHorizontal: Layout.screenPadding,
-    paddingTop: 16,
-    paddingBottom: 16,
-  },
-
-  // Empty State
-  emptyContainer: {
-    alignItems: 'center',
-    paddingTop: 60,
-  },
-  emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.darkSurfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-    marginBottom: 6,
-  },
-  emptyDesc: {
-    fontSize: 13,
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-    marginBottom: 28,
-  },
-  suggestionGrid: {
-    width: '100%',
-    gap: 8,
-  },
-  suggestionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  suggestionIcon: {
-    marginRight: 12,
-  },
-  suggestionCardText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.2,
-  },
-
-  // User Bubble
-  userBubbleWrap: {
-    alignItems: 'flex-end',
-    marginBottom: 12,
-  },
-  userBubble: {
-    maxWidth: '80%',
-    backgroundColor: Colors.primary,
-    borderRadius: 18,
-    borderBottomRightRadius: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  userBubbleText: {
-    fontSize: 15,
-    color: Colors.darkBg,
-    lineHeight: 21,
-  },
-
-  // AI Bubble
-  aiBubbleWrap: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-    gap: 8,
-  },
-  aiAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.darkSurfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  aiBubble: {
-    maxWidth: '80%',
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 18,
-    borderBottomLeftRadius: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  aiBubbleText: {
-    fontSize: 15,
-    color: Colors.darkTextPrimary,
-    lineHeight: 21,
-  },
-  loadingBubble: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 18,
-    borderBottomLeftRadius: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  loadingText: {
-    fontSize: 13,
-    color: Colors.darkTextSecondary,
-  },
-
-  // Answer Section
-  answerSection: {
-    marginTop: 4,
-    gap: 10,
-  },
-  answerCard: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  answerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  answerHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  answerTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-  },
-  trustLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 8,
-  },
-  trustText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.1,
-  },
-  answerBody: {
-    fontSize: 14,
-    color: Colors.darkTextSecondary,
-    lineHeight: 21,
-  },
-  answerProvenance: {
-    marginTop: 10,
-  },
-
-  // Place Card
-  placeCard: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  placeCardInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  placeCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 10,
-  },
-  placeCardIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: Colors.darkSurfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeCardInfo: {
-    flex: 1,
-  },
-  placeCardRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  placeName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-  },
-  placeMeta: {
-    fontSize: 12,
-    color: Colors.darkTextSecondary,
-    marginTop: 2,
-  },
-
-  // Evidence Section
-  evidenceSection: {
-    marginTop: 4,
-  },
-  evidenceSectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.2,
-    marginBottom: 8,
-  },
-  blockGrid: {
-    gap: 8,
-  },
-
-  // Floating Input Bar
-  inputBar: {
-    backgroundColor: Colors.darkBg,
-    borderTopWidth: 0.5,
-    borderTopColor: Colors.darkBorder,
-    paddingHorizontal: Layout.screenPadding,
-    paddingTop: 8,
-  },
-  chipScroll: {
-    marginBottom: 8,
-  },
-  chipScrollContent: {
-    gap: 6,
-  },
-  chipBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 14,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  chipText: {
-    fontSize: 12,
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.1,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    height: 44,
-    paddingHorizontal: 16,
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 22,
-    fontSize: 15,
-    color: Colors.darkTextPrimary,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  sendBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sendBtnDisabled: {
-    opacity: 0.4,
-  },
-});

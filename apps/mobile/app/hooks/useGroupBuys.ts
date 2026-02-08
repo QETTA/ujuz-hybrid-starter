@@ -1,5 +1,5 @@
 /**
- * KidsMap - Group Buy Data Hook
+ * UJUz - Group Buy Data Hook
  *
  * Supabase에서 공동구매 데이터 가져오기
  */

@@ -6,9 +6,9 @@
  * Used in: ThreeSnapBottomSheet, PlaceDetailSheet
  */
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Colors } from '@/app/constants/Colors';
+import { useTheme } from 'tamagui';
 import { TamaguiText, TamaguiRatingStars } from '@/app/design-system';
 import { COPY } from '@/app/copy/copy.ko';
 
@@ -27,6 +27,29 @@ export const ReviewItem = memo(function ReviewItem({
   date,
   variant = 'full',
 }: ReviewItemProps) {
+  const theme = useTheme();
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      paddingVertical: 12,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.borderColor.val,
+    },
+    containerCompact: {
+      paddingVertical: 8,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    text: {
+      marginTop: 6,
+      lineHeight: 20,
+    },
+  }), [theme]);
+
   const accessibilityLabel = `Review by ${author}, ${rating} out of 5 stars, ${date}. ${text}`;
 
   return (
@@ -58,25 +81,4 @@ export const ReviewItem = memo(function ReviewItem({
       </TamaguiText>
     </View>
   );
-});
-
-const styles = StyleSheet.create({
-  container: {
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-  },
-  containerCompact: {
-    paddingVertical: 8,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  text: {
-    marginTop: 6,
-    lineHeight: 20,
-  },
 });

@@ -12,7 +12,6 @@ import { styled, YStack, GetProps, useTheme } from 'tamagui';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '@/app/constants/Colors';
 
 // Base Glass Container
 const GlassContainer = styled(YStack, {
@@ -20,7 +19,7 @@ const GlassContainer = styled(YStack, {
   borderRadius: '$4',
   overflow: 'hidden',
   borderWidth: 1,
-  borderColor: Colors.glassDark as any,
+  borderColor: '$glassDark',
 
   variants: {
     // Glass Intensity
@@ -96,6 +95,17 @@ const GlassContainer = styled(YStack, {
 });
 
 // Props types
+export type ScoreGrade = 'A' | 'B' | 'C' | 'D' | 'F';
+
+/** Theme token keys for score glow (resolved via useTheme) */
+const SCORE_GLOW_KEYS: Record<ScoreGrade, string> = {
+  A: 'scoreA',
+  B: 'scoreB',
+  C: 'scoreC',
+  D: 'scoreD',
+  F: 'scoreF',
+};
+
 export interface TamaguiGlassCardProps {
   /** Children content */
   children: React.ReactNode;
@@ -105,6 +115,8 @@ export interface TamaguiGlassCardProps {
   padding?: 'none' | 'sm' | 'md' | 'lg';
   /** Glow effect */
   glow?: boolean | 'primary' | 'success' | 'warning' | 'error';
+  /** Score grade glow — overrides glow with grade-specific color */
+  scoreGlow?: ScoreGrade;
   /** Blur intensity (0-100) */
   blurIntensity?: number;
   /** Press handler */
@@ -122,6 +134,7 @@ export function TamaguiGlassCard({
   intensity = 'medium',
   padding = 'md',
   glow,
+  scoreGlow,
   blurIntensity = 60,
   onPress,
   testID,
@@ -138,28 +151,47 @@ export function TamaguiGlassCard({
     }
   };
 
-  // Determine blur tint based on theme
-  const blurTint = theme.background.val === Colors.white ? 'light' : 'dark';
+  // Determine blur tint based on theme (light bg → light tint, dark bg → dark)
+  const blurTint = theme.background.val === '#ffffff' || theme.background.val === '#FFFFFF'
+    ? 'light'
+    : 'dark';
+
+  // Glass reflection: theme-aware white-to-transparent gradient
+  const reflectionColors = [
+    theme.glassLight.val,
+    `${theme.glassLight.val}00`,
+  ] as [string, string];
 
   // Get glow value for variant
   const glowValue = glow === true ? 'true' : glow || undefined;
+
+  // Score glow overrides standard glow with grade-specific shadow
+  const scoreGlowStyle = scoreGlow
+    ? {
+        shadowColor: (theme as any)[SCORE_GLOW_KEYS[scoreGlow]]?.val ?? theme.primary.val,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.35,
+        shadowRadius: 20,
+      }
+    : undefined;
 
   return (
     <BlurView intensity={blurIntensity} tint={blurTint} style={[styles.blurContainer, style]}>
       <GlassContainer
         intensity={intensity}
         padding={padding as any}
-        glow={glowValue as any}
+        glow={scoreGlow ? undefined : (glowValue as any)}
         pressable={isPressable}
         onPress={isPressable ? handlePress : undefined}
         accessibilityRole={isPressable ? 'button' : undefined}
         accessibilityLabel={accessibilityLabel}
         testID={testID}
+        {...(scoreGlowStyle as any)}
       >
         {/* Light reflection overlay - React Native LinearGradient */}
         <View style={styles.reflectionContainer} pointerEvents="none">
           <LinearGradient
-            colors={Colors.glassReflection as any}
+            colors={reflectionColors}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
             style={styles.reflectionGradient}

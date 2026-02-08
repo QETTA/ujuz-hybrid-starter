@@ -166,15 +166,39 @@ export const Depths = {
 
 export const Glows = {
   /**
-   * Primary Glow - Blue accent
+   * Primary Glow - Mint accent (UJUz brand)
    * Use: Primary buttons on press, CTAs
    */
   primary: {
-    shadowColor: '#007AFF',
+    shadowColor: '#5DDB9E',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 8,
+  },
+
+  /**
+   * Premium Glow - Purple accent
+   * Use: Premium subscription CTAs
+   */
+  premium: {
+    shadowColor: '#a855f7',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+
+  /**
+   * Deal Glow - Pink accent
+   * Use: Group buy / deal CTAs
+   */
+  deal: {
+    shadowColor: '#ec4899',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
   },
 
   /**
@@ -259,12 +283,12 @@ export const Borders = {
   },
 
   /**
-   * Focus - Input focus state
+   * Focus - Input focus state (UJUz Mint)
    * Use: Focused inputs, selected items
    */
   focus: {
     borderWidth: 2,
-    borderColor: '#007AFF',
+    borderColor: '#5DDB9E',
   },
 } as const;
 
@@ -320,11 +344,11 @@ export const MaterialPresets = {
   },
 
   /**
-   * FAB - Floating action button
+   * FAB - Floating action button (UJUz Mint)
    */
   fab: {
     ...Depths.lifted,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#5DDB9E',
     borderRadius: 28,
   },
 

@@ -98,6 +98,23 @@ export const ujuzColors = {
   glassMedium: 'rgba(255, 255, 255, 0.5)',
   glassDark: 'rgba(255, 255, 255, 0.3)',
   glassOverlay: 'rgba(0, 0, 0, 0.3)',
+
+  // Business Semantic Colors — Admission Score Grades
+  scoreA: '#10b981',   // A등급 (초록)
+  scoreB: '#22d3ee',   // B등급 (시안)
+  scoreC: '#f59e0b',   // C등급 (앰버)
+  scoreD: '#f97316',   // D등급 (오렌지)
+  scoreF: '#ef4444',   // F등급 (레드)
+
+  // Business Semantic Colors — Monetization
+  premium: '#a855f7',        // 프리미엄 배지 (퍼플)
+  premiumLight: '#c084fc',   // 프리미엄 라이트
+  premiumDark: '#7c3aed',    // 프리미엄 다크
+  premiumBg: 'rgba(168, 85, 247, 0.12)',
+  deal: '#ec4899',           // 딜/할인 (핑크)
+  dealLight: '#f472b6',
+  dealDark: '#db2777',
+  dealBg: 'rgba(236, 72, 153, 0.12)',
 };
 
 // 커스텀 토큰 생성
@@ -141,6 +158,12 @@ const tokens = createTokens({
     12: 48,
     16: 64,
     true: 16,
+    // String-based keys for design-system component size variants
+    xs: 12,
+    sm: 14,
+    md: 16,
+    lg: 24,
+    xl: 32,
   },
   radius: {
     ...defaultTokens.radius,
@@ -166,6 +189,12 @@ const tokens = createTokens({
 });
 
 // Inter 폰트 설정
+// String-based size keys (xs, sm, md, lg, xl) are required because
+// design-system components like TamaguiButton and TamaguiChip define
+// custom `size` variants with string keys on styled(Text, ...).
+// Tamagui internally resolves the `size` prop against font size tokens,
+// so these keys must exist here to avoid
+// "No font size found md undefined in size tokens" warnings.
 const headingFont = createInterFont({
   size: {
     1: 12,
@@ -179,6 +208,12 @@ const headingFont = createInterFont({
     9: 40,
     10: 48,
     true: 16,
+    // String-based keys for design-system component size variants
+    xs: 12,
+    sm: 14,
+    md: 16,
+    lg: 24,
+    xl: 32,
   },
   weight: {
     4: '400',
@@ -209,6 +244,12 @@ const bodyFont = createInterFont({
     5: 18,
     6: 20,
     true: 17,
+    // String-based keys for design-system component size variants
+    xs: 12,
+    sm: 14,
+    md: 16,
+    lg: 18,
+    xl: 20,
   },
   weight: {
     4: '400',
@@ -383,33 +424,48 @@ const lightTheme = {
   socialSave: ujuzColors.save,
   socialStar: ujuzColors.star,
 
+  // Business Semantic — Score Grades
+  scoreA: ujuzColors.scoreA,
+  scoreB: ujuzColors.scoreB,
+  scoreC: ujuzColors.scoreC,
+  scoreD: ujuzColors.scoreD,
+  scoreF: ujuzColors.scoreF,
+
+  // Business Semantic — Monetization
+  premium: ujuzColors.premium,
+  premiumLight: ujuzColors.premiumLight,
+  premiumBg: ujuzColors.premiumBg,
+  deal: ujuzColors.deal,
+  dealLight: ujuzColors.dealLight,
+  dealBg: ujuzColors.dealBg,
+
   // Shadow (for elevation) - Toss 2026 style: subtle shadows
   shadowColor: 'rgba(0, 0, 0, 0.04)',      // 토스 기본 그림자
   shadowColorStrong: 'rgba(0, 0, 0, 0.08)', // 강조 그림자
   shadowColorSubtle: 'rgba(0, 0, 0, 0.02)', // 미세 그림자
 };
 
-// Dark 테마 (2026 Design System)
+// Dark 테마 (2026 Design System — Glass + Dark + Mint)
 const darkTheme = {
-  background: ujuzColors.gray900,
-  backgroundHover: ujuzColors.gray800,
-  backgroundPress: ujuzColors.gray700,
-  backgroundFocus: ujuzColors.gray800,
+  background: '#0A0A0A',
+  backgroundHover: '#161616',
+  backgroundPress: '#1C1C1E',
+  backgroundFocus: '#161616',
   backgroundStrong: ujuzColors.black,
   backgroundTransparent: ujuzColors.transparent,
 
-  color: ujuzColors.white,
+  color: '#F5F5F7',
   colorHover: ujuzColors.gray100,
   colorPress: ujuzColors.gray200,
   colorFocus: ujuzColors.gray100,
   colorTransparent: 'rgba(255, 255, 255, 0)',
 
-  borderColor: ujuzColors.gray700,
-  borderColorHover: ujuzColors.gray600,
-  borderColorPress: ujuzColors.gray500,
+  borderColor: 'rgba(255, 255, 255, 0.06)',
+  borderColorHover: 'rgba(255, 255, 255, 0.1)',
+  borderColorPress: 'rgba(255, 255, 255, 0.15)',
   borderColorFocus: ujuzColors.primary400,
 
-  placeholderColor: ujuzColors.gray500,
+  placeholderColor: '#636366',
 
   // Semantic
   primary: ujuzColors.primary400,
@@ -432,25 +488,25 @@ const darkTheme = {
   errorBg: 'rgba(239, 68, 68, 0.15)',
   info: ujuzColors.info,
   infoLight: ujuzColors.infoDark,
-  infoBg: 'rgba(59, 130, 246, 0.15)',
+  infoBg: 'rgba(14, 165, 233, 0.15)',
 
   // Card
-  card: ujuzColors.gray800,
-  cardHover: ujuzColors.gray700,
+  card: '#161616',
+  cardHover: '#1C1C1E',
 
-  // Surface
-  surface: ujuzColors.gray800,
-  surfaceHover: ujuzColors.gray700,
-  surfaceElevated: ujuzColors.gray700,
-  surfaceMuted: ujuzColors.gray800,
+  // Surface — 3-layer dark hierarchy
+  surface: '#161616',
+  surfaceHover: '#1C1C1E',
+  surfaceElevated: '#1C1C1E',
+  surfaceMuted: '#0F0F0F',
 
   // Text variants
-  textPrimary: ujuzColors.white,
-  textSecondary: ujuzColors.gray400,
-  textTertiary: ujuzColors.gray500,
+  textPrimary: '#F5F5F7',
+  textSecondary: '#8E8E93',
+  textTertiary: '#636366',
   textInverse: ujuzColors.gray900,
   textLink: ujuzColors.primary400,
-  textMuted: ujuzColors.gray500,
+  textMuted: '#636366',
 
   // Badge Colors (Trust Indicators) - adjusted for dark mode
   badgeVerified: ujuzColors.success,
@@ -458,13 +514,13 @@ const darkTheme = {
   badgePopular: ujuzColors.like,
   badgePopularBg: 'rgba(236, 72, 153, 0.15)',
   badgeNew: ujuzColors.primary400,
-  badgeNewBg: 'rgba(59, 130, 246, 0.15)',
+  badgeNewBg: 'rgba(93, 219, 158, 0.15)',
   badgeHot: ujuzColors.error,
   badgeHotBg: 'rgba(239, 68, 68, 0.15)',
   badgeSale: ujuzColors.warning,
   badgeSaleBg: 'rgba(245, 158, 11, 0.15)',
-  badgeRecommended: '#a855f7',
-  badgeRecommendedBg: 'rgba(168, 85, 247, 0.15)',
+  badgeRecommended: ujuzColors.premium,
+  badgeRecommendedBg: ujuzColors.premiumBg,
 
   // Category Colors - adjusted for dark mode
   categoryOutdoor: ujuzColors.success,
@@ -472,7 +528,7 @@ const darkTheme = {
   categoryIndoor: ujuzColors.warning,
   categoryIndoorBg: 'rgba(245, 158, 11, 0.15)',
   categoryPublic: ujuzColors.primary400,
-  categoryPublicBg: 'rgba(59, 130, 246, 0.15)',
+  categoryPublicBg: 'rgba(93, 219, 158, 0.15)',
   categoryRestaurant: ujuzColors.error,
   categoryRestaurantBg: 'rgba(239, 68, 68, 0.15)',
 
@@ -488,10 +544,25 @@ const darkTheme = {
   socialSave: ujuzColors.warning,
   socialStar: ujuzColors.star,
 
+  // Business Semantic — Score Grades (same in dark)
+  scoreA: ujuzColors.scoreA,
+  scoreB: ujuzColors.scoreB,
+  scoreC: ujuzColors.scoreC,
+  scoreD: ujuzColors.scoreD,
+  scoreF: ujuzColors.scoreF,
+
+  // Business Semantic — Monetization
+  premium: ujuzColors.premium,
+  premiumLight: ujuzColors.premiumLight,
+  premiumBg: ujuzColors.premiumBg,
+  deal: ujuzColors.deal,
+  dealLight: ujuzColors.dealLight,
+  dealBg: ujuzColors.dealBg,
+
   // Shadow
-  shadowColor: 'rgba(0, 0, 0, 0.3)',
-  shadowColorStrong: 'rgba(0, 0, 0, 0.5)',
-  shadowColorSubtle: 'rgba(0, 0, 0, 0.2)',
+  shadowColor: 'rgba(0, 0, 0, 0.4)',
+  shadowColorStrong: 'rgba(0, 0, 0, 0.6)',
+  shadowColorSubtle: 'rgba(0, 0, 0, 0.25)',
 };
 
 // Tamagui 설정 생성

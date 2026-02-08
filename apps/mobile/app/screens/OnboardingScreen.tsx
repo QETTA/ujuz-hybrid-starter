@@ -1,12 +1,15 @@
 /**
  * OnboardingScreen - Mobile-only onboarding
  * Design System: TamaguiText, TamaguiChip, TamaguiPressableScale
+ *
+ * 2026 UJUz 테마 토큰 기반
  */
 
 import { useMemo, useState } from 'react';
-import { View, StyleSheet, TextInput, ScrollView } from 'react-native';
+import { View, TextInput, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from 'tamagui';
 import { Colors, Layout } from '@/app/constants';
 import { useProfileStore } from '@/app/stores/profileStore';
 import { useOnboardingStore } from '@/app/stores/onboardingStore';
@@ -41,6 +44,7 @@ const BUDGET_OPTIONS = [
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<RootStackNavigationProp>();
+  const theme = useTheme();
   const { setChildName, setChildBirthDate } = useProfileStore();
   const {
     setHasOnboarded,
@@ -70,6 +74,62 @@ export default function OnboardingScreen() {
     setHasOnboarded(true);
     navigation.replace('Permissions');
   };
+
+  const styles = useMemo(
+    () => ({
+      container: {
+        flex: 1 as const,
+        backgroundColor: theme.background.val,
+      },
+      header: {
+        paddingHorizontal: Layout.screenPadding,
+        marginBottom: 24,
+      },
+      logo: {
+        fontStyle: 'italic' as const,
+        letterSpacing: -1.2,
+        marginBottom: 10,
+      },
+      subtitleMargin: {
+        marginTop: 6,
+      },
+      card: {
+        marginHorizontal: 20,
+        padding: 16,
+        borderRadius: 16,
+        backgroundColor: theme.surface.val,
+        borderWidth: 0.5,
+        borderColor: theme.borderColor.val,
+      },
+      sectionLabelMargin: {
+        marginBottom: 10,
+      },
+      sectionLabelMarginTop: {
+        marginTop: 16,
+        marginBottom: 10,
+      },
+      input: {
+        height: 44,
+        backgroundColor: theme.surfaceElevated.val,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        fontSize: 14,
+        color: theme.textPrimary.val,
+        borderWidth: 0.5,
+        borderColor: theme.borderColor.val,
+      },
+      cta: {
+        marginTop: 20,
+        marginHorizontal: 20,
+        height: 52,
+        borderRadius: 16,
+        backgroundColor: Colors.primary,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+      },
+    }),
+    [theme]
+  );
 
   return (
     <ScrollView
@@ -101,7 +161,7 @@ export default function OnboardingScreen() {
           value={childNameInput}
           onChangeText={setChildNameInput}
           placeholder="아이 이름"
-          placeholderTextColor={Colors.darkTextTertiary}
+          placeholderTextColor={theme.textTertiary.val}
           style={styles.input}
           accessibilityLabel="아이 이름"
           accessibilityHint="아이의 이름을 입력하세요"
@@ -203,7 +263,7 @@ export default function OnboardingScreen() {
           value={preferredRegion}
           onChangeText={setPreferredRegion}
           placeholder="예) 서울, 판교"
-          placeholderTextColor={Colors.darkTextTertiary}
+          placeholderTextColor={theme.textTertiary.val}
           style={styles.input}
           accessibilityLabel="기본 지역"
           accessibilityHint="선호하는 지역을 입력하세요"
@@ -224,56 +284,3 @@ export default function OnboardingScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.darkBg,
-  },
-  header: {
-    paddingHorizontal: Layout.screenPadding,
-    marginBottom: 24,
-  },
-  logo: {
-    fontStyle: 'italic',
-    letterSpacing: -1.2,
-    marginBottom: 10,
-  },
-  subtitleMargin: {
-    marginTop: 6,
-  },
-  card: {
-    marginHorizontal: 20,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: Colors.darkSurface,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  sectionLabelMargin: {
-    marginBottom: 10,
-  },
-  sectionLabelMarginTop: {
-    marginTop: 16,
-    marginBottom: 10,
-  },
-  input: {
-    height: 44,
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    fontSize: 14,
-    color: Colors.darkTextPrimary,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  cta: {
-    marginTop: 20,
-    marginHorizontal: 20,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

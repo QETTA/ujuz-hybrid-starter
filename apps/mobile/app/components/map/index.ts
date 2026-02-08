@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - Map Components
+ * UJUz Mobile - Map Components
  * Updated for Kakao Map UX 2.0
  */
 

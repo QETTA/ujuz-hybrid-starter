@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - UI Dimension Constants
+ * UJUz Mobile - UI Dimension Constants
  *
  * Centralized dimensions for consistent UI sizing
  */

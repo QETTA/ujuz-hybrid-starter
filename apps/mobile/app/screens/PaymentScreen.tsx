@@ -6,25 +6,23 @@
  * PG 연동: card / kakao_pay / naver_pay / bank_transfer
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
-  StyleSheet,
   View,
   ScrollView,
   Alert,
   ActivityIndicator,
-  type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
+import { useTheme } from 'tamagui';
 
 import type { RootStackParamList, RootStackNavigationProp } from '@/app/types/navigation';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Colors, Layout } from '@/app/constants';
-import { TamaguiText, TamaguiPressableScale } from '@/app/design-system';
+import { TamaguiText, TamaguiPressableScale, TamaguiHeader } from '@/app/design-system';
 import { usePayment } from '@/app/hooks/usePayment';
 import type { BillingCycle, PaymentRequest, SubscriptionPlan } from '@/app/types/subscription';
 
@@ -56,6 +54,7 @@ const stagger = (i: number) =>
 // ── Component ──
 
 export function PaymentScreen() {
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<RootStackNavigationProp>();
   const route = useRoute<RouteProp<RootStackParamList, 'Payment'>>();
@@ -106,13 +105,202 @@ export function PaymentScreen() {
     }
   }, [plan, billingCycle, paymentMethod, subscribe, displayName, navigation]);
 
+  // ── Styles ──
+
+  const styles = useMemo(() => ({
+    root: {
+      flex: 1,
+      backgroundColor: theme.background.val,
+    },
+    scroll: {
+      flex: 1,
+    },
+    loadingContainer: {
+      flex: 1,
+      backgroundColor: theme.background.val,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+
+    // Section
+    section: {
+      paddingHorizontal: Layout.screenPadding,
+      marginTop: 20,
+    },
+
+    // Card
+    card: {
+      backgroundColor: theme.surface.val,
+      borderRadius: 16,
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
+      padding: 20,
+    },
+
+    // Plan Summary
+    planName: {
+      fontSize: 28,
+      fontWeight: '200' as const,
+      color: theme.textPrimary.val,
+      letterSpacing: -1.2,
+      marginBottom: 6,
+    },
+    planPrice: {
+      fontSize: 20,
+      fontWeight: '600' as const,
+      color: theme.textSecondary.val,
+      letterSpacing: -0.5,
+    },
+
+    // Billing Cycle Toggle
+    toggleContainer: {
+      flexDirection: 'row' as const,
+      backgroundColor: theme.surfaceElevated.val,
+      borderRadius: 10,
+      padding: 3,
+    },
+    toggleOption: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 8,
+      alignItems: 'center' as const,
+    },
+    toggleOptionActive: {
+      backgroundColor: Colors.primary,
+    },
+    toggleText: {
+      fontSize: 14,
+      fontWeight: '500' as const,
+      color: theme.textTertiary.val,
+      letterSpacing: -0.2,
+    },
+    toggleTextActive: {
+      color: theme.background.val,
+      fontWeight: '600' as const,
+    },
+
+    // Payment Method
+    methodCard: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      backgroundColor: theme.surface.val,
+      borderRadius: 16,
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
+      paddingHorizontal: 16,
+      paddingVertical: 15,
+      marginBottom: 8,
+      gap: 12,
+    },
+    radioCircle: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      borderWidth: 1.5,
+    },
+    radioFilled: {
+      backgroundColor: Colors.primary,
+      borderColor: Colors.primary,
+    },
+    radioEmpty: {
+      backgroundColor: 'transparent',
+      borderColor: theme.textTertiary.val,
+    },
+    methodLabel: {
+      fontSize: 15,
+      fontWeight: '400' as const,
+      color: theme.textSecondary.val,
+      letterSpacing: -0.3,
+    },
+    methodLabelSelected: {
+      color: theme.textPrimary.val,
+      fontWeight: '600' as const,
+    },
+
+    // Price Summary
+    priceRow: {
+      flexDirection: 'row' as const,
+      justifyContent: 'space-between' as const,
+      alignItems: 'center' as const,
+      marginBottom: 10,
+    },
+    priceLabel: {
+      fontSize: 14,
+      fontWeight: '400' as const,
+      color: theme.textTertiary.val,
+      letterSpacing: -0.2,
+    },
+    priceValue: {
+      fontSize: 14,
+      fontWeight: '500' as const,
+      color: theme.textSecondary.val,
+      letterSpacing: -0.2,
+    },
+    discountValue: {
+      fontSize: 14,
+      fontWeight: '500' as const,
+      color: Colors.primary,
+      letterSpacing: -0.2,
+    },
+    divider: {
+      height: 0.5,
+      backgroundColor: theme.borderColor.val,
+      marginVertical: 6,
+    },
+    totalLabel: {
+      fontSize: 15,
+      fontWeight: '700' as const,
+      color: theme.textPrimary.val,
+      letterSpacing: -0.3,
+    },
+    totalValue: {
+      fontSize: 18,
+      fontWeight: '700' as const,
+      color: theme.textPrimary.val,
+      letterSpacing: -0.5,
+    },
+
+    // CTA Button
+    ctaButton: {
+      backgroundColor: Colors.primary,
+      borderRadius: 14,
+      paddingVertical: 16,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    ctaButtonDisabled: {
+      opacity: 0.5,
+    },
+    ctaText: {
+      fontSize: 16,
+      fontWeight: '600' as const,
+      color: theme.background.val,
+      letterSpacing: -0.3,
+    },
+
+    // Footer
+    footerSection: {
+      paddingHorizontal: Layout.screenPadding,
+      marginTop: 20,
+      alignItems: 'center' as const,
+    },
+    legalText: {
+      fontSize: 12,
+      fontWeight: '400' as const,
+      color: theme.textTertiary.val,
+      letterSpacing: -0.2,
+      textAlign: 'center' as const,
+      lineHeight: 18,
+    },
+  }), [theme]);
+
   // ── Loading State ──
 
   if (!plan) {
     return (
       <View style={styles.loadingContainer}>
         <View style={{ paddingTop: insets.top + 60 }}>
-          <ActivityIndicator color={Colors.darkTextTertiary} />
+          <ActivityIndicator color={theme.textTertiary.val} />
         </View>
       </View>
     );
@@ -129,18 +317,7 @@ export function PaymentScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Header ── */}
-        <Animated.View entering={stagger(0)} style={styles.header}>
-          <TamaguiPressableScale
-            onPress={() => navigation.goBack()}
-            hapticType="light"
-            style={styles.backButton}
-          >
-            <Ionicons name="chevron-back" size={24} color={Colors.darkTextPrimary} />
-          </TamaguiPressableScale>
-          <TamaguiText preset="h3" style={styles.headerTitle}>
-            결제
-          </TamaguiText>
-        </Animated.View>
+        <TamaguiHeader title="결제" showBack onBack={() => navigation.goBack()} />
 
         {/* ── Plan Summary Card ── */}
         <Animated.View entering={stagger(1)} style={styles.section}>
@@ -244,7 +421,7 @@ export function PaymentScreen() {
             style={[styles.ctaButton, isLoading && styles.ctaButtonDisabled]}
           >
             {isLoading ? (
-              <ActivityIndicator color={Colors.darkBg} />
+              <ActivityIndicator color={theme.background.val} />
             ) : (
               <TamaguiText style={styles.ctaText}>결제하기</TamaguiText>
             )}
@@ -261,215 +438,5 @@ export function PaymentScreen() {
     </View>
   );
 }
-
-// ── Styles ──
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.darkBg,
-  },
-  scroll: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: Colors.darkBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Layout.screenPadding,
-    marginBottom: 8,
-    gap: 10,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.8,
-  },
-
-  // Section
-  section: {
-    paddingHorizontal: Layout.screenPadding,
-    marginTop: 20,
-  },
-
-  // Card
-  card: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 16,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-    padding: 20,
-  },
-
-  // Plan Summary
-  planName: {
-    fontSize: 28,
-    fontWeight: '200',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -1.2,
-    marginBottom: 6,
-  },
-  planPrice: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.5,
-  },
-
-  // Billing Cycle Toggle
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 10,
-    padding: 3,
-  },
-  toggleOption: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  } as ViewStyle,
-  toggleOptionActive: {
-    backgroundColor: Colors.primary,
-  } as ViewStyle,
-  toggleText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-  },
-  toggleTextActive: {
-    color: Colors.darkBg,
-    fontWeight: '600',
-  },
-
-  // Payment Method
-  methodCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 16,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    marginBottom: 8,
-    gap: 12,
-  } as ViewStyle,
-  radioCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1.5,
-  },
-  radioFilled: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  radioEmpty: {
-    backgroundColor: 'transparent',
-    borderColor: Colors.darkTextTertiary,
-  },
-  methodLabel: {
-    fontSize: 15,
-    fontWeight: '400',
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.3,
-  },
-  methodLabelSelected: {
-    color: Colors.darkTextPrimary,
-    fontWeight: '600',
-  },
-
-  // Price Summary
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  priceLabel: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-  },
-  priceValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.2,
-  },
-  discountValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.primary,
-    letterSpacing: -0.2,
-  },
-  divider: {
-    height: 0.5,
-    backgroundColor: Colors.darkBorder,
-    marginVertical: 6,
-  },
-  totalLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.5,
-  },
-
-  // CTA Button
-  ctaButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  ctaButtonDisabled: {
-    opacity: 0.5,
-  } as ViewStyle,
-  ctaText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.darkBg,
-    letterSpacing: -0.3,
-  },
-
-  // Footer
-  footerSection: {
-    paddingHorizontal: Layout.screenPadding,
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  legalText: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-});
 
 export default PaymentScreen;

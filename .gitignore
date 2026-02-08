@@ -20,6 +20,12 @@ infra/.terraform/
 # Logs
 *.log
 
+# Claude Code
+.claude/settings.local.json
+
+# Serena
+.serena/cache/
+
 # Expo / React Native
 .expo/
 android/

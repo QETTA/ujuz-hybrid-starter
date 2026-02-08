@@ -1,8 +1,9 @@
 /**
- * KidsMap Mobile - Hooks Index
+ * UJUz Mobile - Hooks Index
  */
 
 export * from './useAccessibilityAnnouncement';
+export * from './useAppTheme';
 export * from './useAdmissionScore';
 export * from './useAnalytics';
 export * from './useAskEngine';

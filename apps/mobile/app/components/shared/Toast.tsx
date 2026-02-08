@@ -54,6 +54,10 @@ const TOAST_ICONS: Record<ToastType, keyof typeof Ionicons.glyphMap> = {
   warning: 'warning',
 };
 
+// TODO: Migrate Colors.darkTextPrimary to theme tokens.
+// These are in a module-level config object outside React components,
+// so hooks (useTheme) cannot be used here. Consider restructuring
+// TOAST_COLORS to accept theme values at render time.
 // Color mapping (토스 스타일) - semantic colors
 const TOAST_COLORS: Record<ToastType, { bg: string; icon: string; text: string }> = {
   success: {

@@ -13,8 +13,8 @@ import { useFilterStore } from '@/app/stores/filterStore';
 import { MOCK_NEARBY_PLACES } from '@/app/data/mocks';
 
 // Mock dependencies before importing the hook
-jest.mock('@/app/services/api/places', () => ({
-  searchPlaces: jest.fn(),
+jest.mock('@/app/services/mongo', () => ({
+  placesService: { searchNearby: jest.fn() },
 }));
 
 jest.mock('../useOfflineSupport', () => ({

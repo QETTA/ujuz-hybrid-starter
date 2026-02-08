@@ -11,7 +11,7 @@
  */
 
 import { memo, useCallback, useMemo } from 'react';
-import { styled, YStack, XStack, Text, GetProps } from 'tamagui';
+import { styled, YStack, XStack, Text, GetProps, useTheme } from 'tamagui';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -33,13 +33,13 @@ import type { PlaceInsights } from '@/app/types/dataBlock';
 // Styled card container
 const CardContainer = styled(YStack, {
   name: 'PlaceCard',
-  backgroundColor: Colors.darkSurface as any,
+  backgroundColor: '$surface',
   borderRadius: 16,
   marginHorizontal: 16,
   marginVertical: 8,
   overflow: 'hidden',
   borderWidth: 0.5,
-  borderColor: Colors.darkBorder as any,
+  borderColor: '$borderColor',
   pressStyle: {
     opacity: 0.9,
     scale: 0.99,
@@ -58,7 +58,7 @@ const PlaceName = styled(Text, {
   fontSize: 18,
   fontWeight: '600',
   letterSpacing: -0.3,
-  color: Colors.darkTextPrimary as any,
+  color: '$textPrimary',
   marginBottom: 8,
 });
 
@@ -67,7 +67,7 @@ const AddressText = styled(Text, {
   name: 'PlaceCardAddress',
   fontSize: 14,
   fontWeight: '400',
-  color: Colors.darkTextSecondary as any,
+  color: '$textSecondary',
   marginBottom: 12,
 });
 
@@ -82,7 +82,7 @@ const BottomRow = styled(XStack, {
 // Styled distance badge
 const DistanceBadge = styled(XStack, {
   name: 'DistanceBadge',
-  backgroundColor: Colors.darkSurfaceElevated as any,
+  backgroundColor: '$surfaceElevated',
   borderRadius: 6,
   paddingHorizontal: 8,
   paddingVertical: 4,
@@ -102,7 +102,7 @@ const BadgeText = styled(Text, {
   name: 'BadgeText',
   fontSize: 12,
   fontWeight: '500',
-  color: Colors.darkTextSecondary as any,
+  color: '$textSecondary',
 });
 
 const FreeBadgeText = styled(Text, {
@@ -117,7 +117,7 @@ const AmenitiesText = styled(Text, {
   name: 'AmenitiesText',
   fontSize: 12,
   fontWeight: '400',
-  color: Colors.darkTextTertiary as any,
+  color: '$textTertiary',
   marginTop: 4,
 });
 
@@ -139,6 +139,8 @@ function TamaguiPlaceCard({
   isFavorite = false,
   testID,
 }: TamaguiPlaceCardProps) {
+  const theme = useTheme();
+
   const handlePress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPress?.();
@@ -205,7 +207,7 @@ function TamaguiPlaceCard({
           width: '100%',
           height: 200,
           position: 'relative',
-          backgroundColor: Colors.darkSurface,
+          backgroundColor: theme.surface.val,
         }}
         accessibilityElementsHidden={true}
         importantForAccessibility="no"
@@ -219,7 +221,7 @@ function TamaguiPlaceCard({
             alt={`${place.name} image`}
           />
         ) : (
-          <View style={{ width: '100%', height: '100%', backgroundColor: Colors.darkSurface }} />
+          <View style={{ width: '100%', height: '100%', backgroundColor: theme.surface.val }} />
         )}
 
         {/* Trust badges - top left */}
@@ -324,14 +326,14 @@ function TamaguiPlaceCard({
                   paddingVertical={8}
                   paddingHorizontal={10}
                   borderRadius={10}
-                  backgroundColor={Colors.darkSurfaceElevated as any}
+                  backgroundColor="$surfaceElevated"
                   alignItems="center"
                   gap={4}
                 >
-                  <Text fontSize={13} fontWeight="700" color={Colors.darkTextPrimary as any}>
+                  <Text fontSize={13} fontWeight="700" color="$textPrimary">
                     {item.block.value}
                   </Text>
-                  <Text fontSize={11} fontWeight="500" color={Colors.darkTextTertiary as any}>
+                  <Text fontSize={11} fontWeight="500" color="$textTertiary">
                     {item.label}
                   </Text>
                   <ConfidenceBadge confidence={item.block.confidence} size="sm" />

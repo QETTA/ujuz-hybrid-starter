@@ -6,19 +6,27 @@
  * - iOS Maps-style circular action buttons
  * - Card-based insight sections
  * - Dynamic CTA based on data confidence
+ * - Tamagui useTheme() for all color tokens
  */
 
 import { useMemo, useState, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, ScrollView, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { useTheme } from 'tamagui';
 import { Colors, Layout } from '@/app/constants';
 import { usePlaceStore } from '@/app/stores/placeStore';
 import { ConfidenceBadge, InsightCard, ProvenanceFooter } from '@/app/components/dataBlock';
-import { TamaguiEmptyState, TamaguiText, TamaguiPressableScale } from '@/app/design-system';
+import {
+  TamaguiEmptyState,
+  TamaguiText,
+  TamaguiPressableScale,
+  SocialProofBadge,
+  TamaguiHeader,
+} from '@/app/design-system';
 import { OptimizedImage } from '@/app/components/shared';
 import { useToast } from '@/app/components/shared/Toast';
 import { useInsights } from '@/app/hooks/useInsights';
@@ -26,41 +34,39 @@ import { useAnalytics } from '@/app/hooks/useAnalytics';
 import { COPY } from '@/app/copy/copy.ko';
 import type { RootStackNavigationProp } from '@/app/types/navigation';
 import type { DataBlock } from '@/app/types/dataBlock';
+import type { ViewStyle, TextStyle, ImageStyle } from 'react-native';
 
 const stagger = (i: number) =>
   FadeInDown.delay(i * Layout.stagger.delay)
     .springify()
     .damping(Layout.stagger.damping);
 
-// Action button config
+// Action button config (color removed; we use theme.textPrimary.val at render time)
 const ACTIONS = [
   {
     icon: 'call-outline' as const,
     label: COPY.ACTION_CALL,
-    color: Colors.darkTextPrimary,
     a11yLabel: '전화하기',
   },
   {
     icon: 'navigate-outline' as const,
     label: COPY.ACTION_DIRECTIONS,
-    color: Colors.darkTextPrimary,
     a11yLabel: '지도에서 보기',
   },
   {
     icon: 'share-outline' as const,
     label: COPY.ACTION_SHARE,
-    color: Colors.darkTextPrimary,
     a11yLabel: '공유하기',
   },
   {
     icon: 'bookmark-outline' as const,
     label: COPY.ACTION_SAVE,
-    color: Colors.darkTextPrimary,
     a11yLabel: '저장하기',
   },
 ];
 
 export default function PlaceDetailScreen() {
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<RootStackNavigationProp>();
   const { selectedPlace, toggleFavorite, isFavorite } = usePlaceStore();
@@ -92,6 +98,14 @@ export default function PlaceDetailScreen() {
   }, [blocks]);
 
   const sourceCount = useMemo(() => new Set(blocks.map((b) => b.source)).size, [blocks]);
+
+  /** Extract numeric peer-visit count from the peerVisits value string */
+  const peerVisitCount = useMemo(() => {
+    const raw = insights?.peerVisits?.value;
+    if (!raw) return 0;
+    const match = String(raw).match(/(\d+)/);
+    return match ? Number(match[1]) : 0;
+  }, [insights]);
 
   const primaryCta = useMemo(() => {
     const isReliable = (block?: DataBlock) => block && block.confidence >= 0.6;
@@ -173,6 +187,9 @@ export default function PlaceDetailScreen() {
       });
   }, [insights]);
 
+  // ── Styles (theme-aware, computed inside component) ──────────────────
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   if (!selectedPlace) {
     return (
       <View style={[styles.empty, { paddingTop: insets.top + 40 }]}>
@@ -208,40 +225,26 @@ export default function PlaceDetailScreen() {
         {selectedPlace.thumbnailUrl ? (
           <OptimizedImage
             uri={selectedPlace.thumbnailUrl}
-            style={styles.heroImage}
+            style={styles.heroImage as ImageStyle}
             alt={`${selectedPlace.name} 사진`}
             accessibilityLabel={`${selectedPlace.name} 사진`}
           />
         ) : (
           <View style={[styles.heroImage, styles.heroPlaceholder]} accessible={false}>
-            <Ionicons name="image-outline" size={48} color={Colors.darkTextTertiary} />
+            <Ionicons name="image-outline" size={48} color={theme.textTertiary.val} />
           </View>
         )}
         <LinearGradient colors={['transparent', Colors.overlayDark]} style={styles.heroGradient} />
 
-        {/* Nav Buttons over hero */}
-        <View style={[styles.heroNav, { paddingTop: insets.top + 8 }]}>
-          <TamaguiPressableScale
-            onPress={() => navigation.goBack()}
-            hapticType="light"
-            style={styles.heroBtn}
-            accessibilityLabel="뒤로 가기"
-          >
-            <Ionicons name="chevron-back" size={22} color={Colors.white} />
-          </TamaguiPressableScale>
-          <TamaguiPressableScale
-            onPress={() => toggleFavorite(selectedPlace.id, selectedPlace)}
-            hapticType="light"
-            style={styles.heroBtn}
-            accessibilityLabel={hasFav ? '저장 취소' : '저장하기'}
-          >
-            <Ionicons
-              name={hasFav ? 'heart' : 'heart-outline'}
-              size={22}
-              color={hasFav ? Colors.error : Colors.white}
-            />
-          </TamaguiPressableScale>
-        </View>
+        {/* TamaguiHeader over hero (transparent, acts as nav) */}
+        <TamaguiHeader
+          title=""
+          showBack
+          onBack={() => navigation.goBack()}
+          rightIcon={hasFav ? 'heart' : 'heart-outline'}
+          onRightPress={() => toggleFavorite(selectedPlace.id, selectedPlace)}
+          blur={false}
+        />
 
         {/* Place Info over hero */}
         <View style={styles.heroInfo}>
@@ -272,7 +275,7 @@ export default function PlaceDetailScreen() {
           <Ionicons
             name="shield-checkmark"
             size={14}
-            color={Colors.darkTextSecondary}
+            color={theme.textSecondary.val}
             accessibilityElementsHidden={true}
             importantForAccessibility="no"
           />
@@ -290,9 +293,20 @@ export default function PlaceDetailScreen() {
         <ConfidenceBadge confidence={overallConfidence} size="sm" />
       </Animated.View>
 
+      {/* Social Proof */}
+      {peerVisitCount > 0 && (
+        <Animated.View entering={stagger(0)} style={styles.socialProofRow}>
+          <SocialProofBadge
+            count={peerVisitCount}
+            label="{count}명이 관심"
+            size="sm"
+          />
+        </Animated.View>
+      )}
+
       {/* Address */}
       <Animated.View entering={stagger(1)} style={styles.addressSection}>
-        <Ionicons name="location-outline" size={16} color={Colors.darkTextTertiary} />
+        <Ionicons name="location-outline" size={16} color={theme.textTertiary.val} />
         <TamaguiText preset="body" textColor="secondary" style={styles.addressText}>
           {selectedPlace.address ?? '주소 정보 없음'}
         </TamaguiText>
@@ -309,7 +323,7 @@ export default function PlaceDetailScreen() {
             accessibilityLabel={action.a11yLabel}
           >
             <View style={styles.actionIconCircle}>
-              <Ionicons name={action.icon} size={22} color={Colors.darkTextPrimary} />
+              <Ionicons name={action.icon} size={22} color={theme.textPrimary.val} />
             </View>
             <TamaguiText
               preset="caption"
@@ -379,7 +393,7 @@ export default function PlaceDetailScreen() {
           <TamaguiText preset="body" weight="bold" style={styles.primaryCtaText}>
             {primaryCta.label}
           </TamaguiText>
-          <Ionicons name="arrow-forward" size={18} color={Colors.darkBg} />
+          <Ionicons name="arrow-forward" size={18} color={theme.background.val} />
         </TamaguiPressableScale>
         <TamaguiText preset="caption" textColor="tertiary" style={styles.primaryCtaHint}>
           {primaryCta.hint}
@@ -395,7 +409,7 @@ export default function PlaceDetailScreen() {
             onPress={() => navigation.navigate('Ask')}
             accessibilityLabel="우주봇에게 질문하기"
           >
-            <Ionicons name="chatbubble-ellipses-outline" size={16} color={Colors.darkTextPrimary} />
+            <Ionicons name="chatbubble-ellipses-outline" size={16} color={theme.textPrimary.val} />
             <TamaguiText
               preset="caption"
               textColor="primary"
@@ -411,7 +425,7 @@ export default function PlaceDetailScreen() {
             onPress={() => navigation.navigate('Feedback')}
             accessibilityLabel="후기 작성하기"
           >
-            <Ionicons name="create-outline" size={16} color={Colors.darkTextPrimary} />
+            <Ionicons name="create-outline" size={16} color={theme.textPrimary.val} />
             <TamaguiText
               preset="caption"
               textColor="primary"
@@ -427,7 +441,7 @@ export default function PlaceDetailScreen() {
             onPress={() => navigation.navigate('Report')}
             accessibilityLabel="정보 정정 요청하기"
           >
-            <Ionicons name="alert-circle-outline" size={16} color={Colors.darkTextPrimary} />
+            <Ionicons name="alert-circle-outline" size={16} color={theme.textPrimary.val} />
             <TamaguiText
               preset="caption"
               textColor="primary"
@@ -443,244 +457,239 @@ export default function PlaceDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.darkBg,
-  },
+// ── Style factory (plain objects, theme-dependent) ──────────────────────
+type Styles = Record<string, ViewStyle | TextStyle | ImageStyle>;
 
-  // Hero Section
-  heroSection: {
-    height: 280,
-    position: 'relative',
-    backgroundColor: Colors.darkSurface,
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
-  heroPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.darkSurface,
-  },
-  heroGradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 160,
-  },
-  heroNav: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.screenPadding,
-  },
-  heroBtn: {
-    width: 36,
-    height: 36,
-    minWidth: 44,
-    minHeight: 44,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroInfo: {
-    position: 'absolute',
-    bottom: 16,
-    left: Layout.screenPadding,
-    right: Layout.screenPadding,
-  },
-  heroName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-  heroMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  heroMetaText: {
-    fontSize: 13,
-    color: Colors.whiteAlpha85,
-  },
+function createStyles(theme: ReturnType<typeof useTheme>): Styles {
+  return {
+    container: {
+      flex: 1,
+      backgroundColor: theme.background.val,
+    },
 
-  // Trust Bar
-  trustBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.screenPadding,
-    paddingVertical: 12,
-    backgroundColor: Colors.darkSurface,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-  },
-  trustBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  trustBarText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.1,
-  },
+    // Hero Section
+    heroSection: {
+      height: 280,
+      position: 'relative',
+      backgroundColor: theme.surface.val,
+    },
+    heroImage: {
+      width: '100%',
+      height: '100%',
+    },
+    heroPlaceholder: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.surface.val,
+    },
+    heroGradient: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: 160,
+    },
+    heroInfo: {
+      position: 'absolute',
+      bottom: 16,
+      left: Layout.screenPadding,
+      right: Layout.screenPadding,
+    },
+    heroName: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: theme.textPrimary.val,
+      letterSpacing: -0.5,
+      textShadowColor: 'rgba(0, 0, 0, 0.6)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 4,
+    },
+    heroMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    heroMetaText: {
+      fontSize: 13,
+      color: 'rgba(255,255,255,0.85)',
+    },
 
-  // Address
-  addressSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Layout.screenPadding,
-    paddingVertical: 14,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-  },
-  addressText: {
-    fontSize: 14,
-    color: Colors.darkTextSecondary,
-    flex: 1,
-  },
+    // Trust Bar
+    trustBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Layout.screenPadding,
+      paddingVertical: 12,
+      backgroundColor: theme.surface.val,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.borderColor.val,
+    },
+    trustBarLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    trustBarText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.textSecondary.val,
+      letterSpacing: -0.1,
+    },
 
-  // Action Buttons
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 16,
-    paddingHorizontal: Layout.screenPadding,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-  },
-  actionBtn: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  actionIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.darkSurfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  actionLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.1,
-  },
+    // Social Proof
+    socialProofRow: {
+      paddingHorizontal: Layout.screenPadding,
+      paddingVertical: 8,
+      backgroundColor: theme.surface.val,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.borderColor.val,
+    },
 
-  // Sections
-  section: {
-    marginTop: 20,
-    paddingHorizontal: Layout.screenPadding,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-  },
-  sectionCard: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-    gap: 10,
-  },
-  sectionEmptyCard: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 14,
-    padding: 20,
-    alignItems: 'center',
-  },
-  sectionEmpty: {
-    fontSize: 13,
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-  },
-  grid: {
-    gap: 8,
-  },
+    // Address
+    addressSection: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: Layout.screenPadding,
+      paddingVertical: 14,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.borderColor.val,
+    },
+    addressText: {
+      fontSize: 14,
+      color: theme.textSecondary.val,
+      flex: 1,
+    },
 
-  // Primary CTA
-  ctaSection: {
-    marginTop: 24,
-    paddingHorizontal: Layout.screenPadding,
-  },
-  primaryCta: {
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  primaryCtaText: {
-    color: Colors.darkBg,
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  primaryCtaHint: {
-    marginTop: 8,
-    fontSize: 12,
-    color: Colors.darkTextTertiary,
-    textAlign: 'center',
-    letterSpacing: -0.2,
-  },
+    // Action Buttons
+    actionsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      paddingVertical: 16,
+      paddingHorizontal: Layout.screenPadding,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.borderColor.val,
+    },
+    actionBtn: {
+      alignItems: 'center',
+      gap: 6,
+    },
+    actionIconCircle: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: theme.surfaceElevated.val,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
+    },
+    actionLabel: {
+      fontSize: 11,
+      fontWeight: '500',
+      color: theme.textSecondary.val,
+      letterSpacing: -0.1,
+    },
 
-  // Secondary Actions
-  secondaryRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  secondaryBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: Colors.darkSurface,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  secondaryText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.2,
-  },
+    // Sections
+    section: {
+      marginTop: 20,
+      paddingHorizontal: Layout.screenPadding,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 10,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.textPrimary.val,
+      letterSpacing: -0.3,
+    },
+    sectionCard: {
+      backgroundColor: theme.surface.val,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
+      gap: 10,
+    },
+    sectionEmptyCard: {
+      backgroundColor: theme.surface.val,
+      borderRadius: 14,
+      padding: 20,
+      alignItems: 'center',
+    },
+    sectionEmpty: {
+      fontSize: 13,
+      color: theme.textTertiary.val,
+      letterSpacing: -0.2,
+    },
+    grid: {
+      gap: 8,
+    },
 
-  // Empty
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 16,
-    backgroundColor: Colors.darkBg,
-  },
-});
+    // Primary CTA
+    ctaSection: {
+      marginTop: 24,
+      paddingHorizontal: Layout.screenPadding,
+    },
+    primaryCta: {
+      height: 52,
+      borderRadius: 14,
+      backgroundColor: Colors.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    primaryCtaText: {
+      color: theme.background.val,
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: -0.3,
+    },
+    primaryCtaHint: {
+      marginTop: 8,
+      fontSize: 12,
+      color: theme.textTertiary.val,
+      textAlign: 'center',
+      letterSpacing: -0.2,
+    },
+
+    // Secondary Actions
+    secondaryRow: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    secondaryBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 12,
+      borderRadius: 12,
+      backgroundColor: theme.surface.val,
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
+    },
+    secondaryText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.textPrimary.val,
+      letterSpacing: -0.2,
+    },
+
+    // Empty
+    empty: {
+      flex: 1,
+      alignItems: 'center',
+      gap: 16,
+      backgroundColor: theme.background.val,
+    },
+  };
+}

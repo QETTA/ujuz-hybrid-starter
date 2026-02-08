@@ -4,8 +4,10 @@
  * Error state display with retry action
  */
 
+import { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from 'tamagui';
 import { Colors } from '@/app/constants/Colors';
 import { TamaguiText, TamaguiPressableScale } from '@/app/design-system';
 import { COPY } from '@/app/copy/copy.ko';
@@ -23,6 +25,46 @@ export default function ErrorView({
   onRetry,
   icon = 'alert-circle-outline',
 }: ErrorViewProps) {
+  const theme = useTheme();
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+      backgroundColor: theme.background.val,
+    },
+    icon: {
+      marginBottom: 20,
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: '600',
+      letterSpacing: -0.3,
+      color: theme.textPrimary.val,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    message: {
+      fontSize: 17,
+      color: theme.textTertiary.val,
+      textAlign: 'center',
+      marginBottom: 24,
+    },
+    retryButton: {
+      backgroundColor: Colors.primary,
+      paddingHorizontal: 32,
+      paddingVertical: 14,
+      borderRadius: 14,
+    },
+    retryText: {
+      fontSize: 17,
+      fontWeight: '600',
+      color: theme.background.val,
+    },
+  }), [theme]);
+
   return (
     <View style={styles.container}>
       <Ionicons name={icon} size={64} color={Colors.iosSystemRed} style={styles.icon} />
@@ -48,41 +90,3 @@ export default function ErrorView({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: Colors.darkBg,
-  },
-  icon: {
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '600',
-    letterSpacing: -0.3,
-    color: Colors.darkTextPrimary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  message: {
-    fontSize: 17,
-    color: Colors.darkTextTertiary,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  retryButton: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 14,
-  },
-  retryText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: Colors.darkBg,
-  },
-});

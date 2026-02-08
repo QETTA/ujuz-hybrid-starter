@@ -1,5 +1,5 @@
 /**
- * Sentry Configuration for KidsMap Mobile (Mock)
+ * Sentry Configuration for UJUz Mobile (Mock)
  *
  * Re-exports from monitoring/sentry.ts to maintain compatibility
  */

@@ -1,11 +1,10 @@
 /**
  * PeerStatusBar - 또래 실시간 상태 바
  *
- * 2026 KidsMap 킬러 기능
- * 화면 상단에 표시되어 또래 부모들의 실시간 활동을 보여줌
+ * 2026 UJUz 테마 토큰 기반
  */
 
-import { XStack, YStack, styled } from 'tamagui';
+import { XStack, YStack, useTheme } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useAnimatedStyle,
@@ -14,55 +13,18 @@ import Animated, {
   withSequence,
 } from 'react-native-reanimated';
 import { TamaguiGlassCard, TamaguiText } from '@/app/design-system/components';
-import { Colors } from '@/app/constants';
 import type { PeerLiveStatus } from '@/app/types/peerSync';
 
-// ============================================
-// Types
-// ============================================
-
 export interface PeerStatusBarProps {
-  /** 또래 실시간 현황 */
   status: PeerLiveStatus;
-  /** 내 아이 나이 (개월) */
   childAgeMonths: number;
-  /** 클릭 핸들러 */
   onPress?: () => void;
-  /** 테스트 ID */
   testID?: string;
 }
 
-// ============================================
-// Styled Components
-// ============================================
-
-const StatusContainer = styled(XStack, {
-  paddingHorizontal: '$3',
-  paddingVertical: '$2',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-});
-
-const StatusItem = styled(XStack, {
-  alignItems: 'center',
-  gap: '$1',
-});
-
-const PulsingDot = styled(Animated.View, {
-  width: 8,
-  height: 8,
-  borderRadius: 4,
-  backgroundColor: '$success',
-});
-
-// Removed styled Text components - using TamaguiText instead
-
-// ============================================
-// Component
-// ============================================
-
 export function PeerStatusBar({ status, childAgeMonths, onPress, testID }: PeerStatusBarProps) {
-  // Pulsing animation for live indicator
+  const theme = useTheme();
+
   const pulseStyle = useAnimatedStyle(() => {
     return {
       opacity: withRepeat(
@@ -92,10 +54,24 @@ export function PeerStatusBar({ status, childAgeMonths, onPress, testID }: PeerS
       testID={testID}
       accessibilityLabel={`또래 현황: 현재 ${status.activeNow}명 활동 중`}
     >
-      <StatusContainer>
-        {/* Live Status */}
-        <StatusItem>
-          <PulsingDot style={pulseStyle} />
+      <XStack
+        paddingHorizontal="$3"
+        paddingVertical="$2"
+        alignItems="center"
+        justifyContent="space-between"
+      >
+        <XStack alignItems="center" gap="$1">
+          <Animated.View
+            style={[
+              {
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: theme.success.val,
+              },
+              pulseStyle,
+            ]}
+          />
           <YStack>
             <XStack alignItems="baseline" gap="$1">
               <TamaguiText preset="body" textColor="primary" weight="semibold">
@@ -109,11 +85,10 @@ export function PeerStatusBar({ status, childAgeMonths, onPress, testID }: PeerS
               {ageRangeText} 또래
             </TamaguiText>
           </YStack>
-        </StatusItem>
+        </XStack>
 
-        {/* Today Stats */}
-        <StatusItem>
-          <Ionicons name="today-outline" size={16} color={Colors.iosTertiaryLabel} />
+        <XStack alignItems="center" gap="$1">
+          <Ionicons name="today-outline" size={16} color={theme.textTertiary.val} />
           <YStack alignItems="center">
             <TamaguiText preset="body" textColor="primary" weight="semibold">
               {status.activeToday.toLocaleString()}
@@ -122,11 +97,10 @@ export function PeerStatusBar({ status, childAgeMonths, onPress, testID }: PeerS
               오늘 활동
             </TamaguiText>
           </YStack>
-        </StatusItem>
+        </XStack>
 
-        {/* Nearby */}
-        <StatusItem>
-          <Ionicons name="location-outline" size={16} color={Colors.iosTertiaryLabel} />
+        <XStack alignItems="center" gap="$1">
+          <Ionicons name="location-outline" size={16} color={theme.textTertiary.val} />
           <YStack alignItems="center">
             <TamaguiText preset="body" textColor="primary" weight="semibold">
               {status.nearbyActive.toLocaleString()}
@@ -135,11 +109,10 @@ export function PeerStatusBar({ status, childAgeMonths, onPress, testID }: PeerS
               주변 또래
             </TamaguiText>
           </YStack>
-        </StatusItem>
+        </XStack>
 
-        {/* Arrow indicator */}
-        <Ionicons name="chevron-forward" size={20} color={Colors.iosQuaternaryLabel} />
-      </StatusContainer>
+        <Ionicons name="chevron-forward" size={20} color={theme.textTertiary.val} />
+      </XStack>
     </TamaguiGlassCard>
   );
 }

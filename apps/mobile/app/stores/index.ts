@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - Zustand Stores Index
+ * UJUz Mobile - Zustand Stores Index
  */
 
 export * from './admissionStore';

@@ -20,7 +20,7 @@ const StyledButton = styled(TButton, {
   justifyContent: 'center',
   pressStyle: {
     opacity: 0.8,
-    scale: 0.98,
+    scale: 0.97,
   },
 
   variants: {
@@ -72,6 +72,22 @@ const StyledButton = styled(TButton, {
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 2,
+      },
+      premium: {
+        backgroundColor: '$premium',
+        shadowColor: '$premium',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 6,
+      },
+      deal: {
+        backgroundColor: '$deal',
+        shadowColor: '$deal',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+        elevation: 6,
       },
     },
 
@@ -157,6 +173,12 @@ const ButtonText = styled(Text, {
       danger: {
         color: '$textInverse',
       },
+      premium: {
+        color: '$textInverse',
+      },
+      deal: {
+        color: '$textInverse',
+      },
     },
 
     size: {
@@ -197,7 +219,9 @@ export type ButtonVariant =
   | 'ghost'
   | 'success'
   | 'warning'
-  | 'danger';
+  | 'danger'
+  | 'premium'
+  | 'deal';
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 export interface TamaguiButtonProps {

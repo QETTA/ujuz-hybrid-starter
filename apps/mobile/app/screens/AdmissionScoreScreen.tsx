@@ -7,19 +7,25 @@
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { XStack } from 'tamagui';
+import { ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { useTheme, XStack, YStack, Text } from 'tamagui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-// LinearGradient removed — dark-first flat bg
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 
 import type { RootStackParamList, RootStackNavigationProp } from '@/app/types/navigation';
 
-import { Colors, Layout } from '@/app/constants';
-import { TamaguiText, TamaguiPressableScale } from '@/app/design-system';
+import { Layout } from '@/app/constants';
+import {
+  TamaguiPressableScale,
+  TamaguiHeader,
+  TamaguiInput,
+  TamaguiChip,
+  TamaguiChipGroup,
+  QuotaBar,
+  PremiumGate,
+} from '@/app/design-system';
 import { useAdmissionScore } from '@/app/hooks/useAdmissionScore';
 import { usePayment } from '@/app/hooks/usePayment';
 import { useProfileStore } from '@/app/stores/profileStore';
@@ -27,6 +33,7 @@ import { placesService } from '@/app/services/mongo/places';
 import type { AgeClass, PriorityType } from '@/app/types/auth';
 import type { PlaceWithDistance } from '@/app/types/places';
 import type { AdmissionScoreInput } from '@/app/types/admission';
+import { PLAN_LIMITS } from '@/app/types/subscription';
 
 // ─── Constants ───────────────────────────────────────────
 
@@ -66,12 +73,13 @@ export interface AdmissionScoreScreenProps {
 
 export function AdmissionScoreScreen({ testID }: AdmissionScoreScreenProps) {
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
   const navigation = useNavigation<RootStackNavigationProp>();
   const route = useRoute<RouteProp<RootStackParamList, 'AdmissionScore'>>();
 
   // ─── Data ──────────────────────────────────────────
   const { calculateScore, isCalculating } = useAdmissionScore();
-  const { canUseFeature, getRemainingQuota } = usePayment();
+  const { canUseFeature, getRemainingQuota, currentTier } = usePayment();
   const childName = useProfileStore((s) => s.childName);
   const childBirthDate = useProfileStore((s) => s.childBirthDate);
   const getChildAgeMonths = useProfileStore((s) => s.getChildAgeMonths);
@@ -95,6 +103,9 @@ export function AdmissionScoreScreen({ testID }: AdmissionScoreScreenProps) {
   const remaining = getRemainingQuota('admission_score_limit');
   const canUse = canUseFeature('admission_score_limit');
 
+  const admissionRawLimit = PLAN_LIMITS[currentTier].admission_score_limit;
+  const totalLimit = admissionRawLimit === -1 ? 0 : admissionRawLimit;
+
   const ageLabel = useMemo(() => {
     const months = getChildAgeMonths();
     return months >= 12 ? `${Math.floor(months / 12)}세` : `${months}개월`;
@@ -104,6 +115,8 @@ export function AdmissionScoreScreen({ testID }: AdmissionScoreScreenProps) {
     () => ADDITIONAL_PRIORITY_OPTIONS.filter((p) => p.value !== selectedPriority),
     [selectedPriority]
   );
+
+  const headerHeight = 56 + insets.top;
 
   // ─── Effects ───────────────────────────────────────
   useEffect(() => {
@@ -183,240 +196,443 @@ export function AdmissionScoreScreen({ testID }: AdmissionScoreScreenProps) {
 
   // ─── Render ────────────────────────────────────────
   return (
-    <View testID={testID} style={styles.root}>
+    <YStack testID={testID} flex={1} backgroundColor="$background">
+      <TamaguiHeader
+        title="입학 가능성 예측"
+        showBack
+        onBack={() => navigation.goBack()}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingTop: headerHeight, paddingBottom: 100 }}
       >
-        {/* ── 헤더 ─────────────────────────────────── */}
-        <Animated.View
-          entering={stagger(0)}
-          style={[styles.header, { paddingTop: insets.top + 8 }]}
-        >
-          <TamaguiPressableScale
-            hapticType="light"
-            style={styles.hitArea}
-            onPress={() => navigation.goBack()}
-            accessibilityLabel="뒤로 가기"
-            accessibilityHint="이전 화면으로 돌아갑니다"
-          >
-            <Ionicons name="chevron-back" size={22} color={Colors.darkTextPrimary} />
-          </TamaguiPressableScale>
-
-          <View style={styles.headerCenter}>
-            <TamaguiText style={styles.headerTitle}>입학 가능성 예측</TamaguiText>
-          </View>
-
-          <View style={styles.quotaBadge}>
-            <TamaguiText style={styles.quotaText}>
-              {remaining === Infinity ? '무제한' : `${remaining}회`}
-            </TamaguiText>
-          </View>
-        </Animated.View>
-
         {/* ── 스텝 프로그레스 ─────────────────────── */}
-        <Animated.View entering={stagger(1)} style={styles.stepSection}>
-          <View style={styles.stepRow}>
-            <View style={[styles.stepDot, styles.stepDotActive]}>
-              <TamaguiText style={styles.stepNum}>1</TamaguiText>
-            </View>
-            <View style={[styles.stepLine, styles.stepLineActive]} />
-            <View
-              style={[
-                styles.stepDot,
-                selectedFacility ? styles.stepDotActive : styles.stepDotInactive,
-              ]}
+        <Animated.View
+          entering={stagger(1)}
+          style={{ paddingHorizontal: Layout.screenPadding, marginTop: 16 }}
+        >
+          <XStack alignItems="center" justifyContent="center">
+            <YStack
+              width={28}
+              height={28}
+              borderRadius={14}
+              alignItems="center"
+              justifyContent="center"
+              backgroundColor="$primary"
             >
-              <TamaguiText style={[styles.stepNum, !selectedFacility && styles.stepNumInactive]}>
+              <Text fontSize={12} fontWeight="700" color="$background" letterSpacing={-0.2}>
+                1
+              </Text>
+            </YStack>
+            <YStack
+              flex={1}
+              height={2}
+              backgroundColor="$primary"
+              marginHorizontal={4}
+              maxWidth={60}
+            />
+            <YStack
+              width={28}
+              height={28}
+              borderRadius={14}
+              alignItems="center"
+              justifyContent="center"
+              backgroundColor={selectedFacility ? '$primary' : '$surfaceElevated'}
+            >
+              <Text
+                fontSize={12}
+                fontWeight="700"
+                color={selectedFacility ? '$background' : '$textTertiary'}
+                letterSpacing={-0.2}
+              >
                 2
-              </TamaguiText>
-            </View>
-            <View style={styles.stepLine} />
-            <View style={[styles.stepDot, styles.stepDotInactive]}>
-              <TamaguiText style={[styles.stepNum, styles.stepNumInactive]}>3</TamaguiText>
-            </View>
-          </View>
-          <View style={styles.stepLabels}>
-            <TamaguiText style={styles.stepLabel}>시설 선택</TamaguiText>
-            <TamaguiText style={[styles.stepLabel, !selectedFacility && styles.stepLabelInactive]}>
+              </Text>
+            </YStack>
+            <YStack
+              flex={1}
+              height={2}
+              backgroundColor="$surfaceElevated"
+              marginHorizontal={4}
+              maxWidth={60}
+            />
+            <YStack
+              width={28}
+              height={28}
+              borderRadius={14}
+              alignItems="center"
+              justifyContent="center"
+              backgroundColor="$surfaceElevated"
+            >
+              <Text fontSize={12} fontWeight="700" color="$textTertiary" letterSpacing={-0.2}>
+                3
+              </Text>
+            </YStack>
+          </XStack>
+          <XStack justifyContent="space-between" marginTop={6} paddingHorizontal={4}>
+            <Text
+              fontSize={11}
+              fontWeight="600"
+              color="$textPrimary"
+              letterSpacing={-0.2}
+              textAlign="center"
+              width={60}
+            >
+              시설 선택
+            </Text>
+            <Text
+              fontSize={11}
+              fontWeight="600"
+              color={selectedFacility ? '$textPrimary' : '$textTertiary'}
+              letterSpacing={-0.2}
+              textAlign="center"
+              width={60}
+            >
               정보 입력
-            </TamaguiText>
-            <TamaguiText style={[styles.stepLabel, styles.stepLabelInactive]}>
+            </Text>
+            <Text
+              fontSize={11}
+              fontWeight="600"
+              color="$textTertiary"
+              letterSpacing={-0.2}
+              textAlign="center"
+              width={60}
+            >
               결과 확인
-            </TamaguiText>
-          </View>
+            </Text>
+          </XStack>
         </Animated.View>
 
         {/* ── 브랜드 ───────────────────────────────── */}
-        <Animated.View entering={stagger(2)} style={styles.section}>
-          <TamaguiText style={styles.logo}>Ujuz</TamaguiText>
-          <TamaguiText style={styles.pageDesc}>
+        <Animated.View
+          entering={stagger(2)}
+          style={{ paddingHorizontal: Layout.screenPadding, marginTop: 20 }}
+        >
+          <Text
+            fontSize={28}
+            fontWeight="800"
+            fontStyle="italic"
+            color="$textPrimary"
+            letterSpacing={-1.8}
+          >
+            Ujuz
+          </Text>
+          <Text
+            fontSize={22}
+            fontWeight="600"
+            color="$textPrimary"
+            letterSpacing={-0.8}
+            lineHeight={32}
+            marginTop={8}
+          >
             이 어린이집에 내 아이가{'\n'}들어갈 수 있을까?
-          </TamaguiText>
+          </Text>
         </Animated.View>
 
         {/* ── 어린이집 검색 ────────────────────────── */}
-        <Animated.View entering={stagger(3)} style={styles.section}>
-          <TamaguiText style={styles.sectionLabel}>어린이집 선택</TamaguiText>
+        <Animated.View
+          entering={stagger(3)}
+          style={{ paddingHorizontal: Layout.screenPadding, marginTop: 20 }}
+        >
+          <Text
+            fontSize={14}
+            fontWeight="700"
+            color="$textPrimary"
+            letterSpacing={-0.3}
+            marginBottom={10}
+          >
+            어린이집 선택
+          </Text>
 
           {selectedFacility ? (
-            <TamaguiPressableScale
-              hapticType="light"
-              style={styles.selectedCard}
-              onPress={handleClearFacility}
-            >
-              <View style={styles.selectedInfo}>
-                <TamaguiText style={styles.facilityName}>{selectedFacility.name}</TamaguiText>
-                <TamaguiText style={styles.facilityAddr}>{selectedFacility.address}</TamaguiText>
-              </View>
-              <TamaguiText style={styles.changeLabel}>변경</TamaguiText>
+            <TamaguiPressableScale hapticType="light" onPress={handleClearFacility}>
+              <XStack
+                backgroundColor="$surface"
+                borderRadius={12}
+                borderWidth={0.5}
+                borderColor="$borderColor"
+                padding={16}
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <YStack flex={1}>
+                  <Text
+                    fontSize={15}
+                    fontWeight="600"
+                    color="$textPrimary"
+                    letterSpacing={-0.3}
+                  >
+                    {selectedFacility.name}
+                  </Text>
+                  <Text
+                    fontSize={12}
+                    fontWeight="400"
+                    color="$textTertiary"
+                    letterSpacing={-0.1}
+                    marginTop={2}
+                  >
+                    {selectedFacility.address}
+                  </Text>
+                </YStack>
+                <Text fontSize={13} fontWeight="600" color="$primary" letterSpacing={-0.2}>
+                  변경
+                </Text>
+              </XStack>
             </TamaguiPressableScale>
           ) : (
-            <View>
-              <View style={styles.searchBox}>
-                <Ionicons
-                  name="search"
-                  size={16}
-                  color={Colors.darkTextTertiary}
-                  style={styles.searchIcon}
-                />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="어린이집 이름 검색"
-                  placeholderTextColor={Colors.darkTextTertiary}
-                  value={searchQuery}
-                  onChangeText={handleSearch}
-                  autoCorrect={false}
-                  returnKeyType="search"
-                />
-              </View>
+            <YStack>
+              <TamaguiInput
+                variant="search"
+                placeholder="어린이집 이름 검색"
+                value={searchQuery}
+                onChangeText={handleSearch}
+              />
 
               {searchResults.length > 0 && (
-                <View style={styles.dropdown}>
+                <YStack
+                  marginTop={4}
+                  backgroundColor="$surface"
+                  borderRadius={12}
+                  borderWidth={0.5}
+                  borderColor="$borderColor"
+                  overflow="hidden"
+                >
                   {searchResults.map((place) => (
                     <TamaguiPressableScale
                       key={place.id}
                       hapticType="light"
-                      style={styles.dropdownItem}
                       onPress={() => handleSelectFacility(place)}
                     >
-                      <TamaguiText style={styles.dropdownName}>{place.name}</TamaguiText>
-                      <TamaguiText style={styles.dropdownAddr}>{place.address}</TamaguiText>
+                      <YStack
+                        paddingHorizontal={16}
+                        paddingVertical={12}
+                        borderBottomWidth={0.5}
+                        borderBottomColor="$borderColor"
+                      >
+                        <Text
+                          fontSize={14}
+                          fontWeight="600"
+                          color="$textPrimary"
+                          letterSpacing={-0.2}
+                        >
+                          {place.name}
+                        </Text>
+                        <Text
+                          fontSize={12}
+                          fontWeight="400"
+                          color="$textTertiary"
+                          letterSpacing={-0.1}
+                          marginTop={2}
+                        >
+                          {place.address}
+                        </Text>
+                      </YStack>
                     </TamaguiPressableScale>
                   ))}
-                </View>
+                </YStack>
               )}
-            </View>
+            </YStack>
           )}
         </Animated.View>
 
         {/* ── 아이 정보 (자동 반영) ─────────────────── */}
-        <Animated.View entering={stagger(4)} style={styles.section}>
-          <TamaguiText style={styles.sectionLabel}>아이 정보</TamaguiText>
-          <View style={styles.infoCard}>
+        <Animated.View
+          entering={stagger(4)}
+          style={{ paddingHorizontal: Layout.screenPadding, marginTop: 20 }}
+        >
+          <Text
+            fontSize={14}
+            fontWeight="700"
+            color="$textPrimary"
+            letterSpacing={-0.3}
+            marginBottom={10}
+          >
+            아이 정보
+          </Text>
+          <YStack
+            backgroundColor="$surface"
+            borderRadius={16}
+            borderWidth={0.5}
+            borderColor="$borderColor"
+            paddingHorizontal={18}
+            paddingVertical={12}
+          >
             <InfoRow label="이름" value={childName} />
             <InfoRow label="생년월일" value={childBirthDate} />
             <InfoRow label="월령" value={`${getChildAgeMonths()}개월`} />
             <InfoRow label="연령반" value={ageLabel} />
-          </View>
+          </YStack>
         </Animated.View>
 
         {/* ── 희망 연령반 ───────────────────────────── */}
-        <Animated.View entering={stagger(4)} style={styles.section}>
-          <TamaguiText style={styles.sectionLabel}>희망 연령반</TamaguiText>
-          <View style={styles.chipRow}>
+        <Animated.View
+          entering={stagger(4)}
+          style={{ paddingHorizontal: Layout.screenPadding, marginTop: 20 }}
+        >
+          <Text
+            fontSize={14}
+            fontWeight="700"
+            color="$textPrimary"
+            letterSpacing={-0.3}
+            marginBottom={10}
+          >
+            희망 연령반
+          </Text>
+          <TamaguiChipGroup>
             {AGE_CLASSES.map((cls) => (
-              <SelectChip
+              <TamaguiChip
                 key={cls}
                 label={cls}
                 selected={selectedClass === cls}
                 onPress={() => setSelectedClass(cls)}
+                size="sm"
               />
             ))}
-          </View>
+          </TamaguiChipGroup>
         </Animated.View>
 
         {/* ── 우선순위 유형 ─────────────────────────── */}
-        <Animated.View entering={stagger(5)} style={styles.section}>
-          <TamaguiText style={styles.sectionLabel}>입소 우선순위</TamaguiText>
-          <View style={styles.chipRow}>
+        <Animated.View
+          entering={stagger(5)}
+          style={{ paddingHorizontal: Layout.screenPadding, marginTop: 20 }}
+        >
+          <Text
+            fontSize={14}
+            fontWeight="700"
+            color="$textPrimary"
+            letterSpacing={-0.3}
+            marginBottom={10}
+          >
+            입소 우선순위
+          </Text>
+          <TamaguiChipGroup>
             {PRIORITY_OPTIONS.map(({ value, label }) => (
-              <SelectChip
+              <TamaguiChip
                 key={value}
                 label={label}
                 selected={selectedPriority === value}
                 onPress={() => setSelectedPriority(value)}
+                size="sm"
               />
             ))}
-          </View>
+          </TamaguiChipGroup>
         </Animated.View>
 
         {/* ── 추가 우선순위 ─────────────────────────── */}
-        <Animated.View entering={stagger(6)} style={styles.section}>
-          <TamaguiText style={styles.sectionLabel}>추가 우선순위</TamaguiText>
-          <TamaguiText style={styles.sectionHint}>해당하는 항목을 모두 선택하세요</TamaguiText>
-          <View style={styles.chipRow}>
+        <Animated.View
+          entering={stagger(6)}
+          style={{ paddingHorizontal: Layout.screenPadding, marginTop: 20 }}
+        >
+          <Text
+            fontSize={14}
+            fontWeight="700"
+            color="$textPrimary"
+            letterSpacing={-0.3}
+            marginBottom={10}
+          >
+            추가 우선순위
+          </Text>
+          <Text
+            fontSize={12}
+            fontWeight="400"
+            color="$textTertiary"
+            letterSpacing={-0.2}
+            marginBottom={10}
+            marginTop={-4}
+          >
+            해당하는 항목을 모두 선택하세요
+          </Text>
+          <TamaguiChipGroup>
             {filteredAdditional.map(({ value, label }) => (
-              <CheckChip
+              <TamaguiChip
                 key={value}
                 label={label}
-                checked={additionalPriorities.includes(value)}
+                selected={additionalPriorities.includes(value)}
                 onPress={() => toggleAdditional(value)}
+                size="sm"
+                leftIcon={additionalPriorities.includes(value) ? 'checkmark' : undefined}
               />
             ))}
-          </View>
+          </TamaguiChipGroup>
         </Animated.View>
 
-        {/* ── 무료 횟수 초과 시 페이월 ────────────── */}
+        {/* ── 무료 횟수 초과 시 프리미엄 게이트 ──── */}
         {!canUse && (
-          <Animated.View entering={stagger(7)} style={styles.section}>
-            <TamaguiPressableScale
-              hapticType="medium"
-              onPress={() => navigation.navigate('Subscription')}
+          <Animated.View
+            entering={stagger(7)}
+            style={{ paddingHorizontal: Layout.screenPadding, marginTop: 20 }}
+          >
+            <PremiumGate
+              visible
+              inline
+              onUpgradePress={() => navigation.navigate('Subscription')}
             >
-              <View style={styles.paywallCard}>
-                <TamaguiText style={styles.paywallTitle}>
-                  이번 달 무료 예측을 모두 사용했어요
-                </TamaguiText>
-                <TamaguiText style={styles.paywallBody}>
-                  프리미엄에서 무제한으로 이용하세요
-                </TamaguiText>
-                <View style={styles.paywallCta}>
-                  <TamaguiText style={styles.paywallCtaText}>프리미엄 보기</TamaguiText>
-                  <Ionicons name="chevron-forward" size={14} color={Colors.darkBg} />
-                </View>
-              </View>
-            </TamaguiPressableScale>
+              <></>
+            </PremiumGate>
           </Animated.View>
         )}
 
         {/* ── CTA 버튼 ─────────────────────────────── */}
-        <Animated.View entering={stagger(8)} style={styles.section}>
+        <Animated.View
+          entering={stagger(8)}
+          style={{ paddingHorizontal: Layout.screenPadding, marginTop: 20 }}
+        >
           <TamaguiPressableScale
             hapticType="medium"
-            style={[
-              styles.ctaButton,
-              (!selectedFacility || isCalculating || !canUse) && styles.ctaButtonDisabled,
-            ]}
             onPress={handleCalculate}
             disabled={!selectedFacility || isCalculating || !canUse}
             accessibilityLabel="입학 가능성 확인하기"
             accessibilityHint="입학 가능성을 분석합니다"
           >
-            {isCalculating ? (
-              <ActivityIndicator color={Colors.darkBg} size="small" />
-            ) : (
-              <TamaguiText style={styles.ctaText}>입학 가능성 확인하기</TamaguiText>
-            )}
+            <YStack
+              backgroundColor="$primary"
+              borderRadius={14}
+              paddingVertical={16}
+              alignItems="center"
+              justifyContent="center"
+              marginTop={8}
+            >
+              {isCalculating ? (
+                <ActivityIndicator color={theme.background.val} size="small" />
+              ) : (
+                <Text fontSize={15} fontWeight="600" color="$background" letterSpacing={-0.3}>
+                  입학 가능성 확인하기
+                </Text>
+              )}
+            </YStack>
           </TamaguiPressableScale>
 
-          <TamaguiText style={styles.disclaimer}>
+          <Text
+            fontSize={11}
+            fontWeight="400"
+            color="$textTertiary"
+            letterSpacing={-0.1}
+            textAlign="center"
+            marginTop={10}
+          >
             대기 현황 및 지역 경쟁률 기반 예측 결과입니다
-          </TamaguiText>
+          </Text>
         </Animated.View>
+
+        {/* ── 쿼타 바 ──────────────────────────────── */}
+        {totalLimit > 0 && (
+          <Animated.View
+            entering={stagger(9)}
+            style={{ paddingHorizontal: Layout.screenPadding, marginTop: 24 }}
+          >
+            <QuotaBar
+              label="입학조회"
+              used={totalLimit - remaining}
+              total={totalLimit}
+              icon="school-outline"
+              showUpgradeCta={!canUse}
+              onUpgradePress={() => navigation.navigate('Subscription')}
+            />
+          </Animated.View>
+        )}
       </ScrollView>
-    </View>
+    </YStack>
   );
 }
 
@@ -425,428 +641,14 @@ export function AdmissionScoreScreen({ testID }: AdmissionScoreScreenProps) {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <XStack justifyContent="space-between" alignItems="center" paddingVertical={6}>
-      <TamaguiText style={styles.infoLabel}>{label}</TamaguiText>
-      <TamaguiText style={styles.infoValue}>{value}</TamaguiText>
+      <Text fontSize={13} fontWeight="400" color="$textTertiary" letterSpacing={-0.2}>
+        {label}
+      </Text>
+      <Text fontSize={14} fontWeight="600" color="$textPrimary" letterSpacing={-0.2}>
+        {value}
+      </Text>
     </XStack>
   );
 }
-
-function SelectChip({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TamaguiPressableScale
-      hapticType="light"
-      style={[styles.chip, selected && styles.chipSelected]}
-      onPress={onPress}
-    >
-      <TamaguiText style={[styles.chipText, selected && styles.chipTextSelected]}>
-        {label}
-      </TamaguiText>
-    </TamaguiPressableScale>
-  );
-}
-
-function CheckChip({
-  label,
-  checked,
-  onPress,
-}: {
-  label: string;
-  checked: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TamaguiPressableScale
-      hapticType="light"
-      style={[styles.checkChip, checked && styles.checkChipChecked]}
-      onPress={onPress}
-    >
-      {checked && (
-        <Ionicons name="checkmark" size={12} color={Colors.darkBg} style={styles.checkIcon} />
-      )}
-      <TamaguiText style={[styles.checkChipText, checked && styles.checkChipTextChecked]}>
-        {label}
-      </TamaguiText>
-    </TamaguiPressableScale>
-  );
-}
-
-// ═════════════════════════════════════════════════════════
-// Styles -- 2026 Splash-consistent, monochrome
-// ═════════════════════════════════════════════════════════
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.darkBg,
-  },
-
-  // ── 헤더 ──────────────────────────────────────
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.screenPadding,
-    paddingBottom: 4,
-  },
-  hitArea: {
-    padding: 12,
-    margin: -12,
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-  },
-  quotaBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 10,
-  },
-  quotaText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.2,
-  },
-
-  // ── 스텝 프로그레스 ────────────────────────────
-  stepSection: {
-    paddingHorizontal: Layout.screenPadding,
-    marginTop: 16,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 0,
-  },
-  stepDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepDotActive: {
-    backgroundColor: Colors.primary,
-  },
-  stepDotInactive: {
-    backgroundColor: Colors.darkSurfaceElevated,
-  },
-  stepNum: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.darkBg,
-    letterSpacing: -0.2,
-  },
-  stepNumInactive: {
-    color: Colors.darkTextTertiary,
-  },
-  stepLine: {
-    flex: 1,
-    height: 2,
-    backgroundColor: Colors.darkSurfaceElevated,
-    marginHorizontal: 4,
-    maxWidth: 60,
-  },
-  stepLineActive: {
-    backgroundColor: Colors.primary,
-  },
-  stepLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 6,
-    paddingHorizontal: 4,
-  },
-  stepLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.2,
-    textAlign: 'center',
-    width: 60,
-  },
-  stepLabelInactive: {
-    color: Colors.darkTextTertiary,
-  },
-
-  // ── 공통 ──────────────────────────────────────
-  section: {
-    paddingHorizontal: Layout.screenPadding,
-    marginTop: 20,
-  },
-  logo: {
-    fontSize: 28,
-    fontWeight: '800',
-    fontStyle: 'italic',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -1.8,
-  },
-  pageDesc: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.8,
-    lineHeight: 32,
-    marginTop: 8,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-    marginBottom: 10,
-  },
-  sectionHint: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-    marginBottom: 10,
-    marginTop: -4,
-  },
-
-  // ── 검색 ──────────────────────────────────────
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 12,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-    paddingHorizontal: 16,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    height: 48,
-    fontSize: 15,
-    fontWeight: '400',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.2,
-  },
-  dropdown: {
-    marginTop: 4,
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 12,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-    overflow: 'hidden',
-  },
-  dropdownItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-  },
-  dropdownName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.2,
-  },
-  dropdownAddr: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.1,
-    marginTop: 2,
-  },
-
-  // ── 선택된 시설 ────────────────────────────────
-  selectedCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 12,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-    padding: 16,
-  },
-  selectedInfo: {
-    flex: 1,
-  },
-  facilityName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-  },
-  facilityAddr: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.1,
-    marginTop: 2,
-  },
-  changeLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.primary,
-    letterSpacing: -0.2,
-  },
-
-  // ── 아이 정보 ──────────────────────────────────
-  infoCard: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 16,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-  },
-  infoLabel: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-  },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.2,
-  },
-
-  // ── 칩 (단일 선택) ────────────────────────────
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: Colors.darkSurface,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  chipSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.2,
-  },
-  chipTextSelected: {
-    color: Colors.darkBg,
-    fontWeight: '600',
-  },
-
-  // ── 칩 (다중 선택 / 체크) ──────────────────────
-  checkChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-    backgroundColor: Colors.darkSurface,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  checkChipChecked: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  checkIcon: {
-    marginRight: 4,
-  },
-  checkChipText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.1,
-  },
-  checkChipTextChecked: {
-    color: Colors.darkBg,
-    fontWeight: '600',
-  },
-
-  // ── 페이월 ─────────────────────────────────────
-  paywallCard: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 16,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-    padding: 20,
-  },
-  paywallTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-    marginBottom: 4,
-  },
-  paywallBody: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-    marginBottom: 16,
-  },
-  paywallCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.primary,
-    borderRadius: 10,
-    paddingVertical: 12,
-    gap: 4,
-  },
-  paywallCtaText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.darkBg,
-    letterSpacing: -0.3,
-  },
-
-  // ── CTA ────────────────────────────────────────
-  ctaButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  ctaButtonDisabled: {
-    opacity: 0.4,
-  },
-  ctaText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.darkBg,
-    letterSpacing: -0.3,
-  },
-  disclaimer: {
-    fontSize: 11,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.1,
-    textAlign: 'center',
-    marginTop: 10,
-  },
-});
 
 export default AdmissionScoreScreen;

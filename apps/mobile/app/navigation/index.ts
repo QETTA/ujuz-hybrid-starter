@@ -1,6 +1,6 @@
 /**
- * KidsMap Mobile - Navigation Index
+ * UJUz Mobile - Navigation Index
  */
 
 export { default as AppNavigator } from './AppNavigator';
-export { default as TabNavigator } from './TabNavigator.kakao';
+export { default as TabNavigator } from './TabNavigator';

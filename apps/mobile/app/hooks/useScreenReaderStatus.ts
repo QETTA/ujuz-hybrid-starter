@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - Screen Reader Status Hook
+ * UJUz Mobile - Screen Reader Status Hook
  *
  * Detects whether a screen reader (VoiceOver on iOS, TalkBack on Android) is active
  * Useful for conditional rendering or behavior changes when screen reader is enabled

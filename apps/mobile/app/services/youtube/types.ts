@@ -1,7 +1,7 @@
 /**
  * YouTube Data API v3 Types
  *
- * Type definitions for YouTube API responses and KidsMap integration
+ * Type definitions for YouTube API responses and UJUz integration
  */
 
 // ============================================
@@ -126,11 +126,11 @@ export interface YouTubeVideosResponse {
 }
 
 // ============================================
-// KidsMap Shorts Types
+// UJUz Shorts Types
 // ============================================
 
-/** Shorts video for KidsMap feed */
-export interface KidsMapShort {
+/** Shorts video for UJUz feed */
+export interface UJUzShort {
   id: string;
   youtubeId: string;
   title: string;
@@ -166,7 +166,7 @@ export interface ShortsSearchParams {
 
 /** Shorts search result */
 export interface ShortsSearchResult {
-  shorts: KidsMapShort[];
+  shorts: UJUzShort[];
   nextPageToken?: string;
   totalResults: number;
   source: 'youtube' | 'cache';

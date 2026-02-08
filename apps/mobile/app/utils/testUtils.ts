@@ -1,5 +1,5 @@
 /**
- * Test Utilities for KidsMap Mobile
+ * Test Utilities for UJUz Mobile
  *
  * Provides testing helpers and mock data factories
  *

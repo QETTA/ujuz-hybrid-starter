@@ -77,7 +77,7 @@ export default function MapboxMapView({
               weight="semibold"
               style={styles.headerTitle}
             >
-              KidsMap
+              UJUz
             </TamaguiText>
             <TamaguiText preset="caption" textColor="secondary" style={styles.headerSubtitle}>
               {center.lat.toFixed(4)}, {center.lng.toFixed(4)}

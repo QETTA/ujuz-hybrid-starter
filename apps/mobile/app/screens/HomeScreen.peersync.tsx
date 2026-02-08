@@ -1,17 +1,18 @@
 /**
- * HomeScreen v6 — UJUz (우쥬) 메인 화면
+ * HomeScreen v7 — UJUz 비즈니스 허브
  *
- * Toss 2026 Senior Designer 리디자인
- * - Borderless hero: 숫자가 떠있는 느낌
- * - Metrics bar: 3개 박스 → 단일 바 + 디바이더
- * - 라이브 상태: 헤더 인라인
- * - 섹션 간격 대폭 확대 (호흡감)
- * - Ultra-thin display numbers (weight 100)
+ * 2026 Redesign:
+ * - ProactiveAICard: TO 알림/맞춤 제안 최상단
+ * - ScoreRing 히어로: 입학 점수 원형 프로그레스
+ * - QuotaBar 위젯: 잔여 쿼터 시각화 → 업그레이드 유도
+ * - 공동구매 캐러셀: 진행 중 딜 노출
+ * - SocialProof: 이용자 수 상시 노출
+ * - 또래 피드: 실시간 활동
  */
 
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { YStack, XStack } from 'tamagui';
+import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
+import { YStack, XStack, useTheme } from 'tamagui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -34,14 +35,20 @@ import {
   TamaguiSkeleton,
   TamaguiText,
   TamaguiPressableScale,
+  ScoreRing,
+  QuotaBar,
+  ProactiveAICard,
+  SocialProofBadge,
+  TamaguiGlassCard,
 } from '@/app/design-system';
+import TamaguiButton from '@/app/design-system/components/TamaguiButton';
 import { usePeerSync } from '@/app/hooks';
 import { useProfileStore } from '@/app/stores/profileStore';
 import { useAnalytics } from '@/app/hooks/useAnalytics';
 import { useNotifications } from '@/app/hooks/useNotifications';
 import { useAdmissionScore } from '@/app/hooks/useAdmissionScore';
 import { usePayment } from '@/app/hooks/usePayment';
-import { Colors } from '@/app/constants';
+import { useGroupBuys } from '@/app/hooks/useGroupBuys';
 import type { PeerActivity } from '@/app/types/peerSync';
 import { COPY } from '@/app/copy/copy.ko';
 
@@ -62,9 +69,300 @@ function getGreeting(): string {
   return '좋은 저녁이에요';
 }
 
+function getDaysSinceBirth(months: number): number {
+  return Math.round(months * 30.44);
+}
+
 // ─── Types ───────────────────────────────────────────────
 export interface HomeScreenPeerSyncProps {
   testID?: string;
+}
+
+// ═════════════════════════════════════════════════════════
+// Sub-components
+// ═════════════════════════════════════════════════════════
+
+function HomeHeroScore({
+  score,
+  grade,
+  facility,
+  onPress,
+}: {
+  score: number | undefined;
+  grade: string | undefined;
+  facility: string | undefined;
+  onPress: () => void;
+}) {
+  if (score == null || !grade) {
+    return (
+      <TamaguiPressableScale hapticType="medium" onPress={onPress}>
+        <TamaguiGlassCard intensity="medium" padding="lg">
+          <YStack alignItems="center" gap="$3" paddingVertical="$4">
+            <TamaguiText
+              fontSize={22}
+              fontWeight="600"
+              color="$textPrimary"
+              textAlign="center"
+              letterSpacing={-1}
+            >
+              우리 아이,{'\n'}들어갈 수 있을까?
+            </TamaguiText>
+            <TamaguiButton variant="primary" size="md" onPress={onPress}>
+              무료로 확인하기
+            </TamaguiButton>
+          </YStack>
+        </TamaguiGlassCard>
+      </TamaguiPressableScale>
+    );
+  }
+
+  const validGrade = (['A', 'B', 'C', 'D', 'F'] as const).includes(grade as any)
+    ? (grade as 'A' | 'B' | 'C' | 'D' | 'F')
+    : 'C';
+
+  return (
+    <TamaguiPressableScale hapticType="medium" onPress={onPress}>
+      <TamaguiGlassCard intensity="medium" padding="lg" scoreGlow={validGrade}>
+        <YStack alignItems="center" gap="$3" paddingVertical="$2">
+          <ScoreRing score={Math.round(score)} grade={validGrade} size="md" />
+          {facility && (
+            <TamaguiText fontSize={14} color="$textSecondary" fontWeight="400">
+              {facility}
+            </TamaguiText>
+          )}
+          <TamaguiText
+            fontSize={13}
+            color="$primary"
+            fontWeight="600"
+            pressStyle={{ opacity: 0.7 }}
+          >
+            다른 곳도 확인 →
+          </TamaguiText>
+        </YStack>
+      </TamaguiGlassCard>
+    </TamaguiPressableScale>
+  );
+}
+
+function HomeQuotaWidget({
+  admissionUsed,
+  admissionTotal,
+  toUsed,
+  toTotal,
+  botUsed,
+  botTotal,
+  onUpgrade,
+}: {
+  admissionUsed: number;
+  admissionTotal: number;
+  toUsed: number;
+  toTotal: number;
+  botUsed: number;
+  botTotal: number;
+  onUpgrade: () => void;
+}) {
+  return (
+    <TamaguiGlassCard intensity="light" padding="md">
+      <YStack gap="$3">
+        <QuotaBar
+          label="입학 조회"
+          icon="🎓"
+          used={admissionUsed}
+          total={admissionTotal}
+          onUpgradePress={onUpgrade}
+        />
+        <QuotaBar
+          label="TO 알림"
+          icon="🔔"
+          used={toUsed}
+          total={toTotal}
+          onUpgradePress={onUpgrade}
+        />
+        <QuotaBar
+          label="우주봇"
+          icon="🤖"
+          used={botUsed}
+          total={botTotal}
+          onUpgradePress={onUpgrade}
+        />
+        <TamaguiText
+          fontSize={13}
+          fontWeight="600"
+          color="$primary"
+          textAlign="center"
+          onPress={onUpgrade}
+          pressStyle={{ opacity: 0.7 }}
+          marginTop="$1"
+        >
+          Basic으로 더 많이 이용하기 →
+        </TamaguiText>
+      </YStack>
+    </TamaguiGlassCard>
+  );
+}
+
+function HomeDealCarousel({
+  deals,
+  onDealPress,
+}: {
+  deals: Array<{
+    id: string;
+    title: string;
+    discount_rate?: number;
+    current_price?: number;
+    original_price?: number;
+    current_participants?: number;
+    max_participants?: number;
+    image_url?: string;
+    ends_at?: string;
+  }>;
+  onDealPress: (id: string) => void;
+}) {
+  if (!deals.length) return null;
+
+  return (
+    <YStack gap="$3">
+      <XStack justifyContent="space-between" alignItems="center" paddingHorizontal="$5">
+        <XStack alignItems="center" gap="$2">
+          <TamaguiText fontSize={18} fontWeight="700" color="$textPrimary" letterSpacing={-0.5}>
+            공동구매 진행중
+          </TamaguiText>
+          <TamaguiText fontSize={13} color="$deal" fontWeight="600">
+            🔥 {deals.length}
+          </TamaguiText>
+        </XStack>
+      </XStack>
+
+      <FlatList
+        data={deals}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TamaguiPressableScale
+            hapticType="light"
+            onPress={() => onDealPress(item.id)}
+            style={{ width: 200 }}
+          >
+            <TamaguiGlassCard intensity="light" padding="md">
+              <YStack gap="$2">
+                {item.discount_rate && (
+                  <XStack alignItems="center" gap="$1">
+                    <TamaguiText fontSize={14} fontWeight="700" color="$deal">
+                      -{item.discount_rate}%
+                    </TamaguiText>
+                    {item.ends_at && (
+                      <TamaguiText fontSize={11} color="$textTertiary">
+                        D-{Math.max(0, Math.ceil((new Date(item.ends_at).getTime() - Date.now()) / 86400000))}
+                      </TamaguiText>
+                    )}
+                  </XStack>
+                )}
+                <TamaguiText
+                  fontSize={14}
+                  fontWeight="600"
+                  color="$textPrimary"
+                  numberOfLines={2}
+                >
+                  {item.title}
+                </TamaguiText>
+                <XStack alignItems="baseline" gap="$1">
+                  {item.original_price && (
+                    <TamaguiText
+                      fontSize={12}
+                      color="$textTertiary"
+                      textDecorationLine="line-through"
+                    >
+                      ₩{item.original_price.toLocaleString()}
+                    </TamaguiText>
+                  )}
+                  {item.current_price && (
+                    <TamaguiText fontSize={16} fontWeight="700" color="$textPrimary">
+                      ₩{item.current_price.toLocaleString()}
+                    </TamaguiText>
+                  )}
+                </XStack>
+                {item.max_participants && (
+                  <XStack alignItems="center" gap="$1">
+                    <TamaguiText fontSize={11} color="$textTertiary">
+                      👥 {item.current_participants ?? 0}/{item.max_participants}명
+                    </TamaguiText>
+                  </XStack>
+                )}
+              </YStack>
+            </TamaguiGlassCard>
+          </TamaguiPressableScale>
+        )}
+      />
+
+      <XStack paddingHorizontal="$5">
+        <SocialProofBadge count={5432} size="sm" />
+      </XStack>
+    </YStack>
+  );
+}
+
+function HomePeerFeed({
+  activities,
+  isLoading,
+  liveCount,
+  onActivityPress,
+}: {
+  activities: PeerActivity[];
+  isLoading: boolean;
+  liveCount?: number;
+  onActivityPress: (activity: PeerActivity) => void;
+}) {
+  return (
+    <YStack paddingHorizontal="$5" gap="$3">
+      <XStack justifyContent="space-between" alignItems="center">
+        <XStack alignItems="center" gap="$2">
+          <TamaguiText fontSize={18} fontWeight="700" color="$textPrimary" letterSpacing={-0.5}>
+            또래 피드
+          </TamaguiText>
+          <TamaguiText fontSize={12} color="$textTertiary">
+            실시간
+          </TamaguiText>
+        </XStack>
+        {liveCount != null && (
+          <XStack alignItems="center" gap="$1">
+            <TamaguiText fontSize={12} color="$primary">
+              👥 {liveCount}명 활동중
+            </TamaguiText>
+          </XStack>
+        )}
+      </XStack>
+
+      {isLoading && activities.length === 0 ? (
+        <YStack gap={12}>
+          {[0, 1].map((i) => (
+            <YStack key={i} gap={8} padding={16} backgroundColor="$surfaceMuted" borderRadius={16}>
+              <TamaguiSkeleton variant="title" width="half" />
+              <TamaguiSkeleton variant="text" width="full" />
+              <TamaguiSkeleton variant="text" width="third" />
+            </YStack>
+          ))}
+        </YStack>
+      ) : activities.length > 0 ? (
+        <YStack gap={10}>
+          {activities.map((activity) => (
+            <PeerActivityCard
+              key={activity.id}
+              activity={activity}
+              onPress={() => onActivityPress(activity)}
+            />
+          ))}
+        </YStack>
+      ) : (
+        <TamaguiEmptyState
+          icon="people-outline"
+          title="아직 또래 활동이 없어요"
+          message="비슷한 연령대의 부모님이 주변 장소를 방문하면 여기에 표시됩니다"
+        />
+      )}
+    </YStack>
+  );
 }
 
 // ═════════════════════════════════════════════════════════
@@ -73,6 +371,7 @@ export interface HomeScreenPeerSyncProps {
 export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<TabNavigationProp>();
+  const theme = useTheme();
   useAnalytics('UjuHome');
 
   // ─── Data ──────────────────────────────────────────
@@ -80,7 +379,8 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
   const childAgeMonths = useProfileStore((s) => s.getChildAgeMonths());
   const { unreadCount, alerts } = useNotifications();
   const { lastResult } = useAdmissionScore();
-  const { currentTier, getRemainingQuota } = usePayment();
+  const { getRemainingQuota } = usePayment();
+  const { filteredGroupBuys } = useGroupBuys();
 
   const { liveStatus, activities, trends, refresh, isLoading } = usePeerSync({
     childAgeMonths,
@@ -93,26 +393,41 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
   const greeting = useMemo(() => getGreeting(), []);
   const ageLabel = useMemo(
     () => (childAgeMonths >= 12 ? `${Math.floor(childAgeMonths / 12)}세` : `${childAgeMonths}개월`),
-    [childAgeMonths]
+    [childAgeMonths],
   );
-
-  const lastUpdated = liveStatus?.lastUpdated;
-  const syncLabel = useMemo(() => {
-    if (!lastUpdated) return null;
-    const date = new Date(lastUpdated);
-    if (Number.isNaN(date.getTime())) return null;
-    return formatDistanceToNow(date, { addSuffix: true, locale: ko });
-  }, [lastUpdated]);
+  const daysLabel = useMemo(() => `D+${getDaysSinceBirth(childAgeMonths).toLocaleString()}`, [childAgeMonths]);
 
   const scoreDisplay = lastResult?.probability;
   const scoreGrade = lastResult?.grade;
   const scoreFacility = lastResult?.facility_name;
 
   const latestAlert = alerts?.[0];
-  const toActiveCount = useNotifications().subscriptions?.filter((s) => s.is_active)?.length ?? 0;
+  const toActiveCount =
+    useNotifications().subscriptions?.filter((s) => s.is_active)?.length ?? 0;
 
   const admissionQuota = getRemainingQuota('admission_score_limit');
   const botQuota = getRemainingQuota('bot_query_daily_limit');
+
+  // Map group buys to deal carousel format
+  const deals = useMemo(() => filteredGroupBuys.map((gb) => ({
+    id: gb.id,
+    title: gb.title,
+    discount_rate: gb.max_discount_rate,
+    current_price: gb.group_price,
+    original_price: gb.regular_price,
+    current_participants: gb.supporter_count,
+    max_participants: gb.goal_quantity,
+    image_url: gb.thumbnail_url,
+    ends_at: gb.end_date,
+  })), [filteredGroupBuys]);
+
+  // Quota calculations (approximate from remaining quota)
+  const admissionTotal = 1;
+  const admissionUsed = Math.max(0, admissionTotal - admissionQuota);
+  const toTotal = 1;
+  const toUsed = toActiveCount;
+  const botTotal = 5;
+  const botUsed = Math.max(0, botTotal - botQuota);
 
   // ─── Live Pulse Animation ──────────────────────────
   const pulseOpacity = useSharedValue(1);
@@ -120,7 +435,7 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
     pulseOpacity.value = withRepeat(
       withTiming(0.3, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
       -1,
-      true
+      true,
     );
   }, []);
   const liveDotAnim = useAnimatedStyle(() => ({
@@ -140,62 +455,99 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
         navigation.navigate('PlaceDetail', { id: _activity.place.id });
       }
     },
-    [navigation]
+    [navigation],
   );
 
-  const handlePlacePress = useCallback(
-    (id: string) => navigation.navigate('PlaceDetail', { id }),
-    [navigation]
-  );
-
-  const handleGroupBuyPress = useCallback(
+  const handleDealPress = useCallback(
     (id: string) => navigation.navigate('GroupBuy', { id }),
-    [navigation]
+    [navigation],
   );
 
   // ─── Render ────────────────────────────────────────
   return (
-    <View testID={testID} style={styles.root}>
+    <View testID={testID} style={{ flex: 1, backgroundColor: theme.background.val }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={Colors.darkTextTertiary}
+            tintColor={theme.textTertiary.val}
           />
         }
         contentContainerStyle={{ paddingBottom: 120 }}
       >
         {/* ── 헤더 ─────────────────────────────────── */}
-        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 20,
+            paddingTop: insets.top + 12,
+            paddingBottom: 4,
+          }}
+        >
           <XStack alignItems="center" gap={10}>
-            <TamaguiText style={styles.logo}>ujuz</TamaguiText>
+            <TamaguiText
+              fontSize={26}
+              fontWeight="800"
+              fontStyle="italic"
+              color="$textPrimary"
+              letterSpacing={-1.8}
+            >
+              ujuz
+            </TamaguiText>
             {liveStatus && (
               <XStack alignItems="center" gap={5}>
-                <Animated.View style={[styles.liveDot, liveDotAnim]} />
-                <TamaguiText style={styles.liveCount}>{liveStatus.activeNow}</TamaguiText>
+                <Animated.View
+                  style={[
+                    {
+                      width: 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: theme.primary.val,
+                    },
+                    liveDotAnim,
+                  ]}
+                />
+                <TamaguiText fontSize={13} fontWeight="600" color="$primary" letterSpacing={-0.3}>
+                  {liveStatus.activeNow}
+                </TamaguiText>
               </XStack>
             )}
           </XStack>
           <XStack gap={16} alignItems="center">
             <TamaguiPressableScale
               hapticType="light"
-              style={styles.hitArea}
+              style={{ padding: 12, margin: -12 }}
               onPress={() => navigation.navigate('Search')}
             >
-              <Ionicons name="search" size={20} color={Colors.darkTextSecondary} />
+              <Ionicons name="search" size={20} color={theme.textSecondary.val} />
             </TamaguiPressableScale>
             <TamaguiPressableScale
               hapticType="light"
-              style={styles.hitArea}
+              style={{ padding: 12, margin: -12 }}
               onPress={() => navigation.navigate('NotificationHistory')}
             >
               <View>
-                <Ionicons name="notifications-outline" size={20} color={Colors.darkTextSecondary} />
+                <Ionicons name="notifications-outline" size={20} color={theme.textSecondary.val} />
                 {unreadCount > 0 && (
-                  <View style={styles.badge}>
-                    <TamaguiText style={styles.badgeText}>
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -6,
+                      minWidth: 16,
+                      height: 16,
+                      borderRadius: 8,
+                      backgroundColor: theme.primary.val,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    <TamaguiText fontSize={9} fontWeight="700" color="$background">
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </TamaguiText>
                   </View>
@@ -206,480 +558,85 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
         </View>
 
         {/* ── 인사 ─────────────────────────────────── */}
-        <Animated.View entering={stagger(0)} style={styles.greetingSection}>
-          <TamaguiText style={styles.meta}>
-            {childName || '우리 아이'} · {ageLabel}
+        <Animated.View entering={stagger(0)} style={{ paddingHorizontal: 20, marginTop: 24 }}>
+          <TamaguiText fontSize={28} fontWeight="700" color="$textPrimary" letterSpacing={-1.2}>
+            {greeting}
           </TamaguiText>
-          <TamaguiText style={styles.greeting}>{greeting}</TamaguiText>
+          <TamaguiText fontSize={14} fontWeight="400" color="$textTertiary" letterSpacing={-0.2} marginTop={4}>
+            {childName || '우리 아이'} · {ageLabel} · {daysLabel}
+          </TamaguiText>
         </Animated.View>
 
-        {/* ── 히어로: 입학 가능성 ───────────────────── */}
-        <Animated.View entering={stagger(1)} style={styles.heroSection}>
-          <TamaguiPressableScale
-            hapticType="medium"
-            onPress={() => navigation.navigate('AdmissionScore')}
-          >
-            <View style={styles.heroCard}>
-              <XStack justifyContent="space-between" alignItems="center">
-                <TamaguiText style={styles.heroLabel}>입학 가능성</TamaguiText>
-                {scoreGrade && (
-                  <View style={styles.gradeChip}>
-                    <TamaguiText style={styles.gradeText}>{scoreGrade}</TamaguiText>
-                  </View>
-                )}
-              </XStack>
-
-              {scoreDisplay != null ? (
-                <View style={styles.heroScoreWrap}>
-                  <XStack alignItems="baseline" gap={2}>
-                    <TamaguiText style={styles.heroScore}>{Math.round(scoreDisplay)}</TamaguiText>
-                    <TamaguiText style={styles.heroUnit}>%</TamaguiText>
-                  </XStack>
-                  {scoreFacility && (
-                    <TamaguiText style={styles.heroFacility}>{scoreFacility}</TamaguiText>
-                  )}
-                </View>
-              ) : (
-                <View style={styles.heroEmptyWrap}>
-                  <TamaguiText style={styles.heroEmpty}>
-                    우리 아이,{'\n'}들어갈 수 있을까?
-                  </TamaguiText>
-                  <View style={styles.heroCta}>
-                    <TamaguiText style={styles.heroCtaText}>무료로 확인</TamaguiText>
-                    <Ionicons name="arrow-forward" size={14} color={Colors.darkBg} />
-                  </View>
-                </View>
-              )}
-
-              {syncLabel && <TamaguiText style={styles.heroSync}>{syncLabel} 업데이트</TamaguiText>}
-            </View>
-          </TamaguiPressableScale>
-        </Animated.View>
-
-        {/* ── 핵심 지표 ──────────────────────────────── */}
-        <Animated.View entering={stagger(2)} style={styles.section}>
-          <View style={styles.metricsBar}>
-            <TamaguiPressableScale
-              style={styles.metric}
-              hapticType="light"
-              onPress={() => navigation.navigate('AdmissionScore')}
-            >
-              <TamaguiText style={styles.metricValue}>
-                {admissionQuota > 0 ? admissionQuota : '0'}
-              </TamaguiText>
-              <TamaguiText style={styles.metricLabel}>입학 조회</TamaguiText>
-            </TamaguiPressableScale>
-
-            <View style={styles.metricDivider} />
-
-            <TamaguiPressableScale
-              style={styles.metric}
-              hapticType="light"
-              onPress={() => navigation.navigate('TOAlertSettings')}
-            >
-              <TamaguiText style={styles.metricValue}>
-                {toActiveCount > 0 ? toActiveCount : '0'}
-              </TamaguiText>
-              <TamaguiText style={styles.metricLabel}>빈자리 알림</TamaguiText>
-            </TamaguiPressableScale>
-
-            <View style={styles.metricDivider} />
-
-            <TamaguiPressableScale
-              style={styles.metric}
-              hapticType="light"
-              onPress={() => navigation.navigate('Ask')}
-            >
-              <TamaguiText style={styles.metricValue}>{botQuota > 0 ? botQuota : '0'}</TamaguiText>
-              <TamaguiText style={styles.metricLabel}>우주봇</TamaguiText>
-            </TamaguiPressableScale>
-          </View>
-        </Animated.View>
-
-        {/* ── TO 알림 프리뷰 ─────────────────────── */}
+        {/* ── ProactiveAICard: TO 알림 / AI 제안 ──── */}
         {latestAlert && (
-          <Animated.View entering={stagger(3)} style={styles.section}>
-            <TamaguiPressableScale
-              hapticType="light"
-              onPress={() => navigation.navigate('NotificationHistory')}
-            >
-              <View style={styles.alertCard}>
-                <XStack justifyContent="space-between" alignItems="flex-start">
-                  <YStack flex={1} gap={3}>
-                    <TamaguiText style={styles.alertTitle}>{latestAlert.facility_name}</TamaguiText>
-                    <TamaguiText style={styles.alertBody}>
-                      {COPY.VACANCY_DETECTED(latestAlert.estimated_slots)}
-                    </TamaguiText>
-                  </YStack>
-                  {!latestAlert.is_read && <View style={styles.unreadDot} />}
-                </XStack>
-                <TamaguiText style={styles.alertTime}>
-                  {formatDistanceToNow(new Date(latestAlert.detected_at), {
-                    addSuffix: true,
-                    locale: ko,
-                  })}
-                </TamaguiText>
-              </View>
-            </TamaguiPressableScale>
+          <Animated.View entering={stagger(1)} style={{ paddingHorizontal: 20, marginTop: 20 }}>
+            <ProactiveAICard
+              type="to_alert"
+              message={`${latestAlert.facility_name}에 TO가 나왔어요! ${COPY.VACANCY_DETECTED(latestAlert.estimated_slots)}`}
+              ctaText="지금 확인"
+              onCtaPress={() => navigation.navigate('NotificationHistory')}
+              subInfo={formatDistanceToNow(new Date(latestAlert.detected_at), {
+                addSuffix: true,
+                locale: ko,
+              })}
+              onDismiss={() => {}}
+            />
           </Animated.View>
         )}
 
-        {/* ── 구독 배너 ──────────────────────────── */}
-        {currentTier === 'free' && (
-          <Animated.View entering={stagger(4)} style={styles.section}>
-            <TamaguiPressableScale
-              hapticType="light"
-              onPress={() => navigation.navigate('Subscription')}
-            >
-              <View style={styles.tierCard}>
-                <TamaguiText style={styles.tierLabel}>Free</TamaguiText>
-                <TamaguiText style={styles.tierCta}>프리미엄으로 무제한 이용</TamaguiText>
-                <Ionicons name="chevron-forward" size={14} color={Colors.darkTextTertiary} />
-              </View>
-            </TamaguiPressableScale>
+        {/* ── ScoreRing 히어로 ─────────────────────── */}
+        <Animated.View entering={stagger(2)} style={{ paddingHorizontal: 20, marginTop: 24 }}>
+          <HomeHeroScore
+            score={scoreDisplay}
+            grade={scoreGrade}
+            facility={scoreFacility}
+            onPress={() => navigation.navigate('AdmissionScore')}
+          />
+        </Animated.View>
+
+        {/* ── QuotaBar 위젯 ───────────────────────── */}
+        <Animated.View entering={stagger(3)} style={{ paddingHorizontal: 20, marginTop: 20 }}>
+          <HomeQuotaWidget
+            admissionUsed={admissionUsed}
+            admissionTotal={admissionTotal}
+            toUsed={toUsed}
+            toTotal={toTotal}
+            botUsed={botUsed}
+            botTotal={botTotal}
+            onUpgrade={() => navigation.navigate('Subscription')}
+          />
+        </Animated.View>
+
+        {/* ── 공동구매 캐러셀 ──────────────────────── */}
+        {deals && deals.length > 0 && (
+          <Animated.View entering={stagger(4)} style={{ marginTop: 32 }}>
+            <HomeDealCarousel deals={deals} onDealPress={handleDealPress} />
           </Animated.View>
         )}
 
         {/* ── 트렌드 ──────────────────────────────── */}
         {trends && (
-          <Animated.View entering={stagger(5)} style={styles.trendWrap}>
+          <Animated.View entering={stagger(5)} style={{ marginTop: 32 }}>
             <PeerTrendWidget
               trends={trends}
-              onPlacePress={handlePlacePress}
-              onGroupBuyPress={handleGroupBuyPress}
+              onPlacePress={(id) => navigation.navigate('PlaceDetail', { id })}
+              onGroupBuyPress={(id) => navigation.navigate('GroupBuy', { id })}
             />
           </Animated.View>
         )}
 
         {/* ── 또래 피드 ───────────────────────────── */}
-        <Animated.View entering={stagger(6)} style={styles.feedSection}>
-          <XStack justifyContent="space-between" alignItems="center" marginBottom={16}>
-            <TamaguiText style={styles.feedTitle}>또래 피드</TamaguiText>
-            <TamaguiPressableScale hapticType="light" style={styles.hitArea}>
-              <TamaguiText style={styles.feedMore}>더보기</TamaguiText>
-            </TamaguiPressableScale>
-          </XStack>
-
-          {isLoading && activities.length === 0 ? (
-            <YStack gap={12}>
-              {[0, 1].map((i) => (
-                <YStack
-                  key={i}
-                  gap={8}
-                  padding={16}
-                  backgroundColor="$surfaceMuted"
-                  borderRadius={16}
-                >
-                  <TamaguiSkeleton variant="title" width="half" />
-                  <TamaguiSkeleton variant="text" width="full" />
-                  <TamaguiSkeleton variant="text" width="third" />
-                </YStack>
-              ))}
-            </YStack>
-          ) : activities.length > 0 ? (
-            <YStack gap={10}>
-              {activities.map((activity) => (
-                <PeerActivityCard
-                  key={activity.id}
-                  activity={activity}
-                  onPress={() => handleActivityPress(activity)}
-                />
-              ))}
-            </YStack>
-          ) : (
-            <TamaguiEmptyState
-              icon="people-outline"
-              title="아직 또래 활동이 없어요"
-              message="비슷한 연령대의 부모님이 주변 장소를 방문하면 여기에 표시됩니다"
-            />
-          )}
+        <Animated.View entering={stagger(6)} style={{ marginTop: 36 }}>
+          <HomePeerFeed
+            activities={activities}
+            isLoading={isLoading}
+            liveCount={liveStatus?.activeNow}
+            onActivityPress={handleActivityPress}
+          />
         </Animated.View>
       </ScrollView>
     </View>
   );
 }
-
-// ═════════════════════════════════════════════════════════
-// Styles — Toss 2026: Borderless cards, ultra-thin numbers
-// ═════════════════════════════════════════════════════════
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.darkBg,
-  },
-
-  // ── 헤더 ──────────────────────────────────────
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 4,
-  },
-  logo: {
-    fontSize: 26,
-    fontWeight: '800',
-    fontStyle: 'italic',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -1.8,
-  },
-  hitArea: {
-    padding: 12,
-    margin: -12,
-  },
-  badge: {
-    position: 'absolute',
-    top: -4,
-    right: -6,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: Colors.darkBg,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.primary,
-  },
-  liveCount: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.primary,
-    letterSpacing: -0.3,
-  },
-
-  // ── 인사 ──────────────────────────────────────
-  greetingSection: {
-    paddingHorizontal: 20,
-    marginTop: 28,
-  },
-  meta: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-    marginBottom: 4,
-  },
-  greeting: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -1.2,
-  },
-
-  // ── 공통 ──────────────────────────────────────
-  section: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
-
-  // ── 히어로 카드 ────────────────────────────────
-  heroSection: {
-    paddingHorizontal: 20,
-    marginTop: 32,
-  },
-  heroCard: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 24,
-    padding: 28,
-  },
-  heroLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.2,
-  },
-  heroScoreWrap: {
-    marginTop: 20,
-  },
-  heroScore: {
-    fontSize: 64,
-    fontWeight: '100',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -4,
-    includeFontPadding: false,
-  },
-  heroUnit: {
-    fontSize: 28,
-    fontWeight: '200',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -1,
-  },
-  heroFacility: {
-    fontSize: 15,
-    fontWeight: '400',
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.3,
-    marginTop: 8,
-  },
-  gradeChip: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    backgroundColor: Colors.primaryAlpha15,
-    borderRadius: 8,
-  },
-  gradeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.primary,
-    letterSpacing: -0.2,
-  },
-  heroEmptyWrap: {
-    marginTop: 24,
-  },
-  heroEmpty: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -1,
-    lineHeight: 32,
-  },
-  heroCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 6,
-    marginTop: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-  },
-  heroCtaText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.darkBg,
-    letterSpacing: -0.3,
-  },
-  heroSync: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    marginTop: 20,
-  },
-
-  // ── 핵심 지표 바 ─────────────────────────────
-  metricsBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 16,
-    paddingVertical: 20,
-  },
-  metric: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-  },
-  metricValue: {
-    fontSize: 24,
-    fontWeight: '200',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -1,
-    includeFontPadding: false,
-  },
-  metricLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-  },
-  metricDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: Colors.darkBorder,
-  },
-
-  // ── TO 알림 ──────────────────────────────────
-  alertCard: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 16,
-    padding: 20,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.iosSystemOrange,
-  },
-  alertTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-  },
-  alertBody: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.2,
-  },
-  alertTime: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    marginTop: 10,
-  },
-  unreadDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.primary,
-    marginTop: 4,
-  },
-
-  // ── 구독 배너 ────────────────────────────────
-  tierCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    gap: 10,
-  },
-  tierLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.primary,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  tierCta: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '400',
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.2,
-  },
-
-  // ── 트렌드 ───────────────────────────────────
-  trendWrap: {
-    marginTop: 36,
-  },
-
-  // ── 피드 ─────────────────────────────────────
-  feedSection: {
-    marginTop: 40,
-    paddingHorizontal: 20,
-  },
-  feedTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.5,
-  },
-  feedMore: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-  },
-});
 
 export default HomeScreenPeerSync;

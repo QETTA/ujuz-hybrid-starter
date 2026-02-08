@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - Accessibility Announcement Hook
+ * UJUz Mobile - Accessibility Announcement Hook
  *
  * Provides a hook for announcing dynamic content changes to screen readers
  * Uses AccessibilityInfo.announceForAccessibility() for both iOS and Android

@@ -8,10 +8,8 @@
  * - No emojis, no artificial icons
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- Tamagui style type workaround (see error-patterns.md) */
-
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { StyleSheet, View, ScrollView, Alert } from 'react-native';
+import { ScrollView, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
@@ -19,9 +17,10 @@ import type { RootStackNavigationProp } from '@/app/types/navigation';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme, YStack, XStack, Text } from 'tamagui';
 
 import { Colors, Layout } from '@/app/constants';
-import { TamaguiText, TamaguiPressableScale } from '@/app/design-system';
+import { TamaguiPressableScale, QuotaBar, SocialProofBadge } from '@/app/design-system';
 import { usePayment } from '@/app/hooks/usePayment';
 import { PLAN_LIMITS } from '@/app/types/subscription';
 import type { PlanTier, SubscriptionPlan } from '@/app/types/subscription';
@@ -43,17 +42,11 @@ const TIER_NAMES: Record<PlanTier, string> = {
   premium: '프리미엄',
 };
 
-const TIER_ICONS: Record<PlanTier, string> = {
+const TIER_ICONS = {
   free: 'leaf-outline',
   basic: 'star-outline',
   premium: 'diamond-outline',
-};
-
-const TIER_BADGE_COLORS: Record<PlanTier, string> = {
-  free: Colors.darkTextTertiary,
-  basic: Colors.darkTextPrimary,
-  premium: Colors.darkTextPrimary,
-};
+} as const;
 
 const TIER_PRICES: Record<PlanTier, string> = {
   free: '무료',
@@ -104,71 +97,6 @@ function getRemainingDays(endDate: string): number {
 
 // ── Sub-Components ──
 
-function UsageBar({
-  label,
-  used,
-  limit,
-  index,
-}: {
-  label: string;
-  used: number;
-  limit: number;
-  index: number;
-}) {
-  const isUnlimited = limit === -1;
-  const ratio = isUnlimited ? 0 : Math.min(used / Math.max(limit, 1), 1);
-  const displayLimit = isUnlimited ? '---' : String(limit);
-
-  return (
-    <Animated.View entering={stagger(3 + index)} style={styles.usageRow}>
-      <View style={styles.usageHeader}>
-        <TamaguiText
-          style={
-            {
-              fontSize: 13,
-              fontWeight: '500',
-              color: Colors.darkTextSecondary,
-              letterSpacing: -0.2,
-            } as any
-          }
-        >
-          {label}
-        </TamaguiText>
-        <View style={styles.usageNumbers}>
-          <TamaguiText
-            style={
-              {
-                fontSize: 18,
-                fontWeight: '200',
-                color: Colors.darkTextPrimary,
-                letterSpacing: -0.5,
-              } as any
-            }
-          >
-            {used}
-          </TamaguiText>
-          <TamaguiText
-            style={
-              {
-                fontSize: 12,
-                fontWeight: '400',
-                color: Colors.darkTextTertiary,
-                letterSpacing: -0.2,
-              } as any
-            }
-          >
-            {' / '}
-            {displayLimit}
-          </TamaguiText>
-        </View>
-      </View>
-      <View style={styles.progressBarBg}>
-        <View style={[styles.progressBarFill, { width: `${ratio * 100}%` as any }]} />
-      </View>
-    </Animated.View>
-  );
-}
-
 function PlanColumn({
   tier,
   isCurrentTier,
@@ -180,205 +108,202 @@ function PlanColumn({
   plan: SubscriptionPlan | undefined;
   onUpgrade: (planId: string) => void;
 }) {
+  const theme = useTheme();
   const isPremium = tier === 'premium';
 
+  const iconColor = isCurrentTier
+    ? theme.textInverse.val
+    : tier === 'free'
+      ? theme.textTertiary.val
+      : theme.textPrimary.val;
+
   return (
-    <View
-      style={[
-        styles.planCard,
-        isCurrentTier && styles.planCardSelected,
-        isPremium && styles.planCardPremium,
-      ]}
+    <YStack
+      backgroundColor={isCurrentTier ? '$surfaceElevated' : '$surface'}
+      borderRadius={14}
+      padding={20}
+      borderWidth={isPremium || isCurrentTier ? 1.5 : 0.5}
+      borderColor={
+        isPremium
+          ? '$premium'
+          : isCurrentTier
+            ? '$primary'
+            : '$borderColor'
+      }
+      {...(isPremium && {
+        shadowColor: '$premium',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      })}
     >
       {/* Plan Header */}
-      <View style={styles.planHeader}>
-        <View style={styles.planIconWrap}>
-          <Ionicons
-            name={TIER_ICONS[tier] as any}
-            size={18}
-            color={isCurrentTier ? Colors.white : TIER_BADGE_COLORS[tier]}
-          />
-        </View>
-        <View style={styles.planTitleBlock}>
-          <View style={styles.planTitleRow}>
-            <TamaguiText
-              style={
-                {
-                  fontSize: 18,
-                  fontWeight: '700',
-                  color: isCurrentTier ? Colors.white : Colors.text,
-                  letterSpacing: -0.5,
-                } as any
-              }
+      <XStack alignItems="flex-start" gap="$3">
+        <YStack
+          width={36}
+          height={36}
+          borderRadius={18}
+          backgroundColor="$surfaceElevated"
+          alignItems="center"
+          justifyContent="center"
+          marginTop={2}
+        >
+          <Ionicons name={TIER_ICONS[tier]} size={18} color={iconColor} />
+        </YStack>
+        <YStack flex={1}>
+          <XStack alignItems="center" gap="$2">
+            <Text
+              fontSize={18}
+              fontWeight="700"
+              color={isCurrentTier ? '$textInverse' : '$color'}
+              letterSpacing={-0.5}
             >
               {TIER_NAMES[tier]}
-            </TamaguiText>
+            </Text>
             {isCurrentTier && (
-              <View style={styles.currentBadge}>
-                <TamaguiText
-                  style={
-                    {
-                      fontSize: 10,
-                      fontWeight: '700',
-                      color: Colors.white,
-                      letterSpacing: 0.3,
-                    } as any
-                  }
-                >
+              <YStack
+                paddingHorizontal={6}
+                paddingVertical={2}
+                borderRadius={4}
+                backgroundColor="$glassDark"
+              >
+                <Text fontSize={10} fontWeight="700" color="$textInverse" letterSpacing={0.3}>
                   현재
-                </TamaguiText>
-              </View>
+                </Text>
+              </YStack>
             )}
             {isPremium && !isCurrentTier && (
-              <View style={styles.recommendBadge}>
-                <TamaguiText
-                  style={
-                    {
-                      fontSize: 10,
-                      fontWeight: '700',
-                      color: Colors.white,
-                      letterSpacing: 0.3,
-                    } as any
-                  }
-                >
-                  추천
-                </TamaguiText>
-              </View>
+              <YStack
+                paddingHorizontal={6}
+                paddingVertical={2}
+                borderRadius={4}
+                backgroundColor="$premium"
+              >
+                <Text fontSize={10} fontWeight="700" color="$textInverse" letterSpacing={0.3}>
+                  추천 🏆
+                </Text>
+              </YStack>
             )}
-          </View>
+          </XStack>
           {tier === 'free' ? (
-            <TamaguiText
-              style={
-                {
-                  fontSize: 13,
-                  fontWeight: '400',
-                  color: isCurrentTier ? Colors.whiteAlpha70 : Colors.darkTextTertiary,
-                  letterSpacing: -0.2,
-                  marginTop: 2,
-                } as any
-              }
+            <Text
+              fontSize={13}
+              fontWeight="400"
+              color={isCurrentTier ? '$glassLight' : '$textTertiary'}
+              letterSpacing={-0.2}
+              marginTop={2}
             >
               무료
-            </TamaguiText>
+            </Text>
           ) : (
-            <View style={[styles.priceRow, { marginTop: 2 }]}>
-              <TamaguiText
-                style={
-                  {
-                    fontSize: 13,
-                    fontWeight: '400',
-                    color: isCurrentTier ? Colors.whiteAlpha70 : Colors.darkTextTertiary,
-                    letterSpacing: -0.2,
-                  } as any
-                }
+            <XStack alignItems="baseline" marginTop={2}>
+              <Text
+                fontSize={13}
+                fontWeight="400"
+                color={isCurrentTier ? '$glassLight' : '$textTertiary'}
+                letterSpacing={-0.2}
               >
                 월{' '}
-              </TamaguiText>
-              <TamaguiText
-                style={
-                  {
-                    fontSize: 22,
-                    fontWeight: '200',
-                    color: isCurrentTier ? Colors.white : Colors.text,
-                    letterSpacing: -1,
-                  } as any
-                }
+              </Text>
+              <Text
+                fontSize={22}
+                fontWeight="200"
+                color={isCurrentTier ? '$textInverse' : '$color'}
+                letterSpacing={-1}
               >
                 {TIER_PRICES[tier]}
-              </TamaguiText>
-              <TamaguiText
-                style={
-                  {
-                    fontSize: 13,
-                    fontWeight: '400',
-                    color: isCurrentTier ? Colors.whiteAlpha70 : Colors.darkTextTertiary,
-                    letterSpacing: -0.2,
-                  } as any
-                }
+              </Text>
+              <Text
+                fontSize={13}
+                fontWeight="400"
+                color={isCurrentTier ? '$glassLight' : '$textTertiary'}
+                letterSpacing={-0.2}
               >
                 원
-              </TamaguiText>
-            </View>
+              </Text>
+            </XStack>
           )}
-        </View>
-      </View>
+        </YStack>
+      </XStack>
 
-      <View
-        style={[styles.planDivider, isCurrentTier && { backgroundColor: Colors.whiteAlpha15 }]}
+      <YStack
+        height={0.5}
+        backgroundColor={isCurrentTier ? '$glassDark' : '$borderColor'}
+        marginVertical={16}
       />
 
       {/* Feature List */}
-      {COMPARISON_ROWS.map((row) => (
-        <View key={row.label} style={styles.comparisonRow}>
-          <View style={styles.featureRow}>
-            <Ionicons
-              name={row[tier] === '-' ? 'close-circle-outline' : 'checkmark-circle'}
-              size={16}
+      {COMPARISON_ROWS.map((row) => {
+        const isDisabled = row[tier] === '-';
+        const featureIconColor = isCurrentTier
+          ? isDisabled
+            ? theme.glassDark.val
+            : theme.textInverse.val
+          : isDisabled
+            ? theme.textTertiary.val
+            : theme.color.val;
+
+        return (
+          <XStack
+            key={row.label}
+            justifyContent="space-between"
+            alignItems="center"
+            paddingVertical={6}
+          >
+            <XStack alignItems="center">
+              <Ionicons
+                name={isDisabled ? 'close-circle-outline' : 'checkmark-circle'}
+                size={16}
+                color={featureIconColor}
+              />
+              <Text
+                fontSize={13}
+                fontWeight="500"
+                color={isCurrentTier ? '$glassLight' : '$textSecondary'}
+                letterSpacing={-0.2}
+                marginLeft={8}
+              >
+                {row.label}
+              </Text>
+            </XStack>
+            <Text
+              fontSize={13}
+              fontWeight="600"
               color={
                 isCurrentTier
-                  ? row[tier] === '-'
-                    ? Colors.whiteAlpha30
-                    : 'rgba(255,255,255,0.9)' // Note: No whiteAlpha90 token available
-                  : row[tier] === '-'
-                    ? Colors.darkTextTertiary
-                    : Colors.text
-              }
-            />
-            <TamaguiText
-              style={
-                {
-                  fontSize: 13,
-                  fontWeight: '500',
-                  color: isCurrentTier ? Colors.whiteAlpha80 : Colors.darkTextSecondary,
-                  letterSpacing: -0.2,
-                  marginLeft: 8,
-                } as any
-              }
-            >
-              {row.label}
-            </TamaguiText>
-          </View>
-          <TamaguiText
-            style={
-              {
-                fontSize: 13,
-                fontWeight: '600',
-                color: isCurrentTier
-                  ? Colors.white
+                  ? '$textInverse'
                   : row[tier] === '무제한'
-                    ? Colors.text
-                    : Colors.darkTextSecondary,
-                letterSpacing: -0.2,
-              } as any
-            }
-          >
-            {row[tier]}
-          </TamaguiText>
-        </View>
-      ))}
+                    ? '$color'
+                    : '$textSecondary'
+              }
+              letterSpacing={-0.2}
+            >
+              {row[tier]}
+            </Text>
+          </XStack>
+        );
+      })}
 
       {/* CTA */}
       {!isCurrentTier && tier !== 'free' && (
         <TamaguiPressableScale
-          style={[styles.upgradeBtn, isPremium && !isCurrentTier && styles.upgradeBtnPremium]}
+          style={{
+            backgroundColor: theme.primary.val,
+            borderRadius: 12,
+            paddingVertical: 14,
+            alignItems: 'center' as const,
+            justifyContent: 'center' as const,
+            marginTop: 16,
+          }}
           onPress={() => onUpgrade(plan?.id ?? tier)}
           hapticType="medium"
         >
-          <TamaguiText
-            style={
-              {
-                fontSize: 14,
-                fontWeight: '600',
-                color: Colors.darkBg,
-                letterSpacing: -0.2,
-              } as any
-            }
-          >
+          <Text fontSize={14} fontWeight="600" color="$background" letterSpacing={-0.2}>
             {isPremium ? '프리미엄 시작하기' : '업그레이드'}
-          </TamaguiText>
+          </Text>
         </TamaguiPressableScale>
       )}
-    </View>
+    </YStack>
   );
 }
 
@@ -387,6 +312,7 @@ function PlanColumn({
 export function SubscriptionScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<RootStackNavigationProp>();
+  const theme = useTheme();
 
   const { subscription, currentTier, fetchSubscription, fetchPlans, cancelSubscription } =
     usePayment();
@@ -434,10 +360,10 @@ export function SubscriptionScreen() {
   return (
     <LinearGradient
       colors={[...Colors.darkGradient] as [string, string, ...string[]]}
-      style={styles.gradient}
+      style={{ flex: 1 }}
     >
       <ScrollView
-        style={styles.container}
+        style={{ flex: 1 }}
         contentContainerStyle={{
           paddingTop: insets.top + 8,
           paddingBottom: 100,
@@ -445,332 +371,158 @@ export function SubscriptionScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Header ── */}
-        <Animated.View entering={stagger(0)} style={styles.header}>
-          <TamaguiPressableScale
-            onPress={() => navigation.goBack()}
-            style={{ padding: 4 }}
-            hapticType="light"
+        <Animated.View entering={stagger(0)}>
+          <XStack
+            paddingHorizontal={Layout.screenPadding}
+            alignItems="center"
+            justifyContent="space-between"
+            marginBottom={20}
           >
-            <Ionicons name="chevron-back" size={24} color={Colors.text} />
-          </TamaguiPressableScale>
-          <TamaguiText
-            style={
-              {
-                fontSize: 17,
-                fontWeight: '600',
-                color: Colors.darkTextPrimary,
-                letterSpacing: -0.3,
-              } as any
-            }
-          >
-            구독 관리
-          </TamaguiText>
-          <View style={{ width: 24 }} />
+            <TamaguiPressableScale
+              onPress={() => navigation.goBack()}
+              style={{ padding: 4 }}
+              hapticType="light"
+            >
+              <Ionicons name="chevron-back" size={24} color={theme.textPrimary.val} />
+            </TamaguiPressableScale>
+            <Text fontSize={17} fontWeight="600" color="$textPrimary" letterSpacing={-0.3}>
+              구독 관리
+            </Text>
+            <YStack width={24} />
+          </XStack>
         </Animated.View>
 
         {/* ── Current Plan Card ── */}
-        <Animated.View entering={stagger(1)} style={styles.section}>
-          <View style={styles.currentPlanCard}>
-            <TamaguiText
-              style={
-                {
-                  fontSize: 12,
-                  fontWeight: '600',
-                  color: Colors.darkTextTertiary,
-                  letterSpacing: 0.5,
-                } as any
-              }
+        <Animated.View entering={stagger(1)}>
+          <YStack paddingHorizontal={Layout.screenPadding} marginTop={16}>
+            <YStack
+              backgroundColor="$surface"
+              borderRadius={16}
+              padding={24}
+              borderWidth={0.5}
+              borderColor="$borderColor"
             >
-              현재 플랜
-            </TamaguiText>
-            <TamaguiText
-              style={
-                {
-                  fontSize: 32,
-                  fontWeight: '200',
-                  color: Colors.darkTextPrimary,
-                  letterSpacing: -3,
-                  marginTop: 4,
-                } as any
-              }
-            >
-              {TIER_NAMES[currentTier]}
-            </TamaguiText>
-            {isPaid && subscription?.current_period_end && (
-              <TamaguiText
-                style={
-                  {
-                    fontSize: 12,
-                    fontWeight: '400',
-                    color: Colors.darkTextTertiary,
-                    marginTop: 8,
-                    letterSpacing: -0.2,
-                  } as any
-                }
+              <Text fontSize={12} fontWeight="600" color="$textTertiary" letterSpacing={0.5}>
+                현재 플랜
+              </Text>
+              <Text
+                fontSize={32}
+                fontWeight="200"
+                color="$textPrimary"
+                letterSpacing={-3}
+                marginTop={4}
               >
-                {remainingDays}일 남음
-              </TamaguiText>
-            )}
-          </View>
+                {TIER_NAMES[currentTier]}
+              </Text>
+              {isPaid && subscription?.current_period_end && (
+                <Text
+                  fontSize={12}
+                  fontWeight="400"
+                  color="$textTertiary"
+                  marginTop={8}
+                  letterSpacing={-0.2}
+                >
+                  {remainingDays}일 남음
+                </Text>
+              )}
+            </YStack>
+          </YStack>
         </Animated.View>
 
         {/* ── Usage Dashboard ── */}
-        <Animated.View entering={stagger(2)} style={styles.section}>
-          <TamaguiText
-            style={
-              {
-                fontSize: 13,
-                fontWeight: '700',
-                color: Colors.darkTextPrimary,
-                letterSpacing: -0.2,
-                marginBottom: 12,
-              } as any
-            }
-          >
-            사용량
-          </TamaguiText>
-          <View style={styles.usageCard}>
-            {USAGE_ITEMS.map((item, idx) => (
-              <UsageBar
-                key={item.label}
-                label={item.label}
-                used={usage?.[item.usedKey] ?? 0}
-                limit={PLAN_LIMITS[currentTier][item.limitKey]}
-                index={idx}
-              />
-            ))}
-          </View>
+        <Animated.View entering={stagger(2)}>
+          <YStack paddingHorizontal={Layout.screenPadding} marginTop={16}>
+            <Text
+              fontSize={13}
+              fontWeight="700"
+              color="$textPrimary"
+              letterSpacing={-0.2}
+              marginBottom={12}
+            >
+              사용량
+            </Text>
+            <YStack
+              backgroundColor="$surface"
+              borderRadius={16}
+              padding={20}
+              gap={18}
+              borderWidth={0.5}
+              borderColor="$borderColor"
+            >
+              {USAGE_ITEMS.map((item) => (
+                <QuotaBar
+                  key={item.label}
+                  label={item.label}
+                  used={usage?.[item.usedKey] ?? 0}
+                  total={
+                    PLAN_LIMITS[currentTier][item.limitKey] === -1
+                      ? Infinity
+                      : PLAN_LIMITS[currentTier][item.limitKey]
+                  }
+                  icon={
+                    item.label === '입학 가능성 분석'
+                      ? 'school-outline'
+                      : item.label === '빈자리 알림'
+                        ? 'notifications-outline'
+                        : 'chatbubble-outline'
+                  }
+                  showUpgradeCta={false}
+                />
+              ))}
+            </YStack>
+          </YStack>
         </Animated.View>
 
         {/* ── Plan Comparison ── */}
-        <Animated.View entering={stagger(6)} style={styles.section}>
-          <TamaguiText
-            style={
-              {
-                fontSize: 13,
-                fontWeight: '700',
-                color: Colors.darkTextPrimary,
-                letterSpacing: -0.2,
-                marginBottom: 12,
-              } as any
-            }
-          >
-            요금제 비교
-          </TamaguiText>
-          <View style={styles.plansContainer}>
-            {TIERS.map((tier) => (
-              <PlanColumn
-                key={tier}
-                tier={tier}
-                isCurrentTier={currentTier === tier}
-                plan={plans.find((p) => p.tier === tier)}
-                onUpgrade={handleUpgrade}
-              />
-            ))}
-          </View>
+        <Animated.View entering={stagger(6)}>
+          <YStack paddingHorizontal={Layout.screenPadding} marginTop={16}>
+            <Text
+              fontSize={13}
+              fontWeight="700"
+              color="$textPrimary"
+              letterSpacing={-0.2}
+              marginBottom={12}
+            >
+              요금제 비교
+            </Text>
+            <YStack gap={12}>
+              {TIERS.map((tier) => (
+                <PlanColumn
+                  key={tier}
+                  tier={tier}
+                  isCurrentTier={currentTier === tier}
+                  plan={plans.find((p) => p.tier === tier)}
+                  onUpgrade={handleUpgrade}
+                />
+              ))}
+            </YStack>
+          </YStack>
         </Animated.View>
 
         {/* ── Cancel Subscription ── */}
         {isPaid && (
-          <Animated.View entering={stagger(7)} style={styles.cancelSection}>
-            <TamaguiPressableScale onPress={handleCancel} hapticType="light">
-              <TamaguiText
-                style={
-                  {
-                    fontSize: 13,
-                    fontWeight: '500',
-                    color: Colors.darkTextTertiary,
-                    letterSpacing: -0.2,
-                  } as any
-                }
-              >
-                구독 해지
-              </TamaguiText>
-            </TamaguiPressableScale>
+          <Animated.View entering={stagger(7)}>
+            <YStack marginTop={32} alignItems="center" paddingBottom={20}>
+              <TamaguiPressableScale onPress={handleCancel} hapticType="light">
+                <Text fontSize={13} fontWeight="500" color="$textTertiary" letterSpacing={-0.2}>
+                  구독 해지
+                </Text>
+              </TamaguiPressableScale>
+            </YStack>
           </Animated.View>
         )}
+
+        {/* ── Social Proof Footer ── */}
+        <YStack alignItems="center" gap="$3" marginTop="$6" paddingBottom="$5">
+          <XStack alignItems="center" gap="$2">
+            <Ionicons name="shield-checkmark-outline" size={14} color={theme.textTertiary.val} />
+            <Text fontSize={12} color="$textTertiary">언제든 해지 가능</Text>
+          </XStack>
+          <SocialProofBadge count={5432} label="{count}명이 이용 중" size="sm" />
+        </YStack>
       </ScrollView>
     </LinearGradient>
   );
 }
 
 export default SubscriptionScreen;
-
-// ── Styles ──
-
-const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
-  },
-
-  container: {
-    flex: 1,
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.screenPadding,
-    marginBottom: 20,
-  },
-
-  section: {
-    paddingHorizontal: Layout.screenPadding,
-    marginTop: 16,
-  },
-
-  // Current Plan
-  currentPlanCard: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-
-  // Usage Dashboard
-  usageCard: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 16,
-    padding: 20,
-    gap: 18,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-
-  usageRow: {},
-
-  usageHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginBottom: 8,
-  },
-
-  usageNumbers: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-
-  progressBarBg: {
-    height: 4,
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-
-  progressBarFill: {
-    height: 4,
-    backgroundColor: Colors.primary,
-    borderRadius: 2,
-  },
-
-  // Plans
-  plansContainer: {
-    gap: 12,
-  },
-
-  planCard: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 14,
-    padding: 20,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-
-  planCardSelected: {
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    backgroundColor: Colors.darkSurfaceElevated,
-  },
-
-  planCardPremium: {
-    borderColor: Colors.darkBorder,
-  },
-
-  planHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-
-  planIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.darkSurfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-
-  planTitleBlock: {
-    flex: 1,
-  },
-
-  planTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-
-  currentBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    backgroundColor: Colors.whiteAlpha25,
-  },
-
-  recommendBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    backgroundColor: Colors.primary,
-  },
-
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginTop: 2,
-  },
-
-  planDivider: {
-    height: 0.5,
-    backgroundColor: Colors.darkBorder,
-    marginVertical: 16,
-  },
-
-  comparisonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-
-  upgradeBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-
-  upgradeBtnPremium: {
-    backgroundColor: Colors.primary,
-  },
-
-  // Cancel
-  cancelSection: {
-    marginTop: 32,
-    alignItems: 'center',
-    paddingBottom: 20,
-  },
-});

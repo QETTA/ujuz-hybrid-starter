@@ -12,21 +12,23 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View, ScrollView } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import BottomSheet from '@gorhom/bottom-sheet';
 import * as Haptics from 'expo-haptics';
+import { useTheme } from 'tamagui';
 
 import { MapboxMapView, ThreeSnapBottomSheet } from '@/app/components/map';
 import { ConfidenceBadge } from '@/app/components/dataBlock';
 import {
+  TamaguiChip,
   TamaguiEmptyState,
   TamaguiGlassCard,
   TamaguiText,
   TamaguiPressableScale,
 } from '@/app/design-system';
-import { Colors, Shadows } from '@/app/constants';
+import { Shadows } from '@/app/constants';
 import { COPY } from '@/app/copy/copy.ko';
 import { MOCK_MAP_PLACES } from '@/app/data/mocks';
 import { useInsights } from '@/app/hooks/useInsights';
@@ -41,6 +43,7 @@ import type { PlaceWithDistance } from '@/app/types/places';
 import type { DataBlock } from '@/app/types/dataBlock';
 
 export default function MapScreenMapbox() {
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<MapScreenNavigationProp>();
 
@@ -129,6 +132,114 @@ export default function MapScreenMapbox() {
     };
   }, [visiblePlaces, filterCategory, insightsMap]);
 
+  const styles = useMemo(
+    () => ({
+      container: {
+        flex: 1,
+        backgroundColor: theme.background.val,
+      } as const,
+      header: {
+        position: 'absolute' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 16,
+      },
+      searchBar: {
+        height: 44,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 14,
+        paddingHorizontal: 16,
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'space-between' as const,
+        ...Shadows.card,
+      },
+      searchText: {
+        fontSize: 16,
+        fontWeight: '600' as const,
+        color: theme.textPrimary.val,
+        letterSpacing: -0.2,
+      },
+      searchHint: {
+        fontSize: 12,
+        fontWeight: '700' as const,
+        color: theme.textTertiary.val,
+        opacity: 0.8,
+      },
+      layerChips: {
+        position: 'absolute' as const,
+        top: 74,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 16,
+      },
+      chipsContainer: {
+        gap: 8,
+        paddingRight: 16,
+      },
+      statsCardWrapper: {
+        position: 'absolute' as const,
+        top: 132,
+        left: 16,
+        right: 16,
+      },
+      statsHeader: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'space-between' as const,
+        marginBottom: 6,
+      },
+      statsTitle: {
+        fontSize: 15,
+        fontWeight: '700' as const,
+        color: theme.textPrimary.val,
+        letterSpacing: -0.2,
+      },
+      statsSub: {
+        marginTop: 4,
+        fontSize: 13,
+        fontWeight: '600' as const,
+        color: theme.textSecondary.val,
+        letterSpacing: -0.2,
+      },
+      statsHint: {
+        marginTop: 6,
+        fontSize: 12,
+        color: theme.textTertiary.val,
+      },
+      locationButton: {
+        position: 'absolute' as const,
+        right: 16,
+        bottom: 160,
+        backgroundColor: theme.textPrimary.val,
+        borderRadius: 14,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        ...Shadows.card,
+      },
+      locationText: {
+        fontSize: 13,
+        fontWeight: '800' as const,
+        color: theme.background.val,
+        letterSpacing: -0.2,
+      },
+      emptyCard: {
+        position: 'absolute' as const,
+        top: 220,
+        left: 16,
+        right: 16,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 16,
+        padding: 14,
+        alignItems: 'center' as const,
+        gap: 10,
+        ...Shadows.card,
+      },
+    }),
+    [theme]
+  );
+
   return (
     <View style={styles.container}>
       <MapboxMapView
@@ -180,42 +291,12 @@ export default function MapScreenMapbox() {
           contentContainerStyle={styles.chipsContainer}
         >
           {layerChips.map((chip) => (
-            <TamaguiPressableScale
+            <TamaguiChip
               key={chip.key}
+              label={chip.label}
+              variant={activeLayer === chip.key ? 'filled' : 'outlined'}
               onPress={() => setActiveLayer(chip.key)}
-              hapticType="light"
-              style={[styles.chip, activeLayer === chip.key && styles.chipActive]}
-              accessibilityLabel={`${chip.label} 필터`}
-            >
-              <View style={styles.chipLabelRow}>
-                <TamaguiText
-                  preset="caption"
-                  textColor={activeLayer === chip.key ? 'inverse' : 'secondary'}
-                  weight="semibold"
-                  style={styles.chipText}
-                >
-                  {chip.label}
-                </TamaguiText>
-                {typeof chip.count === 'number' && (
-                  <View
-                    style={[
-                      styles.chipBadge,
-                      chip.count === 0 && styles.chipBadgeMuted,
-                      activeLayer === chip.key && styles.chipBadgeActive,
-                    ]}
-                  >
-                    <TamaguiText
-                      preset="caption"
-                      textColor={chip.count === 0 ? 'tertiary' : 'primary'}
-                      weight="bold"
-                      style={styles.chipBadgeText}
-                    >
-                      {chip.count}
-                    </TamaguiText>
-                  </View>
-                )}
-              </View>
-            </TamaguiPressableScale>
+            />
           ))}
         </ScrollView>
       </View>
@@ -279,151 +360,3 @@ export default function MapScreenMapbox() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.white,
-  },
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-  },
-  searchBar: {
-    height: 44,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    ...Shadows.card,
-  },
-  searchText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.text,
-    letterSpacing: -0.2,
-  },
-  searchHint: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textTertiary,
-    opacity: 0.8,
-  },
-  layerChips: {
-    position: 'absolute',
-    top: 74,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-  },
-  chipsContainer: {
-    gap: 8,
-    paddingRight: 16,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.06)',
-  },
-  chipActive: {
-    backgroundColor: Colors.text,
-    borderColor: Colors.text,
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    letterSpacing: -0.2,
-  },
-  chipLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  chipBadge: {
-    minWidth: 18,
-    height: 18,
-    paddingHorizontal: 6,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.white,
-  },
-  chipBadgeMuted: {
-    backgroundColor: Colors.backgroundSecondary,
-  },
-  chipBadgeActive: {
-    backgroundColor: Colors.white,
-  },
-  chipBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  statsCardWrapper: {
-    position: 'absolute',
-    top: 132,
-    left: 16,
-    right: 16,
-  },
-  statsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  statsTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.text,
-    letterSpacing: -0.2,
-  },
-  statsSub: {
-    marginTop: 4,
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    letterSpacing: -0.2,
-  },
-  statsHint: {
-    marginTop: 6,
-    fontSize: 12,
-    color: Colors.textTertiary,
-  },
-  locationButton: {
-    position: 'absolute',
-    right: 16,
-    bottom: 160,
-    backgroundColor: Colors.text,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    ...Shadows.card,
-  },
-  locationText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: Colors.white,
-    letterSpacing: -0.2,
-  },
-  emptyCard: {
-    position: 'absolute',
-    top: 220,
-    left: 16,
-    right: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 14,
-    alignItems: 'center',
-    gap: 10,
-    ...Shadows.card,
-  },
-});

@@ -6,10 +6,10 @@
  * - 카테고리 필터만 명확하게 노출
  */
 
-import { useCallback } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useMemo } from 'react';
+import { ScrollView, View } from 'react-native';
+import { useTheme } from 'tamagui';
 import { TamaguiChip, TamaguiChipGroup } from '@/app/design-system/components';
-import { Colors } from '@/app/constants';
 import { COPY } from '@/app/copy/copy.ko';
 import { useFilterStore } from '@/app/stores/filterStore';
 import type { FilterCategory } from '@/app/types/places';
@@ -28,6 +28,7 @@ const FILTERS: FilterItem[] = [
 
 export default function QuickFilter() {
   const { filterCategory, setFilterCategory } = useFilterStore();
+  const theme = useTheme();
 
   const handlePress = useCallback(
     (category: FilterCategory) => {
@@ -43,6 +44,18 @@ export default function QuickFilter() {
   const handleClear = useCallback(() => {
     setFilterCategory(null);
   }, [setFilterCategory]);
+
+  const styles = useMemo(() => ({
+    container: {
+      backgroundColor: theme.background.val,
+      paddingVertical: 10,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.borderColor.val,
+    },
+    scrollContent: {
+      paddingHorizontal: 16,
+    },
+  }), [theme]);
 
   return (
     <View style={styles.container} accessibilityRole="toolbar">
@@ -79,15 +92,3 @@ export default function QuickFilter() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: Colors.darkBg,
-    paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-  },
-});

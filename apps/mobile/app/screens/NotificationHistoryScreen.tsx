@@ -6,19 +6,19 @@
  */
 
 import { useEffect, useMemo, useCallback } from 'react';
-import { StyleSheet, View, Pressable, SectionList } from 'react-native';
+import { View, SectionList, type ViewStyle, type TextStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from 'tamagui';
 
 import type { RootStackNavigationProp } from '@/app/types/navigation';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 // LinearGradient removed — flat dark bg
-import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 import { Colors, Layout } from '@/app/constants';
-import { TamaguiText, TamaguiPressableScale, TamaguiEmptyState } from '@/app/design-system';
+import { TamaguiText, TamaguiPressableScale, TamaguiEmptyState, TamaguiHeader } from '@/app/design-system';
 import { useNotifications } from '@/app/hooks/useNotifications';
 import { COPY } from '@/app/copy/copy.ko';
 import type { TOAlert } from '@/app/types/toAlert';
@@ -111,6 +111,7 @@ function groupAlertsByDate(alerts: TOAlert[]): AlertSection[] {
 export function NotificationHistoryScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<RootStackNavigationProp>();
+  const theme = useTheme();
 
   const { alerts, unreadCount, fetchAlerts, markAlertRead, markAllRead, isLoading } =
     useNotifications();
@@ -130,6 +131,153 @@ export function NotificationHistoryScreen() {
   );
 
   // ─────────────────────────────────────────────────────────
+  // Theme-aware styles
+  // ─────────────────────────────────────────────────────────
+
+  const styles = useMemo(
+    () => ({
+      root: {
+        flex: 1,
+        backgroundColor: theme.background.val,
+      } as ViewStyle,
+
+      // Section
+      sectionHeader: {
+        fontSize: 13,
+        color: theme.textTertiary.val,
+        paddingHorizontal: Layout.screenPadding,
+        marginTop: 20,
+        marginBottom: 10,
+        letterSpacing: -0.2,
+      } as TextStyle,
+
+      // List
+      listContent: {
+        paddingTop: 56 + insets.top + 4,
+      } as ViewStyle,
+      listContentEmpty: {
+        flex: 1,
+      } as ViewStyle,
+
+      // Alert Card
+      alertCard: {
+        flexDirection: 'row',
+        marginHorizontal: 20,
+        marginBottom: 8,
+        padding: 16,
+        backgroundColor: theme.surface.val,
+        borderRadius: 14,
+        borderWidth: 0.5,
+        borderColor: theme.borderColor.val,
+      } as ViewStyle,
+      unreadDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: Colors.primary,
+        marginRight: 10,
+        marginTop: 6,
+      } as ViewStyle,
+      alertContent: {
+        flex: 1,
+      } as ViewStyle,
+
+      // Alert Row 1: facility + age class
+      alertRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 4,
+      } as ViewStyle,
+      facilityName: {
+        fontSize: 14,
+        color: theme.textPrimary.val,
+        letterSpacing: -0.3,
+        flexShrink: 1,
+      } as TextStyle,
+      ageClassBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        backgroundColor: theme.surfaceElevated.val,
+        borderRadius: 6,
+        marginLeft: 8,
+      } as ViewStyle,
+      ageClassText: {
+        fontSize: 11,
+        color: theme.textSecondary.val,
+        letterSpacing: -0.2,
+      } as TextStyle,
+
+      // Alert Row 2: slots
+      slotsText: {
+        fontSize: 13,
+        color: theme.textSecondary.val,
+        letterSpacing: -0.2,
+        marginBottom: 8,
+      } as TextStyle,
+
+      // Alert Row 3: footer
+      alertFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      } as ViewStyle,
+      footerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+      } as ViewStyle,
+      timeText: {
+        fontSize: 12,
+        color: theme.textTertiary.val,
+        letterSpacing: -0.2,
+      } as TextStyle,
+      sourceBadge: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        backgroundColor: theme.surfaceElevated.val,
+        borderRadius: 4,
+      } as ViewStyle,
+      sourceText: {
+        fontSize: 10,
+        color: theme.textTertiary.val,
+        letterSpacing: -0.2,
+      } as TextStyle,
+      confidenceBadge: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        backgroundColor: theme.surfaceElevated.val,
+        borderRadius: 4,
+      } as ViewStyle,
+      confidenceText: {
+        fontSize: 10,
+        color: theme.textTertiary.val,
+        letterSpacing: -0.2,
+      } as TextStyle,
+
+      // Empty State
+      emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: Layout.screenPadding,
+      } as ViewStyle,
+      ctaButton: {
+        marginTop: 20,
+        paddingHorizontal: 28,
+        paddingVertical: 16,
+        backgroundColor: Colors.primary,
+        borderRadius: 14,
+      } as ViewStyle,
+      ctaText: {
+        color: theme.background.val,
+        letterSpacing: -0.2,
+      } as TextStyle,
+    }),
+    [theme, insets.top]
+  );
+
+  // ─────────────────────────────────────────────────────────
   // Renderers
   // ─────────────────────────────────────────────────────────
 
@@ -139,7 +287,7 @@ export function NotificationHistoryScreen() {
         {section.title}
       </TamaguiText>
     ),
-    []
+    [styles]
   );
 
   const renderAlert = useCallback(
@@ -208,7 +356,7 @@ export function NotificationHistoryScreen() {
         </Animated.View>
       );
     },
-    [handleAlertPress]
+    [handleAlertPress, styles]
   );
 
   const renderEmpty = useCallback(
@@ -232,7 +380,7 @@ export function NotificationHistoryScreen() {
         </TamaguiPressableScale>
       </View>
     ),
-    [navigation]
+    [navigation, styles]
   );
 
   // ─────────────────────────────────────────────────────────
@@ -242,49 +390,13 @@ export function NotificationHistoryScreen() {
   return (
     <View style={styles.root}>
       {/* Header */}
-      <Animated.View
-        entering={FadeInDown.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
-      >
-        <Pressable
-          onPress={() => navigation.goBack()}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel="뒤로 가기"
-          accessibilityHint="이전 화면으로 돌아갑니다"
-        >
-          <Ionicons name="chevron-back" size={24} color={Colors.darkTextPrimary} />
-        </Pressable>
-
-        <View style={styles.headerCenter}>
-          <TamaguiText preset="h4" weight="bold" style={styles.headerTitle}>
-            알림
-          </TamaguiText>
-          {unreadCount > 0 && (
-            <View style={styles.unreadBadge}>
-              <TamaguiText preset="caption" weight="bold" style={styles.unreadBadgeText}>
-                {unreadCount}
-              </TamaguiText>
-            </View>
-          )}
-        </View>
-
-        {unreadCount > 0 ? (
-          <Pressable
-            onPress={markAllRead}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="모두 읽음 처리"
-            accessibilityHint="모든 알림을 읽음 상태로 변경합니다"
-          >
-            <TamaguiText preset="bodySmall" weight="semibold" style={styles.markAllReadText}>
-              모두 읽음
-            </TamaguiText>
-          </Pressable>
-        ) : (
-          <View style={styles.headerPlaceholder} />
-        )}
-      </Animated.View>
+      <TamaguiHeader
+        title="알림"
+        showBack
+        onBack={() => navigation.goBack()}
+        rightIcon={unreadCount > 0 ? 'checkmark-done' : undefined}
+        onRightPress={unreadCount > 0 ? markAllRead : undefined}
+      />
 
       {/* Alert SectionList */}
       <SectionList
@@ -306,189 +418,5 @@ export function NotificationHistoryScreen() {
     </View>
   );
 }
-
-// ═══════════════════════════════════════════════════════════
-// STYLES
-// ═══════════════════════════════════════════════════════════
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.darkBg,
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Layout.screenPadding,
-    paddingBottom: 12,
-  },
-  headerCenter: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 8,
-    gap: 8,
-  },
-  headerTitle: {
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.5,
-  },
-  headerPlaceholder: {
-    width: 60,
-  },
-  unreadBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  unreadBadgeText: {
-    fontSize: 11,
-    color: Colors.darkBg,
-    letterSpacing: -0.2,
-  },
-  markAllReadText: {
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.2,
-  },
-
-  // Section
-  sectionHeader: {
-    fontSize: 13,
-    color: Colors.darkTextTertiary,
-    paddingHorizontal: Layout.screenPadding,
-    marginTop: 20,
-    marginBottom: 10,
-    letterSpacing: -0.2,
-  },
-
-  // List
-  listContent: {
-    paddingTop: 4,
-  },
-  listContentEmpty: {
-    flex: 1,
-  },
-
-  // Alert Card
-  alertCard: {
-    flexDirection: 'row',
-    marginHorizontal: 20,
-    marginBottom: 8,
-    padding: 16,
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 14,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  unreadDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.primary,
-    marginRight: 10,
-    marginTop: 6,
-  },
-  alertContent: {
-    flex: 1,
-  },
-
-  // Alert Row 1: facility + age class
-  alertRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  facilityName: {
-    fontSize: 14,
-    color: Colors.darkTextPrimary,
-    letterSpacing: -0.3,
-    flexShrink: 1,
-  },
-  ageClassBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 6,
-    marginLeft: 8,
-  },
-  ageClassText: {
-    fontSize: 11,
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.2,
-  },
-
-  // Alert Row 2: slots
-  slotsText: {
-    fontSize: 13,
-    color: Colors.darkTextSecondary,
-    letterSpacing: -0.2,
-    marginBottom: 8,
-  },
-
-  // Alert Row 3: footer
-  alertFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  footerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  timeText: {
-    fontSize: 12,
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-  },
-  sourceBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 4,
-  },
-  sourceText: {
-    fontSize: 10,
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-  },
-  confidenceBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 4,
-  },
-  confidenceText: {
-    fontSize: 10,
-    color: Colors.darkTextTertiary,
-    letterSpacing: -0.2,
-  },
-
-  // Empty State
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: Layout.screenPadding,
-  },
-  ctaButton: {
-    marginTop: 20,
-    paddingHorizontal: 28,
-    paddingVertical: 16,
-    backgroundColor: Colors.primary,
-    borderRadius: 14,
-  },
-  ctaText: {
-    color: Colors.darkBg,
-    letterSpacing: -0.2,
-  },
-});
 
 export default NotificationHistoryScreen;

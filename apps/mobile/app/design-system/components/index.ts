@@ -1,5 +1,5 @@
 /**
- * KidsMap Design System - Tamagui Components
+ * UJUz Design System - Tamagui Components
  * 2026 Design System
  */
 

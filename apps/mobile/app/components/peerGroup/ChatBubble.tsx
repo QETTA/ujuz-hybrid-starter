@@ -1,9 +1,11 @@
-// 채팅 버블 컴포넌트
+/**
+ * ChatBubble - 채팅 버블 컴포넌트
+ *
+ * 2026 UJUz 테마 토큰 기반
+ */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Colors } from '@/app/constants';
-import { TamaguiText } from '@/app/design-system';
+import { YStack, Text } from 'tamagui';
 import type { PeerGroupMessage } from '@/app/types/peerGroup';
 
 interface ChatBubbleProps {
@@ -23,75 +25,50 @@ export const ChatBubble = React.memo(function ChatBubble({
   });
 
   return (
-    <View style={[styles.container, isOwn && styles.ownContainer]}>
+    <YStack
+      marginVertical={4}
+      marginHorizontal={16}
+      maxWidth="80%"
+      alignSelf={isOwn ? 'flex-end' : 'flex-start'}
+    >
       {showSender && !isOwn && (
-        <TamaguiText preset="caption" textColor="secondary" style={styles.sender}>
+        <Text
+          fontSize={12}
+          color="$textSecondary"
+          marginBottom={4}
+          marginLeft={12}
+        >
           {message.sender?.display_name || message.sender?.child_name || '익명'}
-        </TamaguiText>
+        </Text>
       )}
 
-      <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.otherBubble]}>
-        <TamaguiText preset="body" style={[styles.content, isOwn && styles.ownContent]}>
+      <YStack
+        borderRadius={18}
+        paddingHorizontal={14}
+        paddingVertical={10}
+        backgroundColor={isOwn ? '$primary' : '$surfaceElevated'}
+        borderBottomRightRadius={isOwn ? 4 : 18}
+        borderBottomLeftRadius={isOwn ? 18 : 4}
+      >
+        <Text
+          fontSize={15}
+          lineHeight={20}
+          color={isOwn ? '$background' : '$textPrimary'}
+        >
           {message.is_deleted ? '삭제된 메시지입니다' : message.content}
-        </TamaguiText>
-      </View>
+        </Text>
+      </YStack>
 
-      <TamaguiText
-        preset="caption"
-        textColor="tertiary"
-        style={[styles.time, isOwn && styles.ownTime]}
+      <Text
+        fontSize={11}
+        color="$textTertiary"
+        marginTop={4}
+        marginLeft={isOwn ? 0 : 12}
+        marginRight={isOwn ? 12 : 0}
+        textAlign={isOwn ? 'right' : 'left'}
       >
         {time}
-      </TamaguiText>
-    </View>
+      </Text>
+    </YStack>
   );
-});
-
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 4,
-    marginHorizontal: 16,
-    maxWidth: '80%',
-  },
-  ownContainer: {
-    alignSelf: 'flex-end',
-  },
-  sender: {
-    fontSize: 12,
-    color: Colors.darkTextSecondary,
-    marginBottom: 4,
-    marginLeft: 12,
-  },
-  bubble: {
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  ownBubble: {
-    backgroundColor: Colors.primary,
-    borderBottomRightRadius: 4,
-  },
-  otherBubble: {
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderBottomLeftRadius: 4,
-  },
-  content: {
-    fontSize: 15,
-    lineHeight: 20,
-    color: Colors.darkTextPrimary,
-  },
-  ownContent: {
-    color: Colors.darkBg,
-  },
-  time: {
-    fontSize: 11,
-    color: Colors.darkTextTertiary,
-    marginTop: 4,
-    marginLeft: 12,
-  },
-  ownTime: {
-    textAlign: 'right',
-    marginRight: 12,
-    marginLeft: 0,
-  },
 });

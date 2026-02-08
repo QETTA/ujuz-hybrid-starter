@@ -1,15 +1,18 @@
 /**
  * FeedbackScreen - Post-visit feedback
- * Design System: TamaguiText, TamaguiPressableScale
+ * Design System: TamaguiText, TamaguiPressableScale, TamaguiHeader
+ *
+ * 2026 UJUz 테마 토큰 기반
  */
 
-import { useState } from 'react';
-import { View, StyleSheet, TextInput } from 'react-native';
+import { useState, useMemo } from 'react';
+import { View, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from 'tamagui';
 import { useNavigation } from '@react-navigation/native';
 import { Colors, Layout } from '@/app/constants';
-import { TamaguiText, TamaguiPressableScale } from '@/app/design-system';
+import { TamaguiText, TamaguiPressableScale, TamaguiHeader } from '@/app/design-system';
 import { useToast } from '@/app/components/shared/Toast';
 import type { RootStackNavigationProp } from '@/app/types/navigation';
 
@@ -18,6 +21,7 @@ const RATINGS = [1, 2, 3, 4, 5];
 export default function FeedbackScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<RootStackNavigationProp>();
+  const theme = useTheme();
   const [rating, setRating] = useState(5);
   const [note, setNote] = useState('');
 
@@ -28,21 +32,61 @@ export default function FeedbackScreen() {
     navigation.goBack();
   };
 
+  const styles = useMemo(
+    () => ({
+      container: {
+        flex: 1 as const,
+        backgroundColor: theme.background.val,
+        paddingHorizontal: Layout.screenPadding,
+      },
+      card: {
+        padding: 16,
+        borderRadius: 16,
+        backgroundColor: theme.surface.val,
+        borderWidth: 0.5,
+        borderColor: theme.borderColor.val,
+      },
+      label: {
+        marginBottom: 10,
+      },
+      labelTop: {
+        marginTop: 16,
+        marginBottom: 10,
+      },
+      ratingRow: {
+        flexDirection: 'row' as const,
+        gap: 6,
+      },
+      textArea: {
+        minHeight: 120,
+        backgroundColor: theme.surfaceElevated.val,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        fontSize: 14,
+        color: theme.textPrimary.val,
+        borderWidth: 0.5,
+        borderColor: theme.borderColor.val,
+      },
+      cta: {
+        marginTop: 16,
+        height: 52,
+        borderRadius: 16,
+        backgroundColor: Colors.primary,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+      },
+    }),
+    [theme]
+  );
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
-      <View style={styles.header}>
-        <TamaguiPressableScale
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          accessibilityLabel="뒤로 가기"
-        >
-          <Ionicons name="chevron-back" size={20} color={Colors.darkTextPrimary} />
-        </TamaguiPressableScale>
-        <TamaguiText preset="h3" textColor="primary" weight="bold">
-          후기 남기기
-        </TamaguiText>
-        <View style={{ width: 36 }} />
-      </View>
+    <View style={[styles.container, { paddingTop: insets.top + 56 }]}>
+      <TamaguiHeader
+        title="후기 남기기"
+        showBack
+        onBack={() => navigation.goBack()}
+      />
 
       <View style={styles.card}>
         <TamaguiText preset="caption" textColor="secondary" weight="semibold" style={styles.label}>
@@ -59,7 +103,7 @@ export default function FeedbackScreen() {
               <Ionicons
                 name={value <= rating ? 'star' : 'star-outline'}
                 size={26}
-                color={value <= rating ? Colors.ratingStar : Colors.darkTextTertiary}
+                color={value <= rating ? Colors.ratingStar : theme.textTertiary.val}
               />
             </TamaguiPressableScale>
           ))}
@@ -77,7 +121,7 @@ export default function FeedbackScreen() {
           value={note}
           onChangeText={setNote}
           placeholder="아이에게 어떤 점이 좋았나요?"
-          placeholderTextColor={Colors.darkTextTertiary}
+          placeholderTextColor={theme.textTertiary.val}
           style={styles.textArea}
           multiline
         />
@@ -97,64 +141,3 @@ export default function FeedbackScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.darkBg,
-    paddingHorizontal: Layout.screenPadding,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    minWidth: 44,
-    minHeight: 44,
-    borderRadius: 18,
-    backgroundColor: Colors.darkSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  card: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: Colors.darkSurface,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  label: {
-    marginBottom: 10,
-  },
-  labelTop: {
-    marginTop: 16,
-    marginBottom: 10,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  textArea: {
-    minHeight: 120,
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: Colors.darkTextPrimary,
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  cta: {
-    marginTop: 16,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

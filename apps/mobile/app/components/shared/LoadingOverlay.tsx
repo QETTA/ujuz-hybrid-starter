@@ -4,8 +4,10 @@
  * Full-screen loading overlay with iOS-style blur effect (UIBlurEffect)
  */
 
+import { useMemo } from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { useTheme } from 'tamagui';
 import { Colors } from '@/app/constants/Colors';
 import { TamaguiText } from '@/app/design-system';
 
@@ -15,6 +17,33 @@ interface LoadingOverlayProps {
 }
 
 export default function LoadingOverlay({ message, visible = true }: LoadingOverlayProps) {
+  const theme = useTheme();
+
+  const styles = useMemo(() => StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: Colors.overlayDark,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 9999,
+    },
+    container: {
+      backgroundColor: theme.surface.val,
+      borderRadius: 16,
+      padding: 24,
+      minWidth: 120,
+      alignItems: 'center',
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
+    },
+    message: {
+      marginTop: 16,
+      fontSize: 17,
+      color: theme.textPrimary.val,
+      textAlign: 'center',
+    },
+  }), [theme]);
+
   if (!visible) return null;
 
   const accessibilityLabel = message ? `처리 중. ${message}` : '처리 중입니다';
@@ -67,28 +96,3 @@ export default function LoadingOverlay({ message, visible = true }: LoadingOverl
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.overlayDark,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 9999,
-  },
-  container: {
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 16,
-    padding: 24,
-    minWidth: 120,
-    alignItems: 'center',
-    borderWidth: 0.5,
-    borderColor: Colors.darkBorder,
-  },
-  message: {
-    marginTop: 16,
-    fontSize: 17,
-    color: Colors.darkTextPrimary,
-    textAlign: 'center',
-  },
-});

@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - Place Components
+ * UJUz Mobile - Place Components
  * Updated for iOS 26 Design
  */
 

@@ -6,8 +6,9 @@
  * Used in: ThreeSnapBottomSheet, PlaceDetailSheet, PlaceCard
  */
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTheme } from 'tamagui';
 import { Colors } from '@/app/constants/Colors';
 import { TamaguiText } from '@/app/design-system';
 import { COPY } from '@/app/copy/copy.ko';
@@ -19,6 +20,8 @@ export interface PillProps {
 }
 
 export const Pill = memo(function Pill({ text, color, variant = 'default' }: PillProps) {
+  const theme = useTheme();
+
   const getColorFromVariant = () => {
     switch (variant) {
       case 'success':
@@ -28,12 +31,26 @@ export const Pill = memo(function Pill({ text, color, variant = 'default' }: Pil
       case 'info':
         return Colors.link;
       default:
-        return color || Colors.darkTextSecondary;
+        return color || theme.textSecondary.val;
     }
   };
 
   const pillColor = getColorFromVariant();
   const isFree = variant === 'success' || text.toLowerCase() === 'free';
+
+  const styles = useMemo(() => StyleSheet.create({
+    pill: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 6,
+      backgroundColor: theme.surfaceElevated.val,
+      marginRight: 6,
+      marginBottom: 6,
+    },
+    pillFree: {
+      backgroundColor: Colors.successMintBg,
+    },
+  }), [theme]);
 
   return (
     <View
@@ -48,18 +65,4 @@ export const Pill = memo(function Pill({ text, color, variant = 'default' }: Pil
       </TamaguiText>
     </View>
   );
-});
-
-const styles = StyleSheet.create({
-  pill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: Colors.darkSurfaceElevated,
-    marginRight: 6,
-    marginBottom: 6,
-  },
-  pillFree: {
-    backgroundColor: Colors.successMintBg,
-  },
 });

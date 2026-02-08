@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - Constants Index
+ * UJUz Mobile - Constants Index
  *
  * 통합 re-export: design-system/tokens의 모든 토큰을 여기서 제공
  * 새 코드는 @/app/constants에서 import하세요

@@ -11,22 +11,22 @@
  */
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Keyboard,
-  SafeAreaView,
-} from 'react-native';
+import { View, ScrollView, Keyboard } from 'react-native';
+import type { TextInput } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from 'tamagui';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlaceCard, QuickFilter } from '@/app/components/place';
-import { TamaguiEmptyState, TamaguiPlaceCardSkeleton } from '@/app/design-system';
+import {
+  TamaguiEmptyState,
+  TamaguiPlaceCardSkeleton,
+  TamaguiText,
+  TamaguiInput,
+  TamaguiPressableScale,
+} from '@/app/design-system';
 import { ConfidenceBadge } from '@/app/components/dataBlock';
 import { Colors, Layout } from '@/app/constants';
 import { COPY } from '@/app/copy/copy.ko';
@@ -44,9 +44,11 @@ import type { SearchScreenNavigationProp } from '@/app/types/navigation';
 import type { DataBlock } from '@/app/types/dataBlock';
 
 // Storage key
-const RECENT_SEARCHES_KEY = 'kidsmap.recentSearches';
+const RECENT_SEARCHES_KEY = 'ujuz.recentSearches';
 
 export default function SearchScreen() {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<SearchScreenNavigationProp>();
   const inputRef = useRef<TextInput>(null);
   const { announce } = useAccessibilityAnnouncement();
@@ -88,6 +90,56 @@ export default function SearchScreen() {
       latest.getTime() > 0 ? formatDistanceToNow(latest, { addSuffix: true, locale: ko }) : null;
     return { blockCount: blocks.length, confidence, sourceCount, updatedLabel };
   }, [insightsMap]);
+
+  // Theme-dependent styles
+  const styles = useMemo(
+    () => ({
+      container: {
+        flex: 1 as const,
+        backgroundColor: theme.background.val,
+        paddingTop: insets.top,
+      },
+      searchHeader: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        gap: 12,
+        borderBottomWidth: 0.5,
+        borderBottomColor: theme.borderColor.val,
+      },
+      trustRow: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'space-between' as const,
+        backgroundColor: theme.surface.val,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        marginBottom: 12,
+      },
+      section: {
+        paddingVertical: 16,
+        borderBottomWidth: 0.5,
+        borderBottomColor: theme.borderColor.val,
+      },
+      sectionHeader: {
+        flexDirection: 'row' as const,
+        justifyContent: 'space-between' as const,
+        alignItems: 'center' as const,
+        paddingHorizontal: Layout.screenPadding,
+        marginBottom: 12,
+      },
+      searchItem: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        paddingHorizontal: Layout.screenPadding,
+        paddingVertical: 12,
+        gap: 12,
+      },
+    }),
+    [theme, insets.top]
+  );
 
   useEffect(() => {
     // Auto-focus on mount
@@ -184,62 +236,39 @@ export default function SearchScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Search Header */}
       <View style={styles.searchHeader}>
-        <View style={styles.searchInputContainer}>
-          <Ionicons
-            name="search"
-            size={20}
-            color={Colors.darkTextTertiary}
-            style={styles.searchIcon}
-            accessibilityElementsHidden={true}
-          />
-          <TextInput
+        <View style={{ flex: 1 }}>
+          <TamaguiInput
             ref={inputRef}
-            style={styles.searchInput}
+            variant="search"
             placeholder={COPY.SEARCH_PLACEHOLDER}
-            placeholderTextColor={Colors.darkTextTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
             onSubmitEditing={handleSearchSubmit}
             returnKeyType="search"
             autoCapitalize="none"
             autoCorrect={false}
+            rightIcon={searchQuery.length > 0 ? 'close-circle' : undefined}
+            onRightIconPress={() => {
+              setSearchQuery('');
+              inputRef.current?.focus();
+            }}
             accessible={true}
             accessibilityLabel={COPY.A11Y_SEARCH_INPUT}
             accessibilityHint={COPY.A11Y_SEARCH_INPUT_HINT}
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                setSearchQuery('');
-                inputRef.current?.focus();
-              }}
-              hitSlop={Layout.hitSlop}
-              accessible={true}
-              accessibilityLabel={COPY.A11Y_CLEAR_SEARCH}
-              accessibilityRole="button"
-              accessibilityHint={COPY.A11Y_CLEAR_SEARCH_HINT}
-            >
-              <Ionicons
-                name="close-circle"
-                size={20}
-                color={Colors.darkTextTertiary}
-                accessibilityElementsHidden={true}
-              />
-            </TouchableOpacity>
-          )}
         </View>
-        <TouchableOpacity
+        <TamaguiPressableScale
           onPress={handleCancel}
-          accessible={true}
           accessibilityLabel={COPY.A11Y_CANCEL_SEARCH}
-          accessibilityRole="button"
           accessibilityHint={COPY.A11Y_CANCEL_SEARCH_HINT}
         >
-          <Text style={styles.cancelText}>{COPY.CANCEL}</Text>
-        </TouchableOpacity>
+          <TamaguiText preset="bodyLarge" textColor="brand">
+            {COPY.CANCEL}
+          </TamaguiText>
+        </TamaguiPressableScale>
       </View>
 
       {/* Filters */}
@@ -248,25 +277,25 @@ export default function SearchScreen() {
       {/* Content */}
       {showResults ? (
         // Search Results
-        <View style={styles.resultsContainer}>
+        <View style={{ flex: 1 }}>
           {isSearching ? (
-            <View style={styles.loadingContainer}>
+            <View style={{ paddingTop: 16 }}>
               <TamaguiPlaceCardSkeleton />
               <TamaguiPlaceCardSkeleton />
               <TamaguiPlaceCardSkeleton />
             </View>
           ) : searchResults.length > 0 ? (
-            <View style={styles.resultsBlock}>
+            <View style={{ flex: 1 }}>
               {trustStats.blockCount > 0 && (
                 <View style={styles.trustRow}>
-                  <Text style={styles.trustText}>
+                  <TamaguiText preset="caption" weight="semibold" textColor="secondary">
                     {COPY.DATA_BLOCKS_STAT(
                       trustStats.blockCount,
                       trustStats.confidence,
                       trustStats.sourceCount
                     )}
-                    {trustStats.updatedLabel ? ` · 업데이트 ${trustStats.updatedLabel}` : ''}
-                  </Text>
+                    {trustStats.updatedLabel ? ` · \uC5C5\uB370\uC774\uD2B8 ${trustStats.updatedLabel}` : ''}
+                  </TamaguiText>
                   <ConfidenceBadge confidence={trustStats.confidence} size="sm" />
                 </View>
               )}
@@ -274,7 +303,7 @@ export default function SearchScreen() {
                 data={searchResults}
                 renderItem={renderPlaceCard}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.resultsList}
+                contentContainerStyle={{ paddingVertical: 8 }}
                 accessibilityRole="list"
                 accessibilityLabel={COPY.A11Y_SEARCH_RESULTS}
               />
@@ -293,7 +322,7 @@ export default function SearchScreen() {
         </View>
       ) : (
         // Recent & Popular Searches
-        <ScrollView style={styles.suggestionsContainer}>
+        <ScrollView style={{ flex: 1 }}>
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
             <View
@@ -303,52 +332,56 @@ export default function SearchScreen() {
               accessibilityHint={COPY.A11Y_RECENT_SEARCHES_HINT}
             >
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle} accessibilityRole="header">
+                <TamaguiText
+                  fontSize={22}
+                  weight="semibold"
+                  letterSpacing={-0.3}
+                  accessibilityRole="header"
+                >
                   {COPY.RECENT_SEARCHES}
-                </Text>
-                <TouchableOpacity
+                </TamaguiText>
+                <TamaguiPressableScale
                   onPress={handleClearAll}
-                  accessible={true}
                   accessibilityLabel={COPY.A11Y_CLEAR_ALL_RECENT}
-                  accessibilityRole="button"
                   accessibilityHint={COPY.A11Y_CLEAR_ALL_RECENT_HINT}
                 >
-                  <Text style={styles.clearAllText}>{COPY.CLEAR_ALL}</Text>
-                </TouchableOpacity>
+                  <TamaguiText preset="bodyLarge" textColor="brand">
+                    {COPY.CLEAR_ALL}
+                  </TamaguiText>
+                </TamaguiPressableScale>
               </View>
               {recentSearches.map((query) => (
-                <TouchableOpacity
+                <TamaguiPressableScale
                   key={`recent-${query}`}
                   style={styles.searchItem}
                   onPress={() => handleRecentSearchPress(query)}
-                  accessible={true}
                   accessibilityLabel={COPY.A11Y_RECENT_SEARCH_ITEM(query)}
-                  accessibilityRole="button"
                   accessibilityHint={COPY.A11Y_RECENT_SEARCH_ITEM_HINT}
                 >
                   <Ionicons
                     name="time-outline"
                     size={20}
-                    color={Colors.darkTextTertiary}
+                    color={theme.textTertiary.val}
                     accessibilityElementsHidden={true}
                   />
-                  <Text style={styles.searchItemText}>{query}</Text>
-                  <TouchableOpacity
+                  <TamaguiText preset="bodyLarge" style={{ flex: 1 }}>
+                    {query}
+                  </TamaguiText>
+                  <TamaguiPressableScale
                     onPress={() => handleClearRecentSearch(query)}
-                    hitSlop={Layout.hitSlop}
-                    accessible={true}
+                    hapticType="none"
+                    style={{ padding: 4 }}
                     accessibilityLabel={COPY.A11Y_REMOVE_RECENT(query)}
-                    accessibilityRole="button"
                     accessibilityHint={COPY.A11Y_REMOVE_RECENT_HINT}
                   >
                     <Ionicons
                       name="close"
                       size={18}
-                      color={Colors.darkTextTertiary}
+                      color={theme.textTertiary.val}
                       accessibilityElementsHidden={true}
                     />
-                  </TouchableOpacity>
-                </TouchableOpacity>
+                  </TamaguiPressableScale>
+                </TamaguiPressableScale>
               ))}
             </View>
           )}
@@ -360,17 +393,20 @@ export default function SearchScreen() {
             accessibilityLabel={COPY.A11Y_POPULAR_SEARCHES}
             accessibilityHint={COPY.A11Y_POPULAR_SEARCHES_HINT}
           >
-            <Text style={styles.sectionTitle} accessibilityRole="header">
+            <TamaguiText
+              fontSize={22}
+              weight="semibold"
+              letterSpacing={-0.3}
+              accessibilityRole="header"
+            >
               {COPY.POPULAR}
-            </Text>
+            </TamaguiText>
             {MOCK_POPULAR_SEARCHES.map((query) => (
-              <TouchableOpacity
+              <TamaguiPressableScale
                 key={`popular-${query}`}
                 style={styles.searchItem}
                 onPress={() => handleRecentSearchPress(query)}
-                accessible={true}
                 accessibilityLabel={COPY.A11Y_POPULAR_SEARCH_ITEM(query)}
-                accessibilityRole="button"
                 accessibilityHint={COPY.A11Y_POPULAR_SEARCH_ITEM_HINT}
               >
                 <Ionicons
@@ -379,119 +415,20 @@ export default function SearchScreen() {
                   color={Colors.primary}
                   accessibilityElementsHidden={true}
                 />
-                <Text style={styles.searchItemText}>{query}</Text>
+                <TamaguiText preset="bodyLarge" style={{ flex: 1 }}>
+                  {query}
+                </TamaguiText>
                 <Ionicons
                   name="arrow-forward"
                   size={18}
-                  color={Colors.darkTextTertiary}
+                  color={theme.textTertiary.val}
                   accessibilityElementsHidden={true}
                 />
-              </TouchableOpacity>
+              </TamaguiPressableScale>
             ))}
           </View>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.darkBg,
-  },
-  searchHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-  },
-  searchInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 17,
-    color: Colors.darkTextPrimary,
-  },
-  cancelText: {
-    fontSize: 17,
-    color: Colors.primary,
-  },
-  resultsContainer: {
-    flex: 1,
-  },
-  resultsBlock: {
-    flex: 1,
-  },
-  loadingContainer: {
-    paddingTop: 16,
-  },
-  resultsList: {
-    paddingVertical: 8,
-  },
-  trustRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.darkSurface,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
-  },
-  trustText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.darkTextSecondary,
-  },
-  suggestionsContainer: {
-    flex: 1,
-  },
-  section: {
-    paddingVertical: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Layout.screenPadding,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    letterSpacing: -0.3,
-    color: Colors.darkTextPrimary,
-  },
-  clearAllText: {
-    fontSize: 17,
-    color: Colors.primary,
-  },
-  searchItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Layout.screenPadding,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  searchItemText: {
-    flex: 1,
-    fontSize: 17,
-    color: Colors.darkTextPrimary,
-  },
-});

@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - API Services Index
+ * UJUz Mobile - API Services Index
  */
 
 export * from './client';

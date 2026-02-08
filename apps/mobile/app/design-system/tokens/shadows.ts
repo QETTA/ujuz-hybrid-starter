@@ -46,9 +46,27 @@ export const Shadows = {
     elevation: 8,
   },
 
-  // Colored shadows for emphasis (NEW)
+  // Colored shadows for emphasis — Brand Mint
   primary: {
-    shadowColor: '#3b82f6',
+    shadowColor: '#5DDB9E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+
+  // Premium glow (purple)
+  premium: {
+    shadowColor: '#a855f7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+
+  // Deal glow (pink)
+  deal: {
+    shadowColor: '#ec4899',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 12,

@@ -15,8 +15,6 @@
 
 /** 데이터 소스 구분 */
 export type UJUzDataSource = 'TOUR_API' | 'PLAYGROUND_API' | 'CHILDCARE_API';
-/** @deprecated Use UJUzDataSource instead */
-export type KidsMapDataSource = UJUzDataSource;
 
 /** 장소 카테고리 */
 export const PLACE_CATEGORIES = {
@@ -229,7 +227,7 @@ export interface NormalizedPlace {
   id: string;
 
   /** 출처 */
-  source: KidsMapDataSource;
+  source: UJUzDataSource;
 
   /** 원본 URL */
   sourceUrl: string;

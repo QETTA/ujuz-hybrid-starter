@@ -9,7 +9,7 @@ import youtubeApiClient, { parseDuration, isShortVideo, getBestThumbnail } from 
 import type {
   ShortsSearchParams,
   ShortsSearchResult,
-  KidsMapShort,
+  UJUzShort,
   YouTubeVideoItem,
 } from './types';
 
@@ -35,7 +35,7 @@ export const shortsService = {
    * 1. Search videos with place keyword + child keywords
    * 2. Filter by duration < 60s (Shorts)
    * 3. Get video details (statistics)
-   * 4. Return mapped KidsMapShort objects
+   * 4. Return mapped UJUzShort objects
    */
   async searchByPlace(params: ShortsSearchParams): Promise<ShortsSearchResult> {
     const {
@@ -112,7 +112,7 @@ export const shortsService = {
   /**
    * Get Shorts by specific YouTube IDs
    */
-  async getByIds(videoIds: string[]): Promise<KidsMapShort[]> {
+  async getByIds(videoIds: string[]): Promise<UJUzShort[]> {
     if (videoIds.length === 0) return [];
 
     try {
@@ -136,10 +136,10 @@ export const shortsService = {
   /**
    * Search trending Shorts for kids/family content
    */
-  async getTrendingKidsShorts(maxResults = 20): Promise<KidsMapShort[]> {
+  async getTrendingKidsShorts(maxResults = 20): Promise<UJUzShort[]> {
     const trendingKeywords = ['키즈카페 브이로그', '아이와 나들이', '육아 일상', '아기 놀이터'];
 
-    const allShorts: KidsMapShort[] = [];
+    const allShorts: UJUzShort[] = [];
 
     for (const keyword of trendingKeywords) {
       try {
@@ -174,9 +174,9 @@ function buildSearchQuery(placeKeyword: string, childKeywords: string[]): string
 }
 
 /**
- * Map YouTube video to KidsMapShort
+ * Map YouTube video to UJUzShort
  */
-function mapVideoToShort(video: YouTubeVideoItem, placeName?: string): KidsMapShort {
+function mapVideoToShort(video: YouTubeVideoItem, placeName?: string): UJUzShort {
   const duration = video.contentDetails?.duration
     ? parseDuration(video.contentDetails.duration).totalSeconds
     : 0;
@@ -206,7 +206,7 @@ function mapVideoToShort(video: YouTubeVideoItem, placeName?: string): KidsMapSh
 /**
  * Remove duplicate shorts by YouTube ID
  */
-function deduplicateShorts(shorts: KidsMapShort[]): KidsMapShort[] {
+function deduplicateShorts(shorts: UJUzShort[]): UJUzShort[] {
   const seen = new Set<string>();
   return shorts.filter((short) => {
     if (seen.has(short.youtubeId)) return false;

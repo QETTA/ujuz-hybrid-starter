@@ -1,14 +1,24 @@
-// 모임 상세 + 채팅 화면
+/**
+ * PeerGroupDetailScreen - 모임 상세 + 채팅 화면
+ *
+ * 2026 UJUz 공동육아 커뮤니티
+ * - 메시지 타입별 렌더링 (text, image, place, groupBuy, system)
+ * - 멤버 수/활동 통계 헤더
+ * - 테마 토큰 기반 다크모드
+ */
 
 import { useCallback, useRef, useEffect, useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
+import { KeyboardAvoidingView, Platform } from 'react-native';
+import { YStack, XStack, Text, useTheme } from 'tamagui';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
-import { TamaguiText } from '@/app/design-system';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, type RouteProp } from '@react-navigation/native';
+
+import { TamaguiHeader, TamaguiEmptyState, SocialProofBadge } from '@/app/design-system';
 import { usePeerGroupStore } from '@/app/stores/peerGroupStore';
 import { usePeerGroupChat } from '@/app/hooks/usePeerGroupChat';
 import { ChatBubble, ChatInput } from '@/app/components/peerGroup';
-import { Colors } from '@/app/constants';
 import { ensureSupabaseUser } from '@/app/services/supabase';
 import type { PeerGroupMessage } from '@/app/types/peerGroup';
 import type { RootStackParamList } from '@/app/types/navigation';
@@ -16,6 +26,8 @@ import type { RootStackParamList } from '@/app/types/navigation';
 export function PeerGroupDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'PeerGroupDetail'>>();
   const navigation = useNavigation();
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const groupId = route.params.groupId;
 
   const flatListRef = useRef<FlashListRef<PeerGroupMessage>>(null);
@@ -71,18 +83,52 @@ export function PeerGroupDetailScreen() {
 
   if (!group) {
     return (
-      <View style={styles.center}>
-        <TamaguiText preset="body" textColor="secondary" style={styles.errorText}>
-          모임을 찾을 수 없습니다
-        </TamaguiText>
-      </View>
+      <YStack flex={1} backgroundColor="$background" justifyContent="center" alignItems="center">
+        <TamaguiEmptyState
+          icon="people-outline"
+          title="모임을 찾을 수 없습니다"
+          message="모임이 삭제되었거나 접근 권한이 없습니다"
+        />
+      </YStack>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <YStack flex={1} backgroundColor="$background">
+      <TamaguiHeader
+        title={group.name}
+        showBack
+        onBack={() => navigation.goBack()}
+        rightIcon="people-outline"
+        subtitle={group.member_count ? `${group.member_count}명 참여 중` : undefined}
+      />
+
+      {/* Member Stats Bar */}
+      <XStack
+        paddingHorizontal="$4"
+        paddingVertical="$2"
+        backgroundColor="$surface"
+        borderBottomWidth={0.5}
+        borderBottomColor="$borderColor"
+        alignItems="center"
+        justifyContent="space-between"
+        marginTop={56 + insets.top}
+      >
+        <SocialProofBadge
+          count={group.member_count ?? 0}
+          label="{count}명 참여 중"
+          size="sm"
+        />
+        <XStack alignItems="center" gap="$1">
+          <Ionicons name="chatbubbles-outline" size={14} color={theme.textTertiary.val} />
+          <Text fontSize={12} color="$textTertiary">
+            {messages.length}개 메시지
+          </Text>
+        </XStack>
+      </XStack>
+
       <KeyboardAvoidingView
-        style={styles.container}
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={90}
       >
@@ -91,32 +137,15 @@ export function PeerGroupDetailScreen() {
           data={messages}
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.messageList}
+          contentContainerStyle={{ paddingVertical: 16 }}
           onEndReached={loadMoreMessages}
           onEndReachedThreshold={0.1}
         />
 
         <ChatInput onSend={handleSend} />
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </YStack>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.darkBg,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 16,
-    color: Colors.darkTextSecondary,
-  },
-  messageList: {
-    paddingVertical: 16,
-  },
-});
+export default PeerGroupDetailScreen;

@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - Layout Constants
+ * UJUz Mobile - Layout Constants
  */
 
 import { Dimensions, Platform } from 'react-native';

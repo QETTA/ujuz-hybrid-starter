@@ -1,14 +1,12 @@
 import React from 'react';
 
-import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { TamaguiProvider } from 'tamagui';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import config from './tamagui.config';
 import AppNavigator from '@/app/navigation/AppNavigator';
 import ErrorBoundary from '@/app/components/shared/ErrorBoundary';
 import OfflineBanner from '@/app/components/shared/OfflineBanner';
 import { ToastProvider } from '@/app/components/shared/Toast';
+import { ThemeProvider } from '@/app/providers/ThemeProvider';
 import { bootstrapMapbox } from '@/app/services/mapbox';
 import { initializeMonitoring } from '@/app/services/monitoring';
 
@@ -23,18 +21,17 @@ export default function App() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
-      <TamaguiProvider config={config} defaultTheme="dark">
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
         <SafeAreaProvider>
           <ToastProvider>
             <OfflineBanner />
             <ErrorBoundary>
               <AppNavigator />
             </ErrorBoundary>
-            <StatusBar style="light" />
           </ToastProvider>
         </SafeAreaProvider>
-      </TamaguiProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

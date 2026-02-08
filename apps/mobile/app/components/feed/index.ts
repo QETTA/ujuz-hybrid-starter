@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - Feed Components
+ * UJUz Mobile - Feed Components
  */
 
 export { default as ContentCard } from './ContentCard';

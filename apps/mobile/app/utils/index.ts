@@ -1,5 +1,5 @@
 /**
- * KidsMap Mobile - Utilities Index
+ * UJUz Mobile - Utilities Index
  */
 
 export * from './distance';

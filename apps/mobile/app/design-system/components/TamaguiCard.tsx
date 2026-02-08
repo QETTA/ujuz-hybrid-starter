@@ -33,6 +33,30 @@ const StyledCard = styled(YStack, {
       filled: {
         backgroundColor: '$surface',
       },
+      glass: {
+        backgroundColor: '$glassMedium',
+        borderWidth: 1,
+        borderColor: '$glassDark',
+        shadowColor: '$shadowColor',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
+      },
+      hero: {
+        backgroundColor: '$card',
+        shadowColor: '$primary',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: '$primary',
+      },
+      locked: {
+        backgroundColor: '$surfaceMuted',
+        opacity: 0.7,
+      },
     },
 
     noPadding: {
@@ -61,7 +85,7 @@ const StyledCard = styled(YStack, {
 });
 
 // Props types
-export type CardVariant = 'elevated' | 'outlined' | 'filled';
+export type CardVariant = 'elevated' | 'outlined' | 'filled' | 'glass' | 'hero' | 'locked';
 
 export interface TamaguiCardProps {
   /** Card variant */

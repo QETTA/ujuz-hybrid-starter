@@ -5,9 +5,10 @@
  * Used in: ThreeSnapBottomSheet, PlaceDetailSheet
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from 'tamagui';
 import { getActionButtonLabel, getActionButtonHint } from '@/app/utils/accessibility';
 import { Colors } from '@/app/constants/Colors';
 import { TamaguiText, TamaguiPressableScale } from '@/app/design-system';
@@ -30,6 +31,8 @@ export const ActionButton = React.memo(function ActionButton({
   active = false,
   placeName,
 }: ActionButtonProps) {
+  const theme = useTheme();
+
   // Map label to action type for accessibility
   const actionType = label.toLowerCase().includes('call')
     ? 'call'
@@ -49,6 +52,39 @@ export const ActionButton = React.memo(function ActionButton({
     ? getActionButtonHint(actionType as any)
     : COPY.A11Y_ACTIVATE_HINT;
 
+  const styles = useMemo(() => StyleSheet.create({
+    button: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: 1,
+    },
+    label: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: theme.textSecondary.val,
+      marginTop: 4,
+    },
+    buttonHorizontal: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+    },
+    buttonActive: {
+      backgroundColor: theme.surfaceElevated.val,
+    },
+    labelHorizontal: {
+      fontSize: 15,
+      fontWeight: '500',
+      color: theme.textSecondary.val,
+    },
+    labelActive: {
+      color: Colors.primary,
+    },
+  }), [theme]);
+
   if (variant === 'horizontal') {
     return (
       <TamaguiPressableScale
@@ -61,7 +97,7 @@ export const ActionButton = React.memo(function ActionButton({
         <Ionicons
           name={icon}
           size={20}
-          color={active ? Colors.primary : Colors.darkTextSecondary}
+          color={active ? Colors.primary : theme.textSecondary.val}
           accessibilityElementsHidden={true}
           importantForAccessibility="no"
         />
@@ -87,7 +123,7 @@ export const ActionButton = React.memo(function ActionButton({
       <Ionicons
         name={icon}
         size={24}
-        color={Colors.darkTextSecondary}
+        color={theme.textSecondary.val}
         accessibilityElementsHidden={true}
         importantForAccessibility="no"
       />
@@ -96,37 +132,4 @@ export const ActionButton = React.memo(function ActionButton({
       </TamaguiText>
     </TamaguiPressableScale>
   );
-});
-
-const styles = StyleSheet.create({
-  button: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: Colors.darkTextSecondary,
-    marginTop: 4,
-  },
-  buttonHorizontal: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  buttonActive: {
-    backgroundColor: Colors.darkSurfaceElevated,
-  },
-  labelHorizontal: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: Colors.darkTextSecondary,
-  },
-  labelActive: {
-    color: Colors.primary,
-  },
 });

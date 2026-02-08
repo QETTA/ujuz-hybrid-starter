@@ -5,11 +5,11 @@
  * iOS 26 스타일: 깔끔한 디자인, 아이콘 최소화
  */
 
-import { StyleSheet } from 'react-native';
+import { useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { Colors } from '@/app/constants/Colors';
+import { useTheme } from 'tamagui';
 import { TamaguiText, TamaguiPressableScale } from '@/app/design-system';
 import { COPY } from '@/app/copy/copy.ko';
 
@@ -25,6 +25,45 @@ export default function SearchBar({
   currentLocation,
 }: SearchBarProps) {
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
+
+  const styles = useMemo(() => ({
+    container: {
+      position: 'absolute' as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 10,
+      backgroundColor: 'rgba(10, 10, 10, 0.75)',
+      paddingHorizontal: 16,
+      paddingBottom: 8,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.borderColor.val,
+      overflow: 'hidden' as const,
+    },
+    searchInput: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      backgroundColor: theme.surfaceElevated.val,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      gap: 8,
+    },
+    placeholderText: {
+      flex: 1,
+      fontSize: 17,
+      fontWeight: '400' as const,
+      color: theme.textTertiary.val,
+    },
+    locationText: {
+      fontSize: 13,
+      fontWeight: '400' as const,
+      color: theme.textTertiary.val,
+      marginTop: 6,
+      paddingLeft: 4,
+    },
+  }), [theme]);
 
   return (
     <BlurView intensity={80} tint="dark" style={[styles.container, { paddingTop: insets.top + 8 }]}>
@@ -39,7 +78,7 @@ export default function SearchBar({
         <Ionicons
           name="search"
           size={20}
-          color={Colors.darkTextTertiary}
+          color={theme.textTertiary.val}
           accessibilityElementsHidden={true}
           importantForAccessibility="no"
         />
@@ -63,41 +102,3 @@ export default function SearchBar({
     </BlurView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    backgroundColor: 'rgba(10, 10, 10, 0.75)',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.darkBorder,
-    overflow: 'hidden',
-  },
-  searchInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.darkSurfaceElevated,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  placeholderText: {
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-  },
-  locationText: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: Colors.darkTextTertiary,
-    marginTop: 6,
-    paddingLeft: 4,
-  },
-});

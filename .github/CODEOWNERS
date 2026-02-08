@@ -1,0 +1,8 @@
+* @qetta
+/apps/mobile/ @qetta
+/apps/api/ @qetta
+/apps/worker-ai/ @qetta
+/apps/worker-alerts/ @qetta
+/packages/ @qetta
+/.github/ @qetta
+/infra/ @qetta

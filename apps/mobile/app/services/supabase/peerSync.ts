@@ -1,7 +1,7 @@
 /**
  * Peer Sync Service - Supabase Direct Access
  *
- * 2026 KidsMap 킬러 기능: 또래 동기화
+ * 2026 UJUz 킬러 기능: 또래 동기화
  * - 또래 부모들의 실시간 활동 추적
  * - 또래 인기 장소/공구 트렌드
  * - FOMO 기반 engagement
