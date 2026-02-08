@@ -1,0 +1,6 @@
+- Repo: UJUz Hybrid Starter monorepo (apps/api, apps/worker-alerts, apps/worker-ai; packages/config, packages/db, packages/shared).
+- Stack: Express + TypeScript + MongoDB + BullMQ(Redis).
+- Prefer small, reviewable diffs. If behavior changes, add/adjust a test (vitest) or a verification step.
+- Never output secrets. Only reference env var names (e.g., MONGODB_URI, REDIS_URL, ANTHROPIC_API_KEY).
+- Keep API route additions consistent with `apps/api/src/index.ts` router mounting conventions.
+- When creating automation that requires admin activation (e.g., adding a repo secret or modifying branch protection), always include clear admin steps and do not assume admin-level changes can be performed by the agent.
