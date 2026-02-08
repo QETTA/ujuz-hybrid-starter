@@ -108,7 +108,7 @@ export const COPY = {
   MAP_FILTER_SAVED: '저장',
   MAP_PLACES_NEARBY: (count: number) => `주변 시설 ${count}곳`,
   MAP_STAT_PEERS: '또래',
-  MAP_STAT_COPARENT: '공동육아',
+  MAP_STAT_COPARENT: '또래 방문',
   MAP_STAT_DEALS: '혜택',
 
   // -- NearbyScreen --
@@ -182,7 +182,7 @@ export const COPY = {
   DATA_BLOCKS_EMPTY: '분석 데이터가 아직 없어요',
   DATA_BLOCKS_STAT: (blocks: number, confidence: number, sources: number) =>
     `${blocks}개 블록 · ${Math.round(confidence * 100)}% 검증 · ${sources}곳 출처`,
-  COPARENTING_STAT: (count: number) => `공동육아 ${count}곳`,
+  COPARENTING_STAT: (count: number) => `또래 방문 ${count}곳`,
   TRY_OTHER_FILTER: '"전체"로 전환하거나 다른 지역을 둘러보세요',
 
   // -- Accessibility (additional) --

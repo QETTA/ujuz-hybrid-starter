@@ -10,12 +10,13 @@
  */
 
 import { useMemo, useState, useCallback } from 'react';
-import { View, ScrollView, RefreshControl } from 'react-native';
+import { View, ScrollView, RefreshControl, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from 'tamagui';
 import { Colors, Layout } from '@/app/constants';
 import { usePlaceStore } from '@/app/stores/placeStore';
@@ -81,6 +82,51 @@ export default function PlaceDetailScreen() {
     await refetch?.();
     setRefreshing(false);
   }, [refetch]);
+
+  const handleDirections = useCallback(async () => {
+    if (!selectedPlace) return;
+    const { latitude, longitude, name, address } = selectedPlace;
+
+    if (latitude != null && longitude != null) {
+      try {
+        if (await Linking.canOpenURL('kakaomap://')) {
+          await Linking.openURL(`kakaomap://look?p=${latitude},${longitude}`);
+          return;
+        }
+      } catch { /* not installed */ }
+      try {
+        if (await Linking.canOpenURL('nmap://')) {
+          await Linking.openURL(
+            `nmap://place?lat=${latitude}&lng=${longitude}&name=${encodeURIComponent(name)}&appname=ujuz`
+          );
+          return;
+        }
+      } catch { /* not installed */ }
+      await Linking.openURL(
+        `https://map.kakao.com/link/to/${encodeURIComponent(name)},${latitude},${longitude}`
+      );
+    } else {
+      const query = encodeURIComponent(`${name} ${address ?? ''}`.trim());
+      await Linking.openURL(`https://map.kakao.com/link/search/${query}`);
+    }
+  }, [selectedPlace]);
+
+  const handleSave = useCallback(() => {
+    if (!selectedPlace) return;
+    const wasFav = isFavorite(selectedPlace.id);
+    toggleFavorite(selectedPlace.id, selectedPlace);
+    showToast({ type: 'success', message: wasFav ? '저장 해제됨' : '저장됨' });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, [selectedPlace, toggleFavorite, isFavorite, showToast]);
+
+  const handleCall = useCallback(() => {
+    if (!selectedPlace) return;
+    if (selectedPlace.tel) {
+      Linking.openURL(`tel:${selectedPlace.tel}`);
+    } else {
+      showToast({ type: 'info', message: '전화번호 정보가 없어요' });
+    }
+  }, [selectedPlace, showToast]);
 
   const insights = useMemo(
     () => (selectedPlace ? insightsMap.get(selectedPlace.id) : undefined),
@@ -209,9 +255,10 @@ export default function PlaceDetailScreen() {
   const hasFav = isFavorite(selectedPlace.id);
 
   return (
+    <View style={styles.container}>
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 40 }}
+      style={{ flex: 1 }}
+      contentContainerStyle={{ paddingBottom: 100 }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -314,27 +361,39 @@ export default function PlaceDetailScreen() {
 
       {/* Action Buttons - iOS Maps Style */}
       <Animated.View entering={stagger(2)} style={styles.actionsRow}>
-        {ACTIONS.map((action) => (
-          <TamaguiPressableScale
-            key={action.label}
-            style={styles.actionBtn}
-            hapticType="light"
-            onPress={() => showToast({ type: 'info', message: '준비 중입니다' })}
-            accessibilityLabel={action.a11yLabel}
-          >
-            <View style={styles.actionIconCircle}>
-              <Ionicons name={action.icon} size={22} color={theme.textPrimary.val} />
-            </View>
-            <TamaguiText
-              preset="caption"
-              textColor="secondary"
-              weight="medium"
-              style={styles.actionLabel}
+        {ACTIONS.map((action) => {
+          const handler =
+            action.icon === 'call-outline' ? handleCall :
+            action.icon === 'navigate-outline' ? handleDirections :
+            action.icon === 'bookmark-outline' ? handleSave :
+            () => showToast({ type: 'info', message: '공유 기능은 곧 추가돼요' });
+          const isSaveAction = action.icon === 'bookmark-outline';
+          return (
+            <TamaguiPressableScale
+              key={action.label}
+              style={styles.actionBtn}
+              hapticType="light"
+              onPress={handler}
+              accessibilityLabel={action.a11yLabel}
             >
-              {action.label}
-            </TamaguiText>
-          </TamaguiPressableScale>
-        ))}
+              <View style={styles.actionIconCircle}>
+                <Ionicons
+                  name={isSaveAction && hasFav ? 'bookmark' : action.icon}
+                  size={22}
+                  color={isSaveAction && hasFav ? Colors.primary : theme.textPrimary.val}
+                />
+              </View>
+              <TamaguiText
+                preset="caption"
+                textColor="secondary"
+                weight="medium"
+                style={styles.actionLabel}
+              >
+                {isSaveAction && hasFav ? '저장됨' : action.label}
+              </TamaguiText>
+            </TamaguiPressableScale>
+          );
+        })}
       </Animated.View>
 
       {/* Insight Sections */}
@@ -386,9 +445,7 @@ export default function PlaceDetailScreen() {
         <TamaguiPressableScale
           style={styles.primaryCta}
           hapticType="medium"
-          onPress={() =>
-            showToast({ type: 'info', message: '지도 앱 연동은 다음 단계에서 연결됩니다.' })
-          }
+          onPress={handleDirections}
         >
           <TamaguiText preset="body" weight="bold" style={styles.primaryCtaText}>
             {primaryCta.label}
@@ -454,6 +511,44 @@ export default function PlaceDetailScreen() {
         </View>
       </View>
     </ScrollView>
+
+      {/* Fixed Bottom CTA Bar */}
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <TamaguiPressableScale
+          style={styles.bottomBarPrimary}
+          hapticType="medium"
+          onPress={handleDirections}
+          accessibilityLabel="길찾기"
+        >
+          <Ionicons name="navigate" size={18} color={theme.background.val} />
+          <TamaguiText preset="body" weight="bold" style={styles.bottomBarPrimaryText}>
+            길찾기
+          </TamaguiText>
+        </TamaguiPressableScale>
+
+        <TamaguiPressableScale
+          style={styles.bottomBarIcon}
+          hapticType="medium"
+          onPress={handleSave}
+          accessibilityLabel={hasFav ? '저장 해제' : '저장'}
+        >
+          <Ionicons
+            name={hasFav ? 'bookmark' : 'bookmark-outline'}
+            size={22}
+            color={hasFav ? Colors.primary : theme.textPrimary.val}
+          />
+        </TamaguiPressableScale>
+
+        <TamaguiPressableScale
+          style={styles.bottomBarIcon}
+          hapticType="light"
+          onPress={() => showToast({ type: 'info', message: '빈자리 알림은 곧 추가돼요' })}
+          accessibilityLabel="알림 받기"
+        >
+          <Ionicons name="notifications-outline" size={22} color={theme.textPrimary.val} />
+        </TamaguiPressableScale>
+      </View>
+    </View>
   );
 }
 
@@ -682,6 +777,44 @@ function createStyles(theme: ReturnType<typeof useTheme>): Styles {
       fontWeight: '600',
       color: theme.textPrimary.val,
       letterSpacing: -0.2,
+    },
+
+    // Bottom CTA Bar
+    bottomBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingTop: 12,
+      paddingHorizontal: Layout.screenPadding,
+      backgroundColor: theme.background.val,
+      borderTopWidth: 0.5,
+      borderTopColor: theme.borderColor.val,
+    },
+    bottomBarPrimary: {
+      flex: 1,
+      height: 48,
+      borderRadius: 14,
+      backgroundColor: Colors.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+    },
+    bottomBarPrimaryText: {
+      color: theme.background.val,
+      fontSize: 15,
+      fontWeight: '700',
+      letterSpacing: -0.3,
+    },
+    bottomBarIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 14,
+      backgroundColor: theme.surface.val,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
     },
 
     // Empty
