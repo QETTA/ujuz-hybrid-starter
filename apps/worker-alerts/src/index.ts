@@ -37,6 +37,7 @@ async function main() {
 
         default:
           logger.warn({ jobType }, 'Unknown job type');
+          return undefined;
       }
     },
     { connection: { url: env.REDIS_URL } },
