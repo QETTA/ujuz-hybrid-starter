@@ -1,0 +1,30 @@
+name: Notify admin to enable BOT automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      admin_message:
+        description: 'Optional custom message to include in the issue'
+        required: false
+
+jobs:
+  create_issue:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Create admin request issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const body = `Admin action required to enable auto-approve automation.\n\nSteps:\n1) Create a Personal Access Token (PAT) with \`repo\` scope.\n2) Add it as repository secret \`BOT_PAT\`.\n3) Verify branch protection settings if needed (allow Actions or allow specified actors to bypass reviews).\n\nSee docs/admin/enable-bypass.md for full details.\n\n${core.getInput('admin_message') || ''}`;
+            const title = 'ADMIN: Enable BOT automation (add BOT_PAT secret & review branch protection)';
+
+            const issue = await github.rest.issues.create({ owner, repo, title, body, labels: ['admin-action'] });
+            core.setOutput('issueUrl', issue.data.html_url);
+
+      - name: Output issue url
+        run: echo "Created issue: ${{ steps.create_issue.outputs.issueUrl }}"
