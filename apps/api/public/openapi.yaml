@@ -34,7 +34,7 @@ paths:
         - name: lat
           in: query
           required: true
-          description: 사용자 위도 (예: 37.4979)
+          description: "사용자 위도 (예: 37.4979)"
           schema:
             type: number
             minimum: -90
@@ -43,7 +43,7 @@ paths:
         - name: lng
           in: query
           required: true
-          description: 사용자 경도 (예: 127.0276)
+          description: "사용자 경도 (예: 127.0276)"
           schema:
             type: number
             minimum: -180
@@ -439,9 +439,12 @@ paths:
                 properties:
                   ok:
                     type: boolean
-                  message:
-                    type: string
-                    description: 자연어 입소 분석 텍스트
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: 자연어 입소 분석 텍스트
 
   /insights:
     get:
@@ -999,8 +1002,57 @@ paths:
                     type: boolean
                   data:
                     type: object
-                    nullable: true
-    delete:
+                    properties:
+                      subscription:
+                        type: object
+                        nullable: true
+
+  /api/ujuz/subscriptions/subscribe:
+    post:
+      operationId: createSubscription
+      summary: 구독 생성
+      description: 새로운 구독을 생성합니다. 레퍼럴 코드 포함 시 추천 추적됩니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - plan_tier
+              properties:
+                plan_tier:
+                  type: string
+                  enum: [free, basic, premium]
+                billing_cycle:
+                  type: string
+                  enum: [monthly, yearly]
+                  default: monthly
+                referral_code:
+                  type: string
+                  minLength: 4
+                  description: 추천 코드 (선택)
+                device_id:
+                  type: string
+                  description: 디바이스 ID (선택)
+      responses:
+        '200':
+          description: 구독 생성 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      subscription:
+                        type: object
+
+  /api/ujuz/subscriptions/cancel:
+    post:
       operationId: cancelSubscription
       summary: 구독 해지
       description: 현재 구독을 해지합니다.
@@ -1015,11 +1067,15 @@ paths:
                   ok:
                     type: boolean
 
-  /api/ujuz/subscriptions:
+  # ── Partner Admin Routes (x-admin-key) ──────────────────────
+
+  /api/ujuz/partners/orgs:
     post:
-      operationId: createSubscription
-      summary: 구독 생성
-      description: 새로운 구독을 생성합니다.
+      operationId: createPartnerOrg
+      summary: 파트너 조직 생성
+      description: 새로운 파트너 조직을 등록합니다. (관리자 전용)
+      security:
+        - adminKeyAuth: []
       requestBody:
         required: true
         content:
@@ -1027,18 +1083,233 @@ paths:
             schema:
               type: object
               required:
-                - plan_tier
-                - billing_cycle
+                - name
               properties:
-                plan_tier:
+                name:
                   type: string
-                  enum: [free, basic, premium]
-                billing_cycle:
+                  minLength: 2
+                org_type:
                   type: string
-                  enum: [monthly, yearly]
+                  default: other
+                contact_name:
+                  type: string
+                contact_email:
+                  type: string
+                  format: email
       responses:
-        '201':
-          description: 구독 생성 성공
+        '200':
+          description: 조직 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkDataResponse'
+
+  /api/ujuz/partners/cafes:
+    post:
+      operationId: createPartnerCafe
+      summary: 파트너 카페 생성
+      description: 파트너 조직 하위에 카페(채널)를 생성합니다. (관리자 전용)
+      security:
+        - adminKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - org_id
+                - name
+              properties:
+                org_id:
+                  type: string
+                  minLength: 3
+                platform:
+                  type: string
+                  default: etc
+                platform_cafe_id:
+                  type: string
+                name:
+                  type: string
+                  minLength: 2
+                url:
+                  type: string
+                  format: uri
+                region:
+                  type: string
+                share_rate_subscription:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                share_rate_commerce:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+      responses:
+        '200':
+          description: 카페 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkDataResponse'
+
+  /api/ujuz/partners/orgs/{orgId}/api-keys:
+    post:
+      operationId: issuePartnerApiKey
+      summary: 파트너 API 키 발급
+      description: 파트너 조직의 API 키를 발급합니다. rawKey는 한 번만 표시됩니다. (관리자 전용)
+      security:
+        - adminKeyAuth: []
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: API 키 발급 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkDataResponse'
+
+  /api/ujuz/partners/cafes/{cafeId}/referral-links:
+    post:
+      operationId: createReferralLink
+      summary: 추천 링크 생성
+      description: 카페의 추천 링크를 생성합니다. (관리자 전용)
+      security:
+        - adminKeyAuth: []
+      parameters:
+        - name: cafeId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                channel:
+                  type: string
+                landing_path:
+                  type: string
+      responses:
+        '200':
+          description: 링크 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkDataResponse'
+
+  /api/ujuz/partners/cafes/{cafeId}/widgets:
+    post:
+      operationId: createWidget
+      summary: 위젯 생성
+      description: 카페에 임베드 위젯을 생성합니다. (관리자 전용)
+      security:
+        - adminKeyAuth: []
+      parameters:
+        - name: cafeId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                config:
+                  type: object
+      responses:
+        '200':
+          description: 위젯 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkDataResponse'
+
+  /api/ujuz/partners/payouts/preview:
+    get:
+      operationId: previewPayout
+      summary: 정산 미리보기
+      description: 지정 월의 정산 내역을 미리보기합니다. (관리자 전용)
+      security:
+        - adminKeyAuth: []
+      parameters:
+        - name: period
+          in: query
+          required: true
+          description: "정산 기간 (YYYY-MM)"
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}$'
+            example: '2026-01'
+      responses:
+        '200':
+          description: 정산 미리보기
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkDataResponse'
+
+  /api/ujuz/partners/payouts/run:
+    post:
+      operationId: runPayout
+      summary: 정산 실행
+      description: 지정 월의 정산을 실행합니다. (관리자 전용)
+      security:
+        - adminKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - period
+              properties:
+                period:
+                  type: string
+                  pattern: '^\d{4}-\d{2}$'
+      responses:
+        '200':
+          description: 정산 실행 완료
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkDataResponse'
+
+  # ── Partner Self-Service Routes (x-partner-key) ─────────────
+
+  /api/ujuz/partners/me/cafes:
+    get:
+      operationId: getPartnerCafes
+      summary: 내 카페 목록
+      description: 파트너 조직의 카페 목록을 반환합니다. (파트너 인증 필요)
+      security:
+        - partnerKeyAuth: []
+      responses:
+        '200':
+          description: 카페 목록
           content:
             application/json:
               schema:
@@ -1047,6 +1318,435 @@ paths:
                   ok:
                     type: boolean
                   data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        cafe_id:
+                          type: string
+                        name:
+                          type: string
+                        platform:
+                          type: string
+                        url:
+                          type: string
+                        status:
+                          type: string
+                        share_rate_subscription:
+                          type: number
+                        share_rate_commerce:
+                          type: number
+
+  /api/ujuz/partners/cafes/{cafeId}/external-posts/batch:
+    post:
+      operationId: batchExternalPosts
+      summary: 외부 글 일괄 등록
+      description: 카페에 외부 게시물을 일괄 등록합니다 (최대 200건). (파트너 인증 필요)
+      security:
+        - partnerKeyAuth: []
+      parameters:
+        - name: cafeId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - posts
+              properties:
+                posts:
+                  type: array
+                  minItems: 1
+                  maxItems: 200
+                  items:
                     type: object
+                    required:
+                      - external_id
+                      - title
+                    properties:
+                      external_id:
+                        type: string
+                      title:
+                        type: string
+                      body:
+                        type: string
+                      url:
+                        type: string
+                        format: uri
+                      posted_at:
+                        type: string
+                        format: date-time
+                      author_hash:
+                        type: string
+                      facility_id:
+                        type: string
+                      facility_name:
+                        type: string
+      responses:
+        '200':
+          description: 등록 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkDataResponse'
+
+  # ── Public Routes ───────────────────────────────────────────
+
+  /api/ujuz/referrals/track:
+    post:
+      operationId: trackReferral
+      summary: 추천 이벤트 추적
+      description: 추천 코드를 통한 방문/가입/구독 이벤트를 추적합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - event_type
+              properties:
+                code:
+                  type: string
+                  minLength: 4
+                  description: 추천 코드
+                event_type:
+                  type: string
+                  enum: [VISIT, SIGNUP, SUBSCRIBE]
+                user_id:
+                  type: string
+                device_id:
+                  type: string
+                amount:
+                  type: number
+                currency:
+                  type: string
+                meta:
+                  type: object
+      responses:
+        '200':
+          description: 추적 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkDataResponse'
+
+  /api/ujuz/widgets/{widgetKey}:
+    get:
+      operationId: getWidget
+      summary: 위젯 설정 조회
+      description: 위젯 키로 위젯 설정을 조회합니다.
+      parameters:
+        - name: widgetKey
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+      responses:
+        '200':
+          description: 위젯 설정
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkDataResponse'
 
   /health:
+    get:
+      operationId: healthCheck
+      summary: 헬스체크
+      description: 서버 상태 및 MongoDB 연결 상태를 확인합니다.
+      responses:
+        '200':
+          description: 정상
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                  uptime_seconds:
+                    type: integer
+                  node_env:
+                    type: string
+                  gitSha:
+                    type: string
+                  mongo:
+                    type: object
+                    properties:
+                      ok:
+                        type: boolean
+                      latency_ms:
+                        type: number
+        '503':
+          description: MongoDB 연결 실패
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: false
+                  mongo:
+                    type: object
+                    properties:
+                      ok:
+                        type: boolean
+                        example: false
+
+components:
+  securitySchemes:
+    deviceAuth:
+      type: apiKey
+      in: header
+      name: x-device-id
+      description: UUID v4 디바이스 식별자
+    adminKeyAuth:
+      type: apiKey
+      in: header
+      name: x-admin-key
+      description: 관리자 API 키
+    partnerKeyAuth:
+      type: apiKey
+      in: header
+      name: x-partner-key
+      description: 파트너 API 키
+
+  schemas:
+    OkDataResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: object
+
+    PlaceSummary:
+      type: object
+      properties:
+        placeId:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+        region:
+          type: string
+
+    PlaceWithDistance:
+      allOf:
+        - $ref: '#/components/schemas/PlaceSummary'
+        - type: object
+          properties:
+            distance_m:
+              type: number
+              description: 거리 (미터)
+
+    PlaceDetail:
+      allOf:
+        - $ref: '#/components/schemas/PlaceSummary'
+        - type: object
+          properties:
+            phone:
+              type: string
+            homepage:
+              type: string
+            capacity:
+              type: integer
+            classInfo:
+              type: object
+            operatingHours:
+              type: string
+            location:
+              type: object
+              properties:
+                type:
+                  type: string
+                  example: Point
+                coordinates:
+                  type: array
+                  items:
+                    type: number
+
+    AdmissionResult:
+      type: object
+      properties:
+        score:
+          type: number
+        probability:
+          type: number
+        grade:
+          type: string
+        breakdown:
+          type: object
+        calculated_at:
+          type: string
+          format: date-time
+
+    AdmissionScoreV1:
+      type: object
+      properties:
+        probability:
+          type: number
+          description: 6개월 내 입소 확률
+          example: 0.62
+        admission_score:
+          type: integer
+          description: 입소 점수 (0-100)
+          example: 67
+        confidence:
+          type: number
+          description: 신뢰도
+          example: 0.74
+        estimated_months_median:
+          type: integer
+          description: 예상 대기 개월 (중앙값)
+        estimated_months_80th:
+          type: integer
+          description: 예상 대기 개월 (80분위)
+        evidence:
+          type: array
+          items:
+            type: object
+        engine_version:
+          type: string
+          example: v1.5.2
+        calculated_at:
+          type: string
+          format: date-time
+
+    Insight:
+      type: object
+      properties:
+        placeId:
+          type: string
+        summary:
+          type: string
+        highlights:
+          type: array
+          items:
+            type: string
+        updated_at:
+          type: string
+          format: date-time
+
+    TOSubscription:
+      type: object
+      properties:
+        facility_id:
+          type: string
+        facility_name:
+          type: string
+        target_classes:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+
+    TOAlert:
+      type: object
+      properties:
+        facility_id:
+          type: string
+        facility_name:
+          type: string
+        alert_type:
+          type: string
+        message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    UserProfile:
+      type: object
+      properties:
+        device_id:
+          type: string
+        display_name:
+          type: string
+        avatar_url:
+          type: string
+        children:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              nickname:
+                type: string
+              birth_date:
+                type: string
+              age_class:
+                type: string
+                nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+  responses:
+    NotFound:
+      description: 리소스를 찾을 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: not_found
+              message: Resource not found
+
+    ValidationError:
+      description: 유효성 검증 실패
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: validation_error
+              message: "facility_id: Required"
+
+    Unauthorized:
+      description: 인증 실패
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: invalid_device_id
+              message: Missing or invalid x-device-id header
