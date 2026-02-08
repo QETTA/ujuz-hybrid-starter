@@ -130,34 +130,23 @@ describe('Bot Routes', () => {
       });
     });
 
-    it('should use "anonymous" when x-user-id is not provided', async () => {
-      const mockResponse = {
-        conversation_id: '507f1f77bcf86cd799439011',
-        message: {
-          id: '507f1f77bcf86cd799439012',
-          role: 'assistant' as const,
-          content: 'Response',
-          intent: 'GENERAL',
-          created_at: '2024-01-01T00:00:00.000Z',
-        },
-        suggestions: [],
-      };
-
-      (processQuery as any).mockResolvedValue(mockResponse);
-
+    it('should return 401 when x-user-id is not provided', async () => {
       const response = await request(app)
         .post('/bot/query')
         .send({ message: 'Hello' });
 
-      expect(response.status).toBe(200);
-      expect(processQuery).toHaveBeenCalledWith(
-        expect.objectContaining({ user_id: 'anonymous' })
-      );
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should return 400 for invalid request body (missing message)', async () => {
       const response = await request(app)
         .post('/bot/query')
+        .set('x-user-id', 'test-user')
         .send({});
 
       expect(response.status).toBe(400);
@@ -167,6 +156,7 @@ describe('Bot Routes', () => {
     it('should return 400 for invalid message (too long)', async () => {
       const response = await request(app)
         .post('/bot/query')
+        .set('x-user-id', 'test-user')
         .send({
           message: 'a'.repeat(5001),
         });
@@ -178,6 +168,7 @@ describe('Bot Routes', () => {
     it('should return 400 for invalid context (invalid lat/lng)', async () => {
       const response = await request(app)
         .post('/bot/query')
+        .set('x-user-id', 'test-user')
         .send({
           message: 'Test',
           context: {
@@ -194,6 +185,7 @@ describe('Bot Routes', () => {
 
       const response = await request(app)
         .post('/bot/query')
+        .set('x-user-id', 'test-user')
         .send({ message: 'Test' });
 
       expect(response.status).toBe(500);
@@ -236,13 +228,15 @@ describe('Bot Routes', () => {
       expect(getConversations).toHaveBeenCalledWith('test-user-123');
     });
 
-    it('should use "anonymous" when x-user-id is not provided', async () => {
-      (getConversations as any).mockResolvedValue({ conversations: [] });
-
+    it('should return 401 when x-user-id is not provided', async () => {
       const response = await request(app).get('/bot/conversations');
 
-      expect(response.status).toBe(200);
-      expect(getConversations).toHaveBeenCalledWith('anonymous');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should return 500 when service throws error', async () => {
@@ -306,8 +300,10 @@ describe('Bot Routes', () => {
 
       expect(response.status).toBe(404);
       expect(response.body).toEqual({
-        ok: false,
-        error: 'not_found',
+        error: {
+          code: 'not_found',
+          message: 'Conversation not found',
+        },
       });
     });
 
@@ -336,13 +332,15 @@ describe('Bot Routes', () => {
       expect(deleteConversation).toHaveBeenCalledWith('507f1f77bcf86cd799439011', 'test-user-123');
     });
 
-    it('should use "anonymous" when x-user-id is not provided', async () => {
-      (deleteConversation as any).mockResolvedValue(undefined);
-
+    it('should return 401 when x-user-id is not provided', async () => {
       const response = await request(app).delete('/bot/conversations/507f1f77bcf86cd799439011');
 
-      expect(response.status).toBe(200);
-      expect(deleteConversation).toHaveBeenCalledWith('507f1f77bcf86cd799439011', 'anonymous');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should return 500 when service throws error', async () => {

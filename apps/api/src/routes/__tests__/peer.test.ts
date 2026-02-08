@@ -329,20 +329,17 @@ describe('Peer Routes', () => {
       expect(response.body.ok).toBe(true);
     });
 
-    it('should use anonymous as default user_id', async () => {
-      mockRecordActivity.mockResolvedValue({
-        id: 'activity-id',
-        created_at: '2024-01-01T12:00:00.000Z',
-      });
-
+    it('should return 401 when x-user-id header is missing', async () => {
       const response = await request(app)
         .post('/peer/activity')
         .send({ activity_type: 'question' });
 
-      expect(response.status).toBe(201);
-      expect(mockRecordActivity).toHaveBeenCalledWith(
-        expect.objectContaining({ user_id: 'anonymous' })
-      );
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should reject missing activity_type', async () => {

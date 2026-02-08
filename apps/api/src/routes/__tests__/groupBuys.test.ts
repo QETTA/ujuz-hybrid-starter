@@ -227,13 +227,15 @@ describe('GroupBuys Routes', () => {
       expect(mockGetUserJoinedGroupBuys).toHaveBeenCalledWith('user123');
     });
 
-    it('should use anonymous as default user_id', async () => {
-      mockGetUserJoinedGroupBuys.mockResolvedValue({ group_buys: [], total: 0 });
-
+    it('should return 401 when x-user-id header is missing', async () => {
       const response = await request(app).get('/group-buys/joined');
 
-      expect(response.status).toBe(200);
-      expect(mockGetUserJoinedGroupBuys).toHaveBeenCalledWith('anonymous');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should return empty list when user has no joined group buys', async () => {
@@ -349,27 +351,15 @@ describe('GroupBuys Routes', () => {
       expect(mockJoinGroupBuy).toHaveBeenCalledWith('gb123', 'user123');
     });
 
-    it('should use anonymous as default user_id', async () => {
-      const mockResult = {
-        id: 'gb123',
-        title: 'Test',
-        item_type: 'ticket',
-        status: 'active',
-        current_amount: 0,
-        current_quantity: 1,
-        goal_quantity: 10,
-        achievement_rate: 10,
-        supporter_count: 1,
-        start_date: '2024-01-01T00:00:00.000Z',
-        end_date: '2024-01-31T23:59:59.000Z',
-      };
-
-      mockJoinGroupBuy.mockResolvedValue(mockResult);
-
+    it('should return 401 when x-user-id header is missing', async () => {
       const response = await request(app).post('/group-buys/gb123/join');
 
-      expect(response.status).toBe(200);
-      expect(mockJoinGroupBuy).toHaveBeenCalledWith('gb123', 'anonymous');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should handle already joined error (409)', async () => {
@@ -427,13 +417,15 @@ describe('GroupBuys Routes', () => {
       expect(mockLeaveGroupBuy).toHaveBeenCalledWith('gb123', 'user123');
     });
 
-    it('should use anonymous as default user_id', async () => {
-      mockLeaveGroupBuy.mockResolvedValue(undefined);
-
+    it('should return 401 when x-user-id header is missing', async () => {
       const response = await request(app).delete('/group-buys/gb123/leave');
 
-      expect(response.status).toBe(200);
-      expect(mockLeaveGroupBuy).toHaveBeenCalledWith('gb123', 'anonymous');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should handle not found error (404)', async () => {

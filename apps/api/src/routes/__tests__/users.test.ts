@@ -146,16 +146,15 @@ describe('Users Routes', () => {
       });
     });
 
-    it('should use anonymous as default user_id when header is missing', async () => {
-      mockFindOne.mockResolvedValue(null);
-      mockFind.mockReturnValue({
-        toArray: vi.fn().mockResolvedValue([]),
-      });
-
+    it('should return 401 when x-user-id header is missing', async () => {
       const response = await request(app).get('/users/me');
 
-      expect(response.status).toBe(200);
-      expect(response.body.data.id).toBe('anonymous');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should handle database error', async () => {

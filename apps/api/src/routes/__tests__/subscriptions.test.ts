@@ -94,7 +94,10 @@ describe('Subscriptions Routes', () => {
       const response = await request(app).get('/subscriptions/plans');
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual(mockPlans);
+      expect(response.body).toEqual({
+        ok: true,
+        data: mockPlans,
+      });
       expect(getPlans).toHaveBeenCalled();
     });
 
@@ -160,7 +163,10 @@ describe('Subscriptions Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
-        subscription: mockSubscription,
+        ok: true,
+        data: {
+          subscription: mockSubscription,
+        },
       });
       expect(getUserSubscription).toHaveBeenCalledWith('device-123');
     });
@@ -174,17 +180,23 @@ describe('Subscriptions Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
-        subscription: null,
+        ok: true,
+        data: {
+          subscription: null,
+        },
       });
     });
 
-    it('should return 500 when x-device-id is missing (route bug: uses status instead of statusCode)', async () => {
+    it('should return 401 when x-device-id is missing', async () => {
       const response = await request(app).get('/subscriptions/me');
 
-      // Note: Due to route implementation bug (uses { status: 401 } instead of AppError),
-      // errorHandler falls through to 500 because it checks instanceof AppError with statusCode
-      expect(response.status).toBe(500);
-      expect(response.body.error.code).toBe('internal_error');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        error: {
+          code: 'missing_device_id',
+          message: 'missing x-device-id',
+        },
+      });
     });
 
     it('should return 500 when service throws error', async () => {
@@ -245,7 +257,10 @@ describe('Subscriptions Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
-        subscription: mockSubscription,
+        ok: true,
+        data: {
+          subscription: mockSubscription,
+        },
       });
       expect(createSubscription).toHaveBeenCalledWith('device-123', 'basic', 'monthly');
     });
@@ -357,20 +372,23 @@ describe('Subscriptions Routes', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.subscription).toEqual(mockSubscription);
+      expect(response.body.data.subscription).toEqual(mockSubscription);
     });
 
-    it('should return 500 when x-device-id is missing (route bug: uses status instead of statusCode)', async () => {
+    it('should return 401 when x-device-id is missing', async () => {
       const response = await request(app)
         .post('/subscriptions/subscribe')
         .send({
           plan_tier: 'basic',
         });
 
-      // Note: Due to route implementation bug (uses { status: 401 } instead of AppError),
-      // errorHandler falls through to 500
-      expect(response.status).toBe(500);
-      expect(response.body.error.code).toBe('internal_error');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        error: {
+          code: 'missing_device_id',
+          message: 'missing x-device-id',
+        },
+      });
     });
 
     it('should return 400 for missing plan_tier', async () => {
@@ -436,18 +454,21 @@ describe('Subscriptions Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
-        success: true,
+        ok: true,
       });
       expect(cancelSubscription).toHaveBeenCalledWith('device-123');
     });
 
-    it('should return 500 when x-device-id is missing (route bug: uses status instead of statusCode)', async () => {
+    it('should return 401 when x-device-id is missing', async () => {
       const response = await request(app).post('/subscriptions/cancel');
 
-      // Note: Due to route implementation bug (uses { status: 401 } instead of AppError),
-      // errorHandler falls through to 500
-      expect(response.status).toBe(500);
-      expect(response.body.error.code).toBe('internal_error');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        error: {
+          code: 'missing_device_id',
+          message: 'missing x-device-id',
+        },
+      });
     });
 
     it('should return 404 when no active subscription found', async () => {

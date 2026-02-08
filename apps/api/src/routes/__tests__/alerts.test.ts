@@ -84,13 +84,15 @@ describe('Alerts Routes', () => {
       expect(getUserSubscriptions).toHaveBeenCalledWith('test-user-123');
     });
 
-    it('should use "anonymous" when x-user-id is not provided', async () => {
-      (getUserSubscriptions as any).mockResolvedValue({ subscriptions: [] });
-
+    it('should return 401 when x-user-id is not provided', async () => {
       const response = await request(app).get('/alerts/to');
 
-      expect(response.status).toBe(200);
-      expect(getUserSubscriptions).toHaveBeenCalledWith('anonymous');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should return empty subscriptions array for new user', async () => {
@@ -266,13 +268,15 @@ describe('Alerts Routes', () => {
       expect(deleteSubscription).toHaveBeenCalledWith('test-user-123', 'facility-001');
     });
 
-    it('should use "anonymous" when x-user-id is not provided', async () => {
-      (deleteSubscription as any).mockResolvedValue(undefined);
-
+    it('should return 401 when x-user-id is not provided', async () => {
       const response = await request(app).delete('/alerts/to/facility-001');
 
-      expect(response.status).toBe(200);
-      expect(deleteSubscription).toHaveBeenCalledWith('anonymous', 'facility-001');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should return 500 when service throws error', async () => {
@@ -351,17 +355,15 @@ describe('Alerts Routes', () => {
       });
     });
 
-    it('should use "anonymous" when x-user-id is not provided', async () => {
-      (getAlertHistory as any).mockResolvedValue({
-        alerts: [],
-        total: 0,
-        unread_count: 0,
-      });
-
+    it('should return 401 when x-user-id is not provided', async () => {
       const response = await request(app).get('/alerts/to/history');
 
-      expect(response.status).toBe(200);
-      expect(getAlertHistory).toHaveBeenCalledWith('anonymous');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should return 500 when service throws error', async () => {

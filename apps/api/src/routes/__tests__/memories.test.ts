@@ -85,29 +85,23 @@ describe('Memories Routes', () => {
       );
     });
 
-    it('should use "anonymous" when x-user-id not provided', async () => {
-      (saveMemory as any).mockResolvedValue({
-        user_id: 'anonymous',
-        memory_key: 'note',
-        content: 'test',
-        tags: [],
-        metadata: {},
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
-
+    it('should return 401 when x-user-id not provided', async () => {
       const response = await request(app)
         .post('/memories')
         .send({ memory_key: 'note', content: 'test' });
 
-      expect(response.status).toBe(201);
-      expect(saveMemory).toHaveBeenCalledWith('anonymous', 'note', 'test', undefined, undefined);
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should return 400 for missing memory_key', async () => {
       const response = await request(app)
         .post('/memories')
+        .set('x-user-id', 'test-user')
         .send({ content: 'test' });
 
       expect(response.status).toBe(400);
@@ -117,6 +111,7 @@ describe('Memories Routes', () => {
     it('should return 400 for missing content', async () => {
       const response = await request(app)
         .post('/memories')
+        .set('x-user-id', 'test-user')
         .send({ memory_key: 'note' });
 
       expect(response.status).toBe(400);
@@ -126,6 +121,7 @@ describe('Memories Routes', () => {
     it('should return 400 for invalid memory_key format', async () => {
       const response = await request(app)
         .post('/memories')
+        .set('x-user-id', 'test-user')
         .send({ memory_key: 'has spaces!', content: 'test' });
 
       expect(response.status).toBe(400);
@@ -135,6 +131,7 @@ describe('Memories Routes', () => {
     it('should return 400 for content exceeding max length', async () => {
       const response = await request(app)
         .post('/memories')
+        .set('x-user-id', 'test-user')
         .send({ memory_key: 'note', content: 'a'.repeat(5001) });
 
       expect(response.status).toBe(400);
@@ -146,6 +143,7 @@ describe('Memories Routes', () => {
 
       const response = await request(app)
         .post('/memories')
+        .set('x-user-id', 'test-user')
         .send(validBody);
 
       expect(response.status).toBe(500);
@@ -306,6 +304,7 @@ describe('Memories Routes', () => {
     it('should return 400 for missing content', async () => {
       const response = await request(app)
         .put('/memories/note')
+        .set('x-user-id', 'test-user')
         .send({});
 
       expect(response.status).toBe(400);
@@ -315,6 +314,7 @@ describe('Memories Routes', () => {
     it('should return 400 for content exceeding max length', async () => {
       const response = await request(app)
         .put('/memories/note')
+        .set('x-user-id', 'test-user')
         .send({ content: 'a'.repeat(5001) });
 
       expect(response.status).toBe(400);
@@ -356,13 +356,15 @@ describe('Memories Routes', () => {
       expect(response.body).toEqual({ ok: false, error: 'not_found' });
     });
 
-    it('should use "anonymous" when x-user-id not provided', async () => {
-      (deleteMemory as any).mockResolvedValue(true);
-
+    it('should return 401 when x-user-id not provided', async () => {
       const response = await request(app).delete('/memories/note');
 
-      expect(response.status).toBe(200);
-      expect(deleteMemory).toHaveBeenCalledWith('anonymous', 'note');
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        ok: false,
+        error: 'missing_user_id',
+        message: 'x-user-id header required',
+      });
     });
 
     it('should return 500 when service throws', async () => {
