@@ -54,6 +54,7 @@ export default function MapScreenMapbox() {
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const [activeLayer, setActiveLayer] = useState<MapLayerKey>('all');
+  const [sortMode, setSortMode] = useState<'default' | 'popular'>('default');
   const [places, setPlaces] = useState<PlaceWithDistance[]>([]);
   const placeIds = useMemo(() => places.map((p) => p.id), [places]);
   const { insightsMap } = useInsights(placeIds);
@@ -61,15 +62,22 @@ export default function MapScreenMapbox() {
 
   useEffect(() => {
     // TODO: replace with real API + data blocks
-    setPlaces(MOCK_MAP_PLACES);
+    // Seed fallback: if API returns 0, use first 5 mock places
+    const data = MOCK_MAP_PLACES;
+    setPlaces(data.length > 0 ? data : MOCK_MAP_PLACES.slice(0, 5));
   }, []);
 
-  const { visiblePlaces, mapLayers, filterCounts } = useMapLayers({
+  const { visiblePlaces: rawVisiblePlaces, mapLayers, filterCounts } = useMapLayers({
     places,
     activeLayer,
     favoritesSet,
     insightsMap,
   });
+
+  const visiblePlaces = useMemo(() => {
+    if (sortMode !== 'popular') return rawVisiblePlaces;
+    return [...rawVisiblePlaces].sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0));
+  }, [rawVisiblePlaces, sortMode]);
 
   useEffect(() => {
     if (selectedPlace && !visiblePlaces.some((place) => place.id === selectedPlace.id)) {
@@ -230,6 +238,22 @@ export default function MapScreenMapbox() {
         gap: 10,
         ...Shadows.card,
       },
+      emptyCtas: {
+        width: '100%' as const,
+        gap: 8,
+        marginTop: 4,
+      },
+      emptyCtaBtn: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        gap: 6,
+        paddingVertical: 12,
+        borderRadius: 12,
+        backgroundColor: theme.surface.val,
+        borderWidth: 0.5,
+        borderColor: theme.borderColor.val,
+      },
     }),
     [theme]
   );
@@ -329,11 +353,45 @@ export default function MapScreenMapbox() {
             icon="map-outline"
             title={COPY.NO_FILTER_MATCH}
             message={COPY.TRY_OTHER_FILTER}
-            action={{
-              label: COPY.RESET_FILTER,
-              onPress: () => setActiveLayer('all'),
-            }}
           />
+          <View style={styles.emptyCtas}>
+            <TamaguiPressableScale
+              style={styles.emptyCtaBtn}
+              hapticType="light"
+              onPress={() => {
+                setSortMode('popular');
+                setActiveLayer('all');
+              }}
+              accessibilityLabel="인기순으로 보기"
+            >
+              <Ionicons name="trending-up" size={16} color={theme.textPrimary.val} />
+              <TamaguiText preset="caption" textColor="primary" weight="semibold">
+                인기순으로 보기
+              </TamaguiText>
+            </TamaguiPressableScale>
+            <TamaguiPressableScale
+              style={styles.emptyCtaBtn}
+              hapticType="light"
+              onPress={() => navigation.navigate('Ask')}
+              accessibilityLabel="우주봇에게 추천받기"
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={16} color={theme.textPrimary.val} />
+              <TamaguiText preset="caption" textColor="primary" weight="semibold">
+                우주봇에게 추천받기
+              </TamaguiText>
+            </TamaguiPressableScale>
+            <TamaguiPressableScale
+              style={styles.emptyCtaBtn}
+              hapticType="light"
+              onPress={() => setActiveLayer('all')}
+              accessibilityLabel={COPY.RESET_FILTER}
+            >
+              <Ionicons name="refresh" size={16} color={theme.textPrimary.val} />
+              <TamaguiText preset="caption" textColor="primary" weight="semibold">
+                {COPY.RESET_FILTER}
+              </TamaguiText>
+            </TamaguiPressableScale>
+          </View>
         </View>
       )}
 
