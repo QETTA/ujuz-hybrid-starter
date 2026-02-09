@@ -39,4 +39,53 @@ config.resolver = {
   unstable_enablePackageExports: true,
 };
 
+// === Sync Status Middleware ===
+// Intercepts .bundle requests to track bundling state,
+// and exposes GET /sync-status endpoint for DevOverlay + Claude diagnostics.
+const originalMiddleware = config.server?.enhanceMiddleware;
+config.server = {
+  ...config.server,
+  enhanceMiddleware: (middleware, metroServer) => {
+    let enhanced = middleware;
+    if (originalMiddleware) {
+      enhanced = originalMiddleware(middleware, metroServer);
+    }
+    return (req, res, next) => {
+      // Sync status endpoint
+      if (req.url === '/sync-status') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(getSyncState()));
+        return;
+      }
+
+      // Monorepo fix: rewrite /index.bundle → /apps/mobile/index.bundle
+      // Metro resolves from the workspace root, but the Dev Client requests /index.bundle.
+      if (req.url && req.url.startsWith('/index.bundle')) {
+        req.url = '/apps/mobile' + req.url;
+      }
+
+      // Windows bundling fixes:
+      // 1. Strip multipart/mixed Accept header → force plain JS response
+      //    (avoids MultipartStreamReader parsing issues on Windows)
+      // 2. Disable chunked encoding → OkHttp ProtocolException (0xd) fix
+      if (req.url && req.url.includes('.bundle')) {
+        onBundleStart();
+        // Force plain application/javascript response (no multipart wrapping)
+        if (req.headers.accept) {
+          req.headers.accept = req.headers.accept
+            .replace(/multipart\/mixed\s*,?\s*/g, '')
+            .replace(/,\s*$/, '') || '*/*';
+        }
+        res.useChunkedEncodingByDefault = false;
+        res.chunkedEncoding = false;
+        res.on('finish', () => {
+          onBundleDone(res.statusCode || 200);
+        });
+      }
+
+      enhanced(req, res, next);
+    };
+  },
+};
+
 module.exports = config;

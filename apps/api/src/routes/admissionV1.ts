@@ -1,5 +1,5 @@
 /**
- * UJUz - Admission Score V1.5.2 Routes
+ * UJUz - Admission Score V1 Routes
  * 초고정밀 입학 가능성 예측 API (강남/서초/위례/성남/분당)
  */
 
@@ -25,7 +25,7 @@ const rateLimit = createRateLimiter();
  *     estimated_months_median: 5,
  *     estimated_months_80th: 7,
  *     evidence: [...],
- *     engine_version: 'v1.5.2',
+ *     engine_version: string, // see ENGINE_VERSION in admissionEngineV1.ts
  *     calculated_at: '2026-02-07T...'
  *   }
  * }
@@ -51,7 +51,7 @@ router.get('/admission-score', rateLimit, async (req, res, next) => {
  * GET /v1/admission-score/bot-format
  * Query params: facility_id, child_age_band, waiting_position?, priority_type?
  *
- * Returns: { ok: true, message: "6개월 내 입학 확률 62%..." }
+ * Returns: { ok: true, data: { message: "6개월 내 입학 확률 62%..." } }
  */
 router.get('/admission-score/bot-format', rateLimit, async (req, res, next) => {
   try {

@@ -88,7 +88,7 @@ function getSnapshotInterval(facility: any): number {
  * places 컬렉션의 현재 상태를 waitlist_snapshots로 기록한다.
  * 대상: 어린이집(daycare) 카테고리 중 정원 정보가 있는 시설.
  *
- * V1.5.2: waitlist_by_class, change.to_detected (1단계) 추가
+ * waitlist_by_class, change.to_detected (1단계) 추가
  * V1.6.0: Cursor-based processing to prevent memory overflow
  */
 export async function collectSnapshots(): Promise<{
@@ -212,7 +212,7 @@ async function processFacilityBatch(db: Db, facilities: any[], now: Date): Promi
  * 1단계: 직전 스냅샷과 비교하여 enrolled_delta < 0 → to_detected=false (후보)
  * 2단계: 다음 스냅샷에서 재확인 or 2개 소스 일치 → to_detected=true → to_alerts 생성
  *
- * V1.5.2: 24시간 cooldown window로 중복 감지 방지
+ * 24시간 cooldown window로 중복 감지 방지
  * V1.6.0: Add limit to prevent unbounded loads
  */
 async function detectAndConfirmTO(db: Db, currentTimestamp: Date): Promise<number> {
@@ -333,7 +333,7 @@ async function detectAndConfirmTO(db: Db, currentTimestamp: Date): Promise<numbe
   return detected;
 }
 
-// ─── Training Data Block Update (V1.5.2 - dataBlocks 통합) ───────
+// ─── Training Data Block Update (dataBlocks 통합) ───────
 
 /**
  * 시설별로 최근 6개월 스냅샷을 집계하여

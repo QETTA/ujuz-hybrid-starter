@@ -126,7 +126,7 @@ async function generateResponse(
   context?: BotQueryInput['context'],
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>,
 ): Promise<string> {
-  // V1.5.2 Admission Engine Integration
+  // Admission Engine Integration (see ENGINE_VERSION)
   if (intent === 'ADMISSION_INQUIRY' && context?.facility_id && context?.child_age_band) {
     try {
       const result = await calculateAdmissionScoreV1({
@@ -138,7 +138,7 @@ async function generateResponse(
 
       return formatBotResponse(result);
     } catch (error) {
-      logger.warn({ error }, 'Admission score V1.5.2 calculation failed in bot');
+      logger.warn({ error }, 'Admission score calculation failed in bot');
       // Fallback to Claude API or hardcoded response
     }
   }

@@ -1,5 +1,5 @@
 /**
- * UJUz - Admission Score Engine V1.5.2
+ * UJUz - Admission Score Engine V1 (see ENGINE_VERSION below)
  * 초고정밀 입학 가능성 산출 엔진 (강남/서초/위례/성남/분당)
  *
  * 핵심 출력:
@@ -8,15 +8,6 @@
  *  - confidence (0-1): Posterior variance 기반 신뢰도
  *  - estimated_months_median/80th: 예상 대기기간
  *  - evidence cards: 숫자+기간+집계만, 원문 인용 절대 금지
- *
- * V1.5.2 핵심 개선:
- *  - Seat-Month 정규화: ρ (seat-month당 vacancy rate)
- *  - Gamma-Poisson conjugate prior: 베이지안 콜드스타트
- *  - Negative Binomial predictive: λ 적분한 확률 분포
- *  - 시즌성 누적 Exposure: E_H = capacity * Σ s_month
- *  - TO 중복 카운팅 방지: 24h cooldown
- *  - Age-band 정합성: capacity_eff 정확히 반영
- *  - Calibration 파이프라인: isotonic regression 매핑
  */
 
 import { jStat } from 'jstat';
@@ -100,6 +91,7 @@ export interface AdmissionScoreResult {
 
 const ENGINE_VERSION = 'v1.7.0'; // V1.7.0: community intel prior correction; // V1.6.1: fix TO snapshot query + change-field based delta
 const CALIBRATION_VERSION = 'v1'; // 주 1회 isotonic regression 업데이트 시 증가
+const EPS = 1e-6;
 
 /** Prior 강도 (pseudo exposure) */
 const E0 = 3.0; // 3 seat-months
@@ -196,7 +188,7 @@ export function effectiveHorizon(H: number, currentMonth: number): number {
   return H_eff; // 단위: month-equivalent
 }
 
-function getCacheKey(input: AdmissionScoreInput, region: string, w_eff: number): string {
+function getCacheKey(input: AdmissionScoreInput, w_eff: number): string {
   return `${input.facility_id}|${input.child_age_band}|${w_eff}|${ENGINE_VERSION}|${CALIBRATION_VERSION}`;
 }
 
@@ -294,9 +286,11 @@ export async function calculateAdmissionScoreV1(
 
   // Age-band별 정원 추정
   const capacityByClass = (facility.capacity_by_class as Record<string, number>) ?? {};
-  const capacity_eff =
+  const capacity_eff = Math.max(
+    1,
     capacityByClass[input.child_age_band] ??
-    capacity * AGE_BAND_CAPACITY_RATIO[input.child_age_band];
+      capacity * AGE_BAND_CAPACITY_RATIO[input.child_age_band],
+  );
 
   // 2. 대기순번 정규화
   let waitingPosition = input.waiting_position;
@@ -323,7 +317,7 @@ export async function calculateAdmissionScoreV1(
   const w_eff = Math.max(0, Math.ceil(waitingPosition * c_region - b_priority));
 
   // 4. 캐시 조회
-  const cacheKey = getCacheKey(input, region, w_eff);
+  const cacheKey = getCacheKey(input, w_eff);
   const cached = await db.collection('admission_scores_v1').findOne({
     cacheKey,
     expires_at: { $gt: new Date() },
@@ -372,11 +366,14 @@ export async function calculateAdmissionScoreV1(
     // Use prebuilt block data (skip expensive snapshot aggregation)
     const vData = vacancyBlock.data as Record<string, number>;
     N = vData.N ?? 0;
-    E_seat_months = vData.E_seat_months ?? 0;
+    const rawE = vData.E_seat_months ?? 0;
+    E_seat_months = Number.isFinite(rawE) && rawE >= 0 ? rawE : 0;
     ρ_observed = vData.rho_observed ?? 0;
-    α_post = vData.alpha_post ?? 0.03;
-    β_post = vData.beta_post ?? 3;
-    ρ_post_mean = α_post / β_post;
+    const rawAlpha = vData.alpha_post ?? 0.03;
+    α_post = Number.isFinite(rawAlpha) && rawAlpha > 0 ? rawAlpha : 0.03;
+    const rawBeta = vData.beta_post ?? 3;
+    β_post = Number.isFinite(rawBeta) && rawBeta > 0 ? rawBeta : 3;
+    ρ_post_mean = α_post / Math.max(β_post, EPS);
     snapshotCount = N > 0 ? 6 : 1; // approximate for evidence display
 
     logger.info({ facility_id: input.facility_id }, 'Using prebuilt admission_vacancy_to block');
@@ -470,7 +467,7 @@ export async function calculateAdmissionScoreV1(
 
     α_post = α0 + N;
     β_post = β0 + E_seat_months;
-    ρ_post_mean = α_post / β_post;
+    ρ_post_mean = α_post / Math.max(β_post, EPS);
 
     if (snapshots.length >= 2) {
       evidence.push({
@@ -521,7 +518,7 @@ export async function calculateAdmissionScoreV1(
         // Community TO mention = 0.3 pseudo-observation (actual snapshot = 1.0)
         α_post += toMentionCount * 0.3;
         β_post += intelSourceCount * 0.5;
-        ρ_post_mean = α_post / β_post;
+        ρ_post_mean = α_post / Math.max(β_post, EPS);
       }
 
       const avgReportedWaitMonths = csData.avg_reported_wait_months as number | undefined;
@@ -607,7 +604,7 @@ export async function calculateAdmissionScoreV1(
       );
       const avgSentiment =
         qualifiedInsights.reduce(
-          (sum, c) => sum + (c.features?.avg_sentiment ?? 0),
+          (sum, c) => sum + (((c.data as Record<string, number>)?.avg_sentiment ?? (c.avg_sentiment as number)) ?? 0),
           0
         ) / qualifiedInsights.length;
 
@@ -627,13 +624,14 @@ export async function calculateAdmissionScoreV1(
   }
 
   // 11. 점수 캘리브레이션
-  const raw_score = Math.round(100 * P_6m);
+  const raw_score = clamp(Math.round(100 * P_6m), 0, 100);
   const calibrated = (CALIBRATION_ARRAY[region] ?? CALIBRATION_ARRAY.default)[raw_score];
   const final_score = clamp(calibrated, 1, 99);
 
   // 12. Confidence (Posterior Variance)
-  const variance = α_post / (β_post ** 2);
-  const mean = α_post / β_post;
+  const safeBeta = Math.max(β_post, EPS);
+  const variance = α_post / (safeBeta ** 2);
+  const mean = α_post / safeBeta;
   const cv = mean > 0 ? Math.sqrt(variance) / mean : 1;
   const confidence = Number(sigmoid(-cv * 3 + 1).toFixed(2));
 
@@ -665,7 +663,7 @@ export async function calculateAdmissionScoreV1(
       sample_size: snapshotCount,
       avg_wait_months: estimated_months_median,
       success_rate: P_6m,
-      definition: `${regionLabel(region as RegionKey)}/${input.child_age_band}\uc138/\uc815\uc6d0${Math.round(capacity_eff)}`,
+      definition: `${region === 'default' ? '기타 지역' : regionLabel(region as RegionKey)}/${input.child_age_band}\uc138/\uc815\uc6d0${Math.round(capacity_eff)}`,
     },
   });
 
@@ -702,7 +700,7 @@ export async function calculateAdmissionScoreV1(
       calibration_version: CALIBRATION_VERSION,
     });
   } catch (err) {
-    logger.warn({ err }, 'Failed to cache V1.5.2 admission score');
+    logger.warn({ err }, 'Failed to cache admission score');
   }
 
   return result;

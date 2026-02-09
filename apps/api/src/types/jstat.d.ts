@@ -1,6 +1,6 @@
 /**
  * Minimal TypeScript declarations for jstat
- * We only need the Negative Binomial CDF function for V1.5.2
+ * We only need the Negative Binomial CDF function for the admission engine
  */
 
 declare module 'jstat' {

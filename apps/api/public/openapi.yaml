@@ -382,17 +382,19 @@ paths:
             enum: ['0', '1', '2', '3', '4', '5']
         - name: priority_type
           in: query
-          required: true
+          required: false
           description: 우선순위 유형
           schema:
             type: string
             enum: [dual_income, sibling, single_parent, multi_child, disability, low_income, general]
+            default: general
         - name: waiting_position
           in: query
-          description: 대기 순번 (미제공 시 기본값 사용)
+          description: 대기 순번 (미제공 시 최신 스냅샷/정원 기반 추정)
           schema:
             type: integer
-            minimum: 0
+            minimum: 1
+            maximum: 500
       responses:
         '200':
           description: 입소 점수 결과
@@ -425,10 +427,18 @@ paths:
             enum: ['0', '1', '2', '3', '4', '5']
         - name: priority_type
           in: query
-          required: true
+          required: false
           schema:
             type: string
             enum: [dual_income, sibling, single_parent, multi_child, disability, low_income, general]
+            default: general
+        - name: waiting_position
+          in: query
+          description: 대기 순번 (미제공 시 최신 스냅샷/정원 기반 추정)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
       responses:
         '200':
           description: 봇 포맷 응답
@@ -1629,7 +1639,6 @@ components:
             type: object
         engine_version:
           type: string
-          example: v1.5.2
         calculated_at:
           type: string
           format: date-time
