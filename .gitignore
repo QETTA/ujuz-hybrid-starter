@@ -20,8 +20,28 @@ infra/.terraform/
 # Logs
 *.log
 
+# Temp / Swap / Backup
+*.tmp
+*.swp
+*.bak
+*.orig
+
+# Scratch / Debug artifacts
+labels.txt
+pr*.json
+pr_body.txt
+
+# Screenshots / ADB captures (dev only)
+screen*.png
+screen*.jpg
+test-sync*.png
+bundle_debug.js
+
 # Claude Code
 .claude/settings.local.json
+.claude/plans/
+.claude/reviews/
+.claude/logs/
 
 # Serena
 .serena/cache/
