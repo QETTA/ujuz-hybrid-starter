@@ -17,9 +17,12 @@ import type { PeerLiveStatus, PeerActivity, PeerTrends, TrendPeriod } from '@/ap
 // Configuration
 // ============================================
 
-const DEFAULT_POLLING_INTERVAL = 30000; // 30 seconds
-const STATUS_POLLING_INTERVAL = 15000; // 15 seconds (more frequent for live status)
-const TREND_POLLING_INTERVAL = 60000; // 1 minute (less frequent for trends)
+const STATUS_POLLING_INTERVAL = 15000; // 15 seconds
+const ACTIVITY_POLLING_INTERVAL = 30000; // 30 seconds
+const TREND_POLLING_INTERVAL = 60000; // 1 minute
+const MAX_BACKOFF_INTERVAL = 120000; // 2 minutes max backoff
+const BACKOFF_MULTIPLIER = 2;
+const BACKOFF_THRESHOLD = 2; // consecutive failures before backoff kicks in
 
 // ============================================
 // Types
@@ -34,8 +37,6 @@ export interface UsePeerSyncOptions {
   userLng?: number;
   /** 폴링 활성화 여부 */
   enablePolling?: boolean;
-  /** 폴링 간격 (ms) */
-  pollingInterval?: number;
 }
 
 export interface UsePeerSyncResult {
@@ -71,7 +72,6 @@ export function usePeerSync(options: UsePeerSyncOptions): UsePeerSyncResult {
     userLat,
     userLng,
     enablePolling = true,
-    pollingInterval = DEFAULT_POLLING_INTERVAL,
   } = options;
 
   // State
@@ -85,18 +85,29 @@ export function usePeerSync(options: UsePeerSyncOptions): UsePeerSyncResult {
   const [hasMoreActivities, setHasMoreActivities] = useState(true);
 
   // Refs for polling
-  const statusPollingRef = useRef<NodeJS.Timeout | null>(null);
-  const activityPollingRef = useRef<NodeJS.Timeout | null>(null);
-  const trendPollingRef = useRef<NodeJS.Timeout | null>(null);
+  const statusPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activityPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trendPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activityOffsetRef = useRef(0);
+  const consecutiveFailuresRef = useRef(0);
+  const isPollingActiveRef = useRef(false);
+
+  // Backoff interval calculator
+  const getBackoffInterval = useCallback((baseInterval: number) => {
+    const failures = consecutiveFailuresRef.current;
+    if (failures < BACKOFF_THRESHOLD) return baseInterval;
+    const multiplier = Math.pow(BACKOFF_MULTIPLIER, failures - BACKOFF_THRESHOLD);
+    return Math.min(baseInterval * multiplier, MAX_BACKOFF_INTERVAL);
+  }, []);
 
   // Fetch live status
   const fetchLiveStatus = useCallback(async () => {
     try {
       const status = await peerSyncService.getLiveStatus(childAgeMonths, userLat, userLng);
       setLiveStatus(status);
-    } catch (err) {
-      console.error('[usePeerSync] Failed to fetch live status:', err);
+      consecutiveFailuresRef.current = 0;
+    } catch {
+      consecutiveFailuresRef.current += 1;
     }
   }, [childAgeMonths, userLat, userLng]);
 
@@ -122,8 +133,8 @@ export function usePeerSync(options: UsePeerSyncOptions): UsePeerSyncResult {
 
         setHasMoreActivities(newActivities.length === 20);
         activityOffsetRef.current += newActivities.length;
-      } catch (err) {
-        console.error('[usePeerSync] Failed to fetch activities:', err);
+      } catch {
+        // Failure counted in fetchLiveStatus (primary health indicator)
       }
     },
     [childAgeMonths]
@@ -134,8 +145,8 @@ export function usePeerSync(options: UsePeerSyncOptions): UsePeerSyncResult {
     try {
       const trendData = await peerSyncService.getPeerTrends(childAgeMonths, trendPeriod);
       setTrends(trendData);
-    } catch (err) {
-      console.error('[usePeerSync] Failed to fetch trends:', err);
+    } catch {
+      // Failure counted in fetchLiveStatus (primary health indicator)
     }
   }, [childAgeMonths, trendPeriod]);
 
@@ -170,49 +181,68 @@ export function usePeerSync(options: UsePeerSyncOptions): UsePeerSyncResult {
     }
   }, [fetchActivities, isLoadingMore, hasMoreActivities]);
 
-  // Setup polling
-  const startPolling = useCallback(() => {
-    if (!enablePolling) return;
+  // Schedule next poll with adaptive delay (setTimeout chain, NOT setInterval)
+  const scheduleStatusPoll = useCallback(() => {
+    if (!isPollingActiveRef.current) return;
+    const delay = getBackoffInterval(STATUS_POLLING_INTERVAL);
+    statusPollingRef.current = setTimeout(async () => {
+      await fetchLiveStatus();
+      scheduleStatusPoll();
+    }, delay);
+  }, [fetchLiveStatus, getBackoffInterval]);
 
-    // Clear existing intervals
-    if (statusPollingRef.current) clearInterval(statusPollingRef.current);
-    if (activityPollingRef.current) clearInterval(activityPollingRef.current);
-    if (trendPollingRef.current) clearInterval(trendPollingRef.current);
+  const scheduleActivityPoll = useCallback(() => {
+    if (!isPollingActiveRef.current) return;
+    const delay = getBackoffInterval(ACTIVITY_POLLING_INTERVAL);
+    activityPollingRef.current = setTimeout(async () => {
+      await fetchActivities(true);
+      scheduleActivityPoll();
+    }, delay);
+  }, [fetchActivities, getBackoffInterval]);
 
-    // Start new intervals
-    statusPollingRef.current = setInterval(fetchLiveStatus, STATUS_POLLING_INTERVAL);
-    activityPollingRef.current = setInterval(() => fetchActivities(true), pollingInterval);
-    trendPollingRef.current = setInterval(fetchTrends, TREND_POLLING_INTERVAL);
-
-    console.log('[usePeerSync] Polling started');
-  }, [enablePolling, fetchLiveStatus, fetchActivities, fetchTrends, pollingInterval]);
+  const scheduleTrendPoll = useCallback(() => {
+    if (!isPollingActiveRef.current) return;
+    const delay = getBackoffInterval(TREND_POLLING_INTERVAL);
+    trendPollingRef.current = setTimeout(async () => {
+      await fetchTrends();
+      scheduleTrendPoll();
+    }, delay);
+  }, [fetchTrends, getBackoffInterval]);
 
   const stopPolling = useCallback(() => {
+    isPollingActiveRef.current = false;
     if (statusPollingRef.current) {
-      clearInterval(statusPollingRef.current);
+      clearTimeout(statusPollingRef.current);
       statusPollingRef.current = null;
     }
     if (activityPollingRef.current) {
-      clearInterval(activityPollingRef.current);
+      clearTimeout(activityPollingRef.current);
       activityPollingRef.current = null;
     }
     if (trendPollingRef.current) {
-      clearInterval(trendPollingRef.current);
+      clearTimeout(trendPollingRef.current);
       trendPollingRef.current = null;
     }
-
-    console.log('[usePeerSync] Polling stopped');
   }, []);
+
+  // Setup polling
+  const startPolling = useCallback(() => {
+    if (!enablePolling) return;
+    stopPolling();
+    isPollingActiveRef.current = true;
+    consecutiveFailuresRef.current = 0;
+    scheduleStatusPoll();
+    scheduleActivityPoll();
+    scheduleTrendPoll();
+  }, [enablePolling, stopPolling, scheduleStatusPoll, scheduleActivityPoll, scheduleTrendPoll]);
 
   // Handle app state changes (pause polling when app is in background)
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
-        console.log('[usePeerSync] App became active, resuming polling');
         refresh();
         startPolling();
       } else if (nextAppState === 'background' || nextAppState === 'inactive') {
-        console.log('[usePeerSync] App went to background, pausing polling');
         stopPolling();
       }
     };

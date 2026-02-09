@@ -21,6 +21,9 @@ import type {
 } from '@/app/types/peerSync';
 import { MOCK_NEARBY_PLACES } from '@/app/data/mocks';
 
+// Warn-once: only log the first network failure per session
+let _peerSyncWarnedOnce = false;
+
 function mockLiveStatus(): PeerLiveStatus {
   return {
     activeNow: Math.floor(Math.random() * 100) + 50,
@@ -134,7 +137,10 @@ export const peerSyncService = {
       });
       return result ?? mockLiveStatus();
     } catch (error) {
-      console.warn('[MongoPeerSync] getLiveStatus failed:', error);
+      if (!_peerSyncWarnedOnce) {
+        _peerSyncWarnedOnce = true;
+        console.warn('[MongoPeerSync] Server unreachable, using mock data. Further errors silenced.');
+      }
       return mockLiveStatus();
     }
   },
@@ -158,7 +164,10 @@ export const peerSyncService = {
       });
       return Array.isArray(result) ? result : mockActivities(childAgeMonths, limit, offset);
     } catch (error) {
-      console.warn('[MongoPeerSync] getRecentActivities failed:', error);
+      if (!_peerSyncWarnedOnce) {
+        _peerSyncWarnedOnce = true;
+        console.warn('[MongoPeerSync] Server unreachable, using mock data. Further errors silenced.');
+      }
       return mockActivities(childAgeMonths, limit, offset);
     }
   },
@@ -177,7 +186,10 @@ export const peerSyncService = {
       });
       return result ?? mockTrends();
     } catch (error) {
-      console.warn('[MongoPeerSync] getPeerTrends failed:', error);
+      if (!_peerSyncWarnedOnce) {
+        _peerSyncWarnedOnce = true;
+        console.warn('[MongoPeerSync] Server unreachable, using mock data. Further errors silenced.');
+      }
       return mockTrends();
     }
   },
@@ -210,7 +222,7 @@ export const peerSyncService = {
         message: options.message,
       });
     } catch (error) {
-      console.warn('[MongoPeerSync] recordActivity failed:', error);
+      // Silent: best-effort only
     }
   },
 };

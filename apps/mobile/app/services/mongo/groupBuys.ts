@@ -10,6 +10,9 @@
 import { apiGet, apiPost, getApiBaseUrl, isOnline } from './client';
 import type { GroupBuy, GroupBuyItemType, GroupBuyStatus } from '@/app/stores/groupBuyStore';
 
+// Warn-once: only log the first network failure per session
+let _groupBuyWarnedOnce = false;
+
 // ============================================
 // Types
 // ============================================
@@ -176,7 +179,10 @@ export const groupBuyService = {
         source: 'mongo',
       };
     } catch (error) {
-      console.warn('[MongoGroupBuy] Failed to fetch group buys:', error);
+      if (!_groupBuyWarnedOnce) {
+        _groupBuyWarnedOnce = true;
+        console.warn('[MongoGroupBuy] Server unreachable, using empty fallback. Further errors silenced.');
+      }
       return { groupBuys: [], total: 0, hasMore: false, source: 'mock' };
     }
   },
@@ -191,7 +197,10 @@ export const groupBuyService = {
       const ids = Array.isArray(result) ? result : result.ids || [];
       return { ids: Array.from(new Set(ids)), source: 'mongo' };
     } catch (error) {
-      console.warn('[MongoGroupBuy] getJoinedGroupBuyIds failed:', error);
+      if (!_groupBuyWarnedOnce) {
+        _groupBuyWarnedOnce = true;
+        console.warn('[MongoGroupBuy] Server unreachable. Further errors silenced.');
+      }
       return { ids: [], source: 'none' };
     }
   },
@@ -209,7 +218,7 @@ export const groupBuyService = {
       if (error?.status === 401) {
         return { ok: false, reason: 'auth_required' };
       }
-      console.warn('[MongoGroupBuy] joinGroupBuy failed:', error);
+      // User-facing: error propagated via result.reason
       return { ok: false, reason: 'mongo_error' };
     }
   },
@@ -227,7 +236,7 @@ export const groupBuyService = {
       if (error?.status === 401) {
         return { ok: false, reason: 'auth_required' };
       }
-      console.warn('[MongoGroupBuy] leaveGroupBuy failed:', error);
+      // User-facing: error propagated via result.reason
       return { ok: false, reason: 'mongo_error' };
     }
   },
