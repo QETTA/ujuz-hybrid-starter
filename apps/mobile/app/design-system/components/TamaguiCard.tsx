@@ -14,7 +14,6 @@ const StyledCard = styled(YStack, {
   name: 'UJUzCard',
   borderRadius: 16,
   overflow: 'hidden',
-
   variants: {
     variant: {
       elevated: {
@@ -70,9 +69,10 @@ const StyledCard = styled(YStack, {
 
     pressable: {
       true: {
+        animation: 'press',
         pressStyle: {
           opacity: 0.7,
-          scale: 0.99,
+          scale: 0.98,
         },
       },
     },

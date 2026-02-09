@@ -7,7 +7,7 @@
 
 import { ujuzColors } from '@/tamagui.config';
 
-const withAlpha = (hex: string, alpha: number): string => {
+export const withAlpha = (hex: string, alpha: number): string => {
   const normalized = hex.replace('#', '');
   if (normalized.length !== 6) return hex;
   const r = Number.parseInt(normalized.slice(0, 2), 16);

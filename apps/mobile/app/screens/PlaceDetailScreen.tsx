@@ -255,7 +255,12 @@ export default function PlaceDetailScreen() {
   const hasFav = isFavorite(selectedPlace.id);
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={[theme.background.val, `${theme.primary.val}06`, theme.background.val]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.container}
+    >
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{ paddingBottom: 100 }}
@@ -458,7 +463,7 @@ export default function PlaceDetailScreen() {
       </Animated.View>
 
       {/* Secondary Actions */}
-      <View style={styles.section}>
+      <Animated.View entering={stagger(6)} style={styles.section}>
         <View style={styles.secondaryRow}>
           <TamaguiPressableScale
             style={styles.secondaryBtn}
@@ -509,7 +514,7 @@ export default function PlaceDetailScreen() {
             </TamaguiText>
           </TamaguiPressableScale>
         </View>
-      </View>
+      </Animated.View>
     </ScrollView>
 
       {/* Fixed Bottom CTA Bar */}
@@ -548,7 +553,7 @@ export default function PlaceDetailScreen() {
           <Ionicons name="notifications-outline" size={22} color={theme.textPrimary.val} />
         </TamaguiPressableScale>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -564,7 +569,7 @@ function createStyles(theme: ReturnType<typeof useTheme>): Styles {
 
     // Hero Section
     heroSection: {
-      height: 280,
+      height: 320,
       position: 'relative',
       backgroundColor: theme.surface.val,
     },
@@ -591,13 +596,13 @@ function createStyles(theme: ReturnType<typeof useTheme>): Styles {
       right: Layout.screenPadding,
     },
     heroName: {
-      fontSize: 24,
-      fontWeight: '700',
-      color: theme.textPrimary.val,
-      letterSpacing: -0.5,
-      textShadowColor: 'rgba(0, 0, 0, 0.6)',
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 4,
+      fontSize: 30,
+      fontWeight: '800',
+      color: '#FFFFFF', // Intentional: white text on hero image overlay
+      letterSpacing: -1.2,
+      textShadowColor: 'rgba(0, 0, 0, 0.7)', // Intentional: readability on image
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 8,
     },
     heroMeta: {
       flexDirection: 'row',
@@ -671,14 +676,19 @@ function createStyles(theme: ReturnType<typeof useTheme>): Styles {
       gap: 6,
     },
     actionIconCircle: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
+      width: 52,
+      height: 52,
+      borderRadius: 26,
       backgroundColor: theme.surfaceElevated.val,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 0.5,
+      borderWidth: 1,
       borderColor: theme.borderColor.val,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
     },
     actionLabel: {
       fontSize: 11,
@@ -699,24 +709,36 @@ function createStyles(theme: ReturnType<typeof useTheme>): Styles {
       marginBottom: 10,
     },
     sectionTitle: {
-      fontSize: 16,
+      fontSize: 18,
       fontWeight: '700',
       color: theme.textPrimary.val,
-      letterSpacing: -0.3,
+      letterSpacing: -0.5,
     },
     sectionCard: {
       backgroundColor: theme.surface.val,
-      borderRadius: 14,
-      padding: 14,
+      borderRadius: 16,
+      padding: 16,
       borderWidth: 0.5,
       borderColor: theme.borderColor.val,
       gap: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      elevation: 4,
     },
     sectionEmptyCard: {
       backgroundColor: theme.surface.val,
       borderRadius: 14,
       padding: 20,
       alignItems: 'center',
+      borderWidth: 0.5,
+      borderColor: theme.borderColor.val,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 3,
     },
     sectionEmpty: {
       fontSize: 13,
@@ -740,6 +762,11 @@ function createStyles(theme: ReturnType<typeof useTheme>): Styles {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 8,
+      shadowColor: Colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      elevation: 6,
     },
     primaryCtaText: {
       color: theme.background.val,
@@ -771,6 +798,11 @@ function createStyles(theme: ReturnType<typeof useTheme>): Styles {
       backgroundColor: theme.surface.val,
       borderWidth: 0.5,
       borderColor: theme.borderColor.val,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 3,
     },
     secondaryText: {
       fontSize: 13,
@@ -792,13 +824,18 @@ function createStyles(theme: ReturnType<typeof useTheme>): Styles {
     },
     bottomBarPrimary: {
       flex: 1,
-      height: 48,
+      height: 52,
       borderRadius: 14,
       backgroundColor: Colors.primary,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 6,
+      gap: 8,
+      shadowColor: Colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      elevation: 6,
     },
     bottomBarPrimaryText: {
       color: theme.background.val,
@@ -815,6 +852,11 @@ function createStyles(theme: ReturnType<typeof useTheme>): Styles {
       justifyContent: 'center',
       borderWidth: 0.5,
       borderColor: theme.borderColor.val,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 3,
     },
 
     // Empty

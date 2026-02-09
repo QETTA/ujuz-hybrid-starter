@@ -4,8 +4,7 @@
  * UJUz 디자인 시스템을 Tamagui 형식으로 매핑
  */
 
-import { createTamagui, createTokens } from 'tamagui';
-import { createInterFont } from '@tamagui/font-inter';
+import { createTamagui, createTokens, createFont } from 'tamagui';
 import { shorthands } from '@tamagui/shorthands';
 import { tokens as defaultTokens } from '@tamagui/config/v3';
 import { createAnimations } from '@tamagui/animations-react-native';
@@ -188,44 +187,25 @@ const tokens = createTokens({
   },
 });
 
-// Inter 폰트 설정
-// String-based size keys (xs, sm, md, lg, xl) are required because
-// design-system components like TamaguiButton and TamaguiChip define
-// custom `size` variants with string keys on styled(Text, ...).
-// Tamagui internally resolves the `size` prop against font size tokens,
-// so these keys must exist here to avoid
-// "No font size found md undefined in size tokens" warnings.
-const headingFont = createInterFont({
+// Inter 폰트 설정 (createFont 사용 — createInterFont는 string key를 드롭하여 경고 유발)
+const headingFont = createFont({
+  family: 'Inter',
   size: {
-    1: 12,
-    2: 14,
-    3: 16,
-    4: 18,
-    5: 20,
-    6: 24,
-    7: 28,
-    8: 32,
-    9: 40,
-    10: 48,
+    1: 12, 2: 14, 3: 16, 4: 18, 5: 20, 6: 24, 7: 28, 8: 32, 9: 40, 10: 48,
     true: 16,
-    // String-based keys for design-system component size variants
-    xs: 12,
-    sm: 14,
-    md: 16,
-    lg: 24,
-    xl: 32,
+    xs: 12, sm: 14, md: 16, lg: 24, xl: 32,
   },
   weight: {
-    4: '400',
-    5: '500',
-    6: '600',
-    7: '700',
+    4: '400', 5: '500', 6: '600', 7: '700',
+    true: '400',
   },
   letterSpacing: {
-    4: 0,
-    5: -0.25,
-    6: -0.5,
-    7: -0.5,
+    4: 0, 5: -0.25, 6: -0.5, 7: -0.5,
+    true: 0,
+  },
+  lineHeight: {
+    1: 16, 2: 18, 3: 20, 4: 22, 5: 24, 6: 30, 7: 34, 8: 38, 9: 48, 10: 56,
+    true: 20,
   },
   face: {
     400: { normal: 'Inter' },
@@ -235,30 +215,24 @@ const headingFont = createInterFont({
   },
 });
 
-const bodyFont = createInterFont({
+const bodyFont = createFont({
+  family: 'Inter',
   size: {
-    1: 12,
-    2: 14,
-    3: 16,
-    4: 17,
-    5: 18,
-    6: 20,
+    1: 12, 2: 14, 3: 16, 4: 17, 5: 18, 6: 20,
     true: 17,
-    // String-based keys for design-system component size variants
-    xs: 12,
-    sm: 14,
-    md: 16,
-    lg: 18,
-    xl: 20,
+    xs: 12, sm: 14, md: 16, lg: 18, xl: 20,
   },
   weight: {
-    4: '400',
-    5: '500',
-    6: '600',
+    4: '400', 5: '500', 6: '600',
+    true: '400',
   },
   letterSpacing: {
-    4: 0,
-    5: -0.4,
+    4: 0, 5: -0.4,
+    true: 0,
+  },
+  lineHeight: {
+    1: 16, 2: 18, 3: 20, 4: 21, 5: 22, 6: 24,
+    true: 21,
   },
   face: {
     400: { normal: 'Inter' },

@@ -1,14 +1,16 @@
 /**
- * OnboardingScreen - Mobile-only onboarding
+ * OnboardingScreen - 모바일 전용 온보딩
  * Design System: TamaguiText, TamaguiChip, TamaguiPressableScale
  *
  * 2026 UJUz 테마 토큰 기반
  */
 
 import { useMemo, useState } from 'react';
-import { View, TextInput, ScrollView } from 'react-native';
+import { TextInput, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTheme } from 'tamagui';
 import { Colors, Layout } from '@/app/constants';
 import { useProfileStore } from '@/app/stores/profileStore';
@@ -22,11 +24,11 @@ import {
 } from '@/app/design-system';
 
 const AGE_OPTIONS = [
-  { label: '0-6m', months: 4 },
-  { label: '6-12m', months: 9 },
-  { label: '1-2y', months: 18 },
-  { label: '2-4y', months: 36 },
-  { label: '4-6y', months: 54 },
+  { label: '0~6개월', months: 4 },
+  { label: '6~12개월', months: 9 },
+  { label: '1~2세', months: 18 },
+  { label: '2~4세', months: 36 },
+  { label: '4~6세', months: 54 },
 ];
 
 const PREFERENCE_OPTIONS = [
@@ -77,26 +79,32 @@ export default function OnboardingScreen() {
 
   const styles = useMemo(
     () => ({
-      container: {
+      gradient: {
         flex: 1 as const,
-        backgroundColor: theme.background.val,
       },
       header: {
         paddingHorizontal: Layout.screenPadding,
-        marginBottom: 24,
+        marginBottom: 28,
       },
       logo: {
         fontStyle: 'italic' as const,
-        letterSpacing: -1.2,
-        marginBottom: 10,
+        letterSpacing: -1.4,
+        fontSize: 36,
+        fontWeight: '800' as const,
+        marginBottom: 12,
+      },
+      title: {
+        fontSize: 30,
+        fontWeight: '800' as const,
+        lineHeight: 40,
       },
       subtitleMargin: {
-        marginTop: 6,
+        marginTop: 8,
       },
       card: {
         marginHorizontal: 20,
-        padding: 16,
-        borderRadius: 16,
+        padding: 20,
+        borderRadius: 20,
         backgroundColor: theme.surface.val,
         borderWidth: 0.5,
         borderColor: theme.borderColor.val,
@@ -105,24 +113,24 @@ export default function OnboardingScreen() {
         marginBottom: 10,
       },
       sectionLabelMarginTop: {
-        marginTop: 16,
+        marginTop: 18,
         marginBottom: 10,
       },
       input: {
-        height: 44,
+        height: 48,
         backgroundColor: theme.surfaceElevated.val,
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        fontSize: 14,
+        borderRadius: 14,
+        paddingHorizontal: 14,
+        fontSize: 15,
         color: theme.textPrimary.val,
         borderWidth: 0.5,
         borderColor: theme.borderColor.val,
       },
       cta: {
-        marginTop: 20,
+        marginTop: 24,
         marginHorizontal: 20,
-        height: 52,
-        borderRadius: 16,
+        height: 56,
+        borderRadius: 18,
         backgroundColor: Colors.primary,
         alignItems: 'center' as const,
         justifyContent: 'center' as const,
@@ -132,23 +140,28 @@ export default function OnboardingScreen() {
   );
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: 40 }}
+    <LinearGradient
+      colors={[theme.background.val, theme.surface.val, theme.background.val]}
+      locations={[0, 0.5, 1]}
+      style={styles.gradient}
     >
-      <View style={styles.header}>
-        <TamaguiText preset="h1" textColor="primary" weight="bold" style={styles.logo}>
-          uju
-        </TamaguiText>
-        <TamaguiText preset="h3" textColor="primary" weight="bold">
-          아이에게 맞는 하루를 시작해요
-        </TamaguiText>
-        <TamaguiText preset="caption" textColor="secondary" style={styles.subtitleMargin}>
-          오늘 갈 곳·입학·대기 알림까지
-        </TamaguiText>
-      </View>
+      <ScrollView
+        contentContainerStyle={{ paddingTop: insets.top + 28, paddingBottom: 48 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View style={styles.header} entering={FadeInDown.duration(500)}>
+          <TamaguiText preset="h1" textColor="primary" weight="bold" style={styles.logo}>
+            우쥬
+          </TamaguiText>
+          <TamaguiText preset="h3" textColor="primary" weight="bold" style={styles.title}>
+            아이에게 맞는 하루를{'\n'}시작해요
+          </TamaguiText>
+          <TamaguiText preset="caption" textColor="secondary" style={styles.subtitleMargin}>
+            오늘 갈 곳·입학·대기 알림까지
+          </TamaguiText>
+        </Animated.View>
 
-      <View style={styles.card}>
+        <Animated.View style={styles.card} entering={FadeInDown.delay(200).duration(500)}>
         <TamaguiText
           preset="caption"
           textColor="secondary"
@@ -236,7 +249,7 @@ export default function OnboardingScreen() {
           weight="semibold"
           style={styles.sectionLabelMarginTop}
         >
-          이동 거리 (km)
+          이동 거리
         </TamaguiText>
         <TamaguiChipGroup gap={8}>
           {[3, 5, 8, 12].map((value) => (
@@ -268,19 +281,22 @@ export default function OnboardingScreen() {
           accessibilityLabel="기본 지역"
           accessibilityHint="선호하는 지역을 입력하세요"
         />
-      </View>
+        </Animated.View>
 
-      <TamaguiPressableScale
-        onPress={handleContinue}
-        hapticType="medium"
-        style={styles.cta}
-        accessibilityLabel="다음 버튼"
-        accessibilityHint="다음 단계로 이동합니다"
-      >
-        <TamaguiText preset="bodyLarge" textColor="inverse" weight="bold">
-          다음
-        </TamaguiText>
-      </TamaguiPressableScale>
-    </ScrollView>
+        <Animated.View entering={FadeInDown.delay(400).duration(500)}>
+          <TamaguiPressableScale
+            onPress={handleContinue}
+            hapticType="medium"
+            style={styles.cta}
+            accessibilityLabel="다음 버튼"
+            accessibilityHint="다음 단계로 이동합니다"
+          >
+            <TamaguiText preset="bodyLarge" textColor="inverse" weight="bold">
+              다음
+            </TamaguiText>
+          </TamaguiPressableScale>
+        </Animated.View>
+      </ScrollView>
+    </LinearGradient>
   );
 }

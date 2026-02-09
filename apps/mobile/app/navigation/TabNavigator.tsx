@@ -32,6 +32,8 @@ import {
 import { useGroupBuyStore } from '@/app/stores';
 import { getTabLabel } from '@/app/utils/accessibility';
 import { TamaguiText } from '@/app/design-system';
+import { Colors, withAlpha } from '@/app/constants/Colors';
+import { ujuzColors } from '@/tamagui.config';
 
 const Tab = createBottomTabNavigator();
 
@@ -166,11 +168,12 @@ const badgeStyles = StyleSheet.create({
 const ORB_SIZE = 54;
 const BLOB_SIZE = 34;
 
+// Siri 오브는 의도적 다크 테마 — 시스템 테마와 무관
 const BLOB_COLORS = [
-  'rgba(93, 219, 158, 0.70)', // mint (brand)
-  'rgba(59, 130, 246, 0.60)', // blue
-  'rgba(139, 92, 246, 0.55)', // purple
-  'rgba(236, 72, 153, 0.50)', // pink
+  withAlpha(ujuzColors.primary500, 0.70), // mint (brand)
+  withAlpha('#3B82F6', 0.60),             // blue
+  withAlpha('#8B5CF6', 0.55),             // purple
+  withAlpha('#EC4899', 0.50),             // pink
 ];
 
 function SiriBlob({
@@ -291,13 +294,13 @@ const orbStyles = StyleSheet.create({
     width: ORB_SIZE + 16,
     height: ORB_SIZE + 16,
     borderRadius: (ORB_SIZE + 16) / 2,
-    backgroundColor: 'rgba(93, 219, 158, 0.12)',
+    backgroundColor: withAlpha(ujuzColors.primary500, 0.12),
   },
   orbOuter: {
     width: ORB_SIZE,
     height: ORB_SIZE,
     borderRadius: ORB_SIZE / 2,
-    shadowColor: '#5DDB9E',
+    shadowColor: ujuzColors.primary500,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.35,
     shadowRadius: 16,
@@ -307,12 +310,12 @@ const orbStyles = StyleSheet.create({
     width: ORB_SIZE,
     height: ORB_SIZE,
     borderRadius: ORB_SIZE / 2,
-    backgroundColor: 'rgba(18, 18, 20, 0.88)',
+    backgroundColor: 'rgba(18, 18, 20, 0.88)', // Intentional: dark orb background
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: Colors.whiteAlpha10,
   },
   iconCenter: {
     position: 'absolute',
@@ -323,7 +326,7 @@ const orbStyles = StyleSheet.create({
   label: {
     fontSize: 10,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.55)',
+    color: Colors.whiteAlpha70,
     marginTop: 5,
     letterSpacing: 0.3,
   },

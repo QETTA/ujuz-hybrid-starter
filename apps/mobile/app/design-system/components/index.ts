@@ -69,3 +69,6 @@ export {
   type TamaguiListSkeletonProps,
 } from './TamaguiListSkeleton';
 export { default as TamaguiRatingStars, type TamaguiRatingStarsProps } from './TamaguiRatingStars';
+
+// Screen Wrapper (2026 Glassmorphism)
+export { GradientScaffold, type GradientVariant } from './GradientScaffold';

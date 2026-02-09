@@ -17,7 +17,6 @@ declare module '@env' {
   export const YOUTUBE_API_KEY: string;
   export const KAKAO_JAVASCRIPT_KEY: string;
 
-  // Mapbox (client-safe)
-  export const MAPBOX_PUBLIC_TOKEN: string;
-  export const MAPBOX_STYLE_URL: string | undefined;
+  // Naver Map (configured via app.json plugin)
+  export const NAVER_CLIENT_ID: string;
 }

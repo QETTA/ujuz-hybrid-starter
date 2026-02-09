@@ -16,9 +16,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
-import { Animations } from '@/app/constants';
-
-const SPRING_CONFIG = Animations.springSnappy;
+/** Natural spring physics: damping 15, stiffness 150 for organic feel */
+const SPRING_CONFIG = {
+  damping: 15,
+  stiffness: 150,
+};
 
 export interface TamaguiPressableScaleProps {
   /** Children content */
@@ -53,19 +55,22 @@ export function TamaguiPressableScale({
   accessibilityHint,
 }: TamaguiPressableScaleProps) {
   const scaleValue = useSharedValue(1);
+  const opacityValue = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scaleValue.value }],
-    opacity: disabled ? 0.5 : 1,
+    opacity: disabled ? 0.5 : opacityValue.value,
   }));
 
   const gesture = Gesture.Tap()
     .enabled(!disabled)
     .onBegin(() => {
       scaleValue.value = withSpring(scaleAmount, SPRING_CONFIG);
+      opacityValue.value = withSpring(0.95, SPRING_CONFIG);
     })
     .onFinalize(() => {
       scaleValue.value = withSpring(1, SPRING_CONFIG);
+      opacityValue.value = withSpring(1, SPRING_CONFIG);
     })
     .onEnd(() => {
       if (onPress && !disabled) {

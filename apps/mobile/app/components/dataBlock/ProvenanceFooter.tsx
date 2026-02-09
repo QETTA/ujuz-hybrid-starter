@@ -13,10 +13,10 @@ interface Props {
 }
 
 const SOURCE_LABEL: Record<DataBlock['source'], string> = {
-  public_api: 'public API',
-  user_report: 'user report',
-  crawler: 'crawler',
-  inference: 'inference',
+  public_api: '공공데이터',
+  user_report: '사용자 제보',
+  crawler: '자동 수집',
+  inference: 'AI 분석',
 };
 
 export default function ProvenanceFooter({ block, compact = false }: Props) {

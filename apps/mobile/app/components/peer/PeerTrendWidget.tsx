@@ -37,17 +37,17 @@ function TrendingPlaceItem({
 
   return (
     <TamaguiPressableScale
-      style={{ width: 140, marginRight: 12 }}
+      style={{ width: 152, marginRight: 12 }}
       onPress={onPress}
       hapticType="light"
     >
       <YStack position="relative" marginBottom={10}>
         <Image
-          source={{ uri: place.place.thumbnailUrl || 'https://picsum.photos/140/100' }}
+          source={{ uri: place.place.thumbnailUrl || 'https://picsum.photos/152/108' }}
           style={{
-            width: 140,
-            height: 100,
-            borderRadius: 12,
+            width: 152,
+            height: 108,
+            borderRadius: 14,
             backgroundColor: theme.surfaceElevated.val,
           }}
           resizeMode="cover"
@@ -193,7 +193,7 @@ export function PeerTrendWidget({
           justifyContent="space-between"
           paddingHorizontal={20}
         >
-          <Text fontSize={16} fontWeight="700" color="$textPrimary">
+          <Text fontSize={17} fontWeight="700" color="$textPrimary" letterSpacing={-0.4}>
             인기 장소
           </Text>
           <TamaguiPressableScale
@@ -229,7 +229,7 @@ export function PeerTrendWidget({
           justifyContent="space-between"
           paddingHorizontal={20}
         >
-          <Text fontSize={16} fontWeight="700" color="$textPrimary">
+          <Text fontSize={17} fontWeight="700" color="$textPrimary" letterSpacing={-0.4}>
             인기 공구
           </Text>
           <TamaguiPressableScale

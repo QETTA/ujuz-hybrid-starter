@@ -8,7 +8,7 @@
  */
 
 import { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, useColorScheme } from 'react-native';
 import { styled, YStack, GetProps } from 'tamagui';
 import Animated, {
   useSharedValue,
@@ -110,6 +110,9 @@ export function TamaguiSkeleton({
   testID,
 }: TamaguiSkeletonProps) {
   const shimmerPosition = useSharedValue(-1);
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const shimmerColor = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.06)';
 
   // Start shimmer animation
   useEffect(() => {
@@ -148,7 +151,7 @@ export function TamaguiSkeleton({
     >
       {animate && (
         <AnimatedGradient
-          colors={['transparent', 'rgba(255, 255, 255, 0.3)', 'transparent']}
+          colors={['transparent', shimmerColor, 'transparent']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[StyleSheet.absoluteFill, shimmerStyle, { width: 200 }]}

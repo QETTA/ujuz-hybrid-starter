@@ -19,13 +19,13 @@ const GlassContainer = styled(YStack, {
   borderRadius: '$4',
   overflow: 'hidden',
   borderWidth: 1,
-  borderColor: '$glassDark',
+  borderColor: '$glassMedium',
 
   variants: {
     // Glass Intensity
     intensity: {
       light: {
-        backgroundColor: '$glassDark',
+        backgroundColor: '$glassMedium',
       },
       medium: {
         backgroundColor: '$glassMedium',
@@ -135,7 +135,7 @@ export function TamaguiGlassCard({
   padding = 'md',
   glow,
   scoreGlow,
-  blurIntensity = 60,
+  blurIntensity = 80,
   onPress,
   testID,
   accessibilityLabel,

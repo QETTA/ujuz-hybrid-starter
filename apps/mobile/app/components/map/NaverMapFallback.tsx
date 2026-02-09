@@ -1,51 +1,18 @@
 /**
  * Expo Go Fallback Map View
- * Used when @rnmapbox/maps native module is not available
+ * Development Build가 아닌 환경에서 사용되는 폴백 리스트 UI
  */
 import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/app/constants';
 import { TamaguiText, TamaguiPressableScale } from '@/app/design-system';
-
-export type MapLngLat = { lng: number; lat: number };
-
-// GeoJSON Feature type for map layers (compatible with geojson library)
-type GeoJSONFeature = {
-  type: 'Feature';
-  properties: Record<string, unknown> | null;
-  geometry: { type: string; coordinates: number[] | number[][] };
-};
-
-type GeoJSONFeatureCollection = {
-  type: 'FeatureCollection';
-  features: GeoJSONFeature[];
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyGeoJSON = GeoJSONFeatureCollection | any;
-
-export type MapboxLayers = {
-  places: AnyGeoJSON | null;
-  peers?: AnyGeoJSON | null;
-  heat?: AnyGeoJSON | null;
-  coParents?: AnyGeoJSON | null;
-};
-
-type Props = {
-  center: MapLngLat;
-  zoom: number;
-  layers: MapboxLayers;
-  showUserLocation?: boolean;
-  activeLayer?: 'all' | 'peers' | 'deals' | 'saved';
-  onPlacePress?: (placeId: string) => void;
-  onRegionDidChange?: (next: { center: MapLngLat; zoom: number }) => void;
-};
+import type { MapViewProps } from './types';
 
 /**
- * Fallback map for Expo Go (no native Mapbox support)
+ * Fallback map for Expo Go (no native Naver SDK support)
  * Shows placeholder with place count and basic info
  */
-export default function MapboxMapViewExpo({ center, layers, onPlacePress }: Props) {
+export default function NaverMapFallback({ center, layers, onPlacePress }: MapViewProps) {
   const placeCount = layers.places?.features?.length || 0;
   const peerCount = layers.peers?.features?.length || 0;
 

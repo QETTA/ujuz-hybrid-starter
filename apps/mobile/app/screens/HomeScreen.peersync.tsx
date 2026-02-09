@@ -12,6 +12,7 @@
 
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { YStack, XStack, useTheme } from 'tamagui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,6 +51,7 @@ import { useAdmissionScore } from '@/app/hooks/useAdmissionScore';
 import { usePayment } from '@/app/hooks/usePayment';
 import { useGroupBuys } from '@/app/hooks/useGroupBuys';
 import type { PeerActivity } from '@/app/types/peerSync';
+import { Colors } from '@/app/constants';
 import { COPY } from '@/app/copy/copy.ko';
 
 // ─── Constants ───────────────────────────────────────────
@@ -96,7 +98,10 @@ function HomeHeroScore({
   if (score == null || !grade) {
     return (
       <TamaguiPressableScale hapticType="medium" onPress={onPress}>
-        <TamaguiGlassCard intensity="medium" padding="lg">
+        <TamaguiGlassCard
+          intensity="medium"
+          padding="lg"
+        >
           <YStack alignItems="center" gap="$3" paddingVertical="$4">
             <TamaguiText
               fontSize={22}
@@ -122,7 +127,11 @@ function HomeHeroScore({
 
   return (
     <TamaguiPressableScale hapticType="medium" onPress={onPress}>
-      <TamaguiGlassCard intensity="medium" padding="lg" scoreGlow={validGrade}>
+      <TamaguiGlassCard
+        intensity="medium"
+        padding="lg"
+        scoreGlow={validGrade}
+      >
         <YStack alignItems="center" gap="$3" paddingVertical="$2">
           <ScoreRing score={Math.round(score)} grade={validGrade} size="md" />
           {facility && (
@@ -145,11 +154,11 @@ function HomeHeroScore({
 }
 
 const TODAY_PICKS = [
-  { id: 'pick-wait', icon: 'time-outline' as const, label: '대기 짧은 곳', desc: '지금 바로 갈 수 있어요', filter: 'all' as const },
-  { id: 'pick-age', icon: 'people-outline' as const, label: '3세 인기', desc: '비슷한 연령대가 많이 간 곳', filter: 'peers' as const },
-  { id: 'pick-indoor', icon: 'home-outline' as const, label: '실내 놀이', desc: '날씨 걱정 없는 실내 공간', filter: 'all' as const },
-  { id: 'pick-free', icon: 'gift-outline' as const, label: '무료 체험', desc: '무료로 이용할 수 있어요', filter: 'deals' as const },
-  { id: 'pick-new', icon: 'sparkles-outline' as const, label: '새로 오픈', desc: '최근 오픈한 시설', filter: 'all' as const },
+  { id: 'pick-wait', icon: 'time-outline' as const, label: '대기 짧은 곳', desc: '지금 바로 갈 수 있어요', filter: 'all' as const, accent: Colors.success },
+  { id: 'pick-age', icon: 'people-outline' as const, label: '3세 인기', desc: '비슷한 연령대가 많이 간 곳', filter: 'peers' as const, accent: '#6366F1' },
+  { id: 'pick-indoor', icon: 'home-outline' as const, label: '실내 놀이', desc: '날씨 걱정 없는 실내 공간', filter: 'all' as const, accent: Colors.warning },
+  { id: 'pick-free', icon: 'gift-outline' as const, label: '무료 체험', desc: '무료로 이용할 수 있어요', filter: 'deals' as const, accent: Colors.deal },
+  { id: 'pick-new', icon: 'sparkles-outline' as const, label: '새로 오픈', desc: '최근 오픈한 시설', filter: 'all' as const, accent: Colors.info },
 ];
 
 function HomeTodayPicks({ onPickPress }: { onPickPress: (filter: string) => void }) {
@@ -157,34 +166,64 @@ function HomeTodayPicks({ onPickPress }: { onPickPress: (filter: string) => void
   return (
     <YStack gap="$3">
       <XStack paddingHorizontal="$5" alignItems="center" gap="$2">
-        <TamaguiText fontSize={18} fontWeight="700" color="$textPrimary" letterSpacing={-0.5}>
+        <TamaguiText fontSize={20} fontWeight="800" color="$textPrimary" letterSpacing={-0.8}>
           오늘 추천
         </TamaguiText>
-        <TamaguiText fontSize={13} color="$textTertiary" fontWeight="500">
-          TOP {TODAY_PICKS.length}
-        </TamaguiText>
+        <View style={{
+          paddingHorizontal: 8,
+          paddingVertical: 2,
+          borderRadius: 10,
+          backgroundColor: `${theme.primary.val}15`,
+        }}>
+          <TamaguiText fontSize={12} color="$primary" fontWeight="700">
+            TOP {TODAY_PICKS.length}
+          </TamaguiText>
+        </View>
       </XStack>
       <FlatList
         data={TODAY_PICKS}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TamaguiPressableScale
             hapticType="light"
             onPress={() => onPickPress(item.filter)}
-            style={{ width: 140 }}
+            accessibilityLabel={`${item.label}, ${item.desc}`}
+
+            style={{
+              width: 176,
+              shadowColor: item.accent,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 4,
+            }}
           >
-            <TamaguiGlassCard intensity="light" padding="md">
-              <YStack gap="$2" alignItems="flex-start">
-                <Ionicons name={item.icon} size={22} color={theme.primary.val} />
-                <TamaguiText fontSize={14} fontWeight="700" color="$textPrimary" letterSpacing={-0.3}>
-                  {item.label}
-                </TamaguiText>
-                <TamaguiText fontSize={12} fontWeight="400" color="$textTertiary" numberOfLines={2}>
-                  {item.desc}
-                </TamaguiText>
+            <TamaguiGlassCard
+              intensity="light"
+              padding="md"
+            >
+              <YStack gap="$3" alignItems="flex-start">
+                <View style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  backgroundColor: `${item.accent}15`,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Ionicons name={item.icon} size={24} color={item.accent} />
+                </View>
+                <YStack gap="$1">
+                  <TamaguiText fontSize={15} fontWeight="700" color="$textPrimary" letterSpacing={-0.4}>
+                    {item.label}
+                  </TamaguiText>
+                  <TamaguiText fontSize={12} fontWeight="400" color="$textTertiary" numberOfLines={2} lineHeight={16}>
+                    {item.desc}
+                  </TamaguiText>
+                </YStack>
               </YStack>
             </TamaguiGlassCard>
           </TamaguiPressableScale>
@@ -243,6 +282,8 @@ function HomeQuotaWidget({
           onPress={onUpgrade}
           pressStyle={{ opacity: 0.7 }}
           marginTop="$1"
+
+          accessibilityLabel="구독 업그레이드"
         >
           더 많이 이용하기
         </TamaguiText>
@@ -274,7 +315,7 @@ function HomeDealCarousel({
     <YStack gap="$3">
       <XStack justifyContent="space-between" alignItems="center" paddingHorizontal="$5">
         <XStack alignItems="center" gap="$2">
-          <TamaguiText fontSize={18} fontWeight="700" color="$textPrimary" letterSpacing={-0.5}>
+          <TamaguiText fontSize={20} fontWeight="800" color="$textPrimary" letterSpacing={-0.8}>
             공동구매 진행중
           </TamaguiText>
           <TamaguiText fontSize={13} color="$deal" fontWeight="600">
@@ -293,6 +334,8 @@ function HomeDealCarousel({
           <TamaguiPressableScale
             hapticType="light"
             onPress={() => onDealPress(item.id)}
+            accessibilityLabel={`${item.title}${item.discount_rate ? `, ${item.discount_rate}% 할인` : ''}`}
+
             style={{ width: 200 }}
           >
             <TamaguiGlassCard intensity="light" padding="md">
@@ -368,7 +411,7 @@ function HomePeerFeed({
     <YStack paddingHorizontal="$5" gap="$3">
       <XStack justifyContent="space-between" alignItems="center">
         <XStack alignItems="center" gap="$2">
-          <TamaguiText fontSize={18} fontWeight="700" color="$textPrimary" letterSpacing={-0.5}>
+          <TamaguiText fontSize={20} fontWeight="800" color="$textPrimary" letterSpacing={-0.8}>
             또래 피드
           </TamaguiText>
           <TamaguiText fontSize={12} color="$textTertiary">
@@ -387,7 +430,7 @@ function HomePeerFeed({
       {isLoading && activities.length === 0 ? (
         <YStack gap={12}>
           {[0, 1].map((i) => (
-            <YStack key={i} gap={8} padding={16} backgroundColor="$surfaceMuted" borderRadius={16}>
+            <YStack key={i} gap={8} padding={16} backgroundColor="$surfaceMuted" borderRadius={16} borderWidth={0.5} borderColor="$borderColor">
               <TamaguiSkeleton variant="title" width="half" />
               <TamaguiSkeleton variant="text" width="full" />
               <TamaguiSkeleton variant="text" width="third" />
@@ -522,7 +565,13 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
 
   // ─── Render ────────────────────────────────────────
   return (
-    <View testID={testID} style={{ flex: 1, backgroundColor: theme.background.val }}>
+    <LinearGradient
+      testID={testID}
+      colors={[theme.background.val, `${theme.primary.val}08`, theme.background.val]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1 }}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -541,8 +590,8 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingHorizontal: 20,
-            paddingTop: insets.top + 12,
-            paddingBottom: 4,
+            paddingTop: insets.top + 14,
+            paddingBottom: 8,
           }}
         >
           <XStack alignItems="center" gap={10}>
@@ -579,6 +628,8 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
               hapticType="light"
               style={{ padding: 12, margin: -12 }}
               onPress={() => navigation.navigate('Search')}
+              accessibilityLabel="검색"
+  
             >
               <Ionicons name="search" size={20} color={theme.textSecondary.val} />
             </TamaguiPressableScale>
@@ -586,6 +637,8 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
               hapticType="light"
               style={{ padding: 12, margin: -12 }}
               onPress={() => navigation.navigate('NotificationHistory')}
+              accessibilityLabel={unreadCount > 0 ? `알림 ${unreadCount}건` : '알림'}
+  
             >
               <View>
                 <Ionicons name="notifications-outline" size={20} color={theme.textSecondary.val} />
@@ -616,12 +669,20 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
 
         {/* ── 인사 ─────────────────────────────────── */}
         <Animated.View entering={stagger(0)} style={{ paddingHorizontal: 20, marginTop: 24 }}>
-          <TamaguiText fontSize={28} fontWeight="700" color="$textPrimary" letterSpacing={-1.2}>
+          <TamaguiText fontSize={34} fontWeight="800" color="$textPrimary" letterSpacing={-1.8}>
             {greeting}
           </TamaguiText>
-          <TamaguiText fontSize={14} fontWeight="400" color="$textTertiary" letterSpacing={-0.2} marginTop={4}>
-            {childName || '우리 아이'} · {ageLabel} · {daysLabel}
-          </TamaguiText>
+          <XStack alignItems="center" gap={6} marginTop={8}>
+            <View style={{
+              width: 7,
+              height: 7,
+              borderRadius: 3.5,
+              backgroundColor: theme.primary.val,
+            }} />
+            <TamaguiText fontSize={15} fontWeight="600" color="$textSecondary" letterSpacing={-0.3}>
+              {childName || '우리 아이'} · {ageLabel} · {daysLabel}
+            </TamaguiText>
+          </XStack>
         </Animated.View>
 
         {/* ── ProactiveAICard: TO 알림 / AI 제안 ──── */}
@@ -642,7 +703,7 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
         )}
 
         {/* ── ScoreRing 히어로 ─────────────────────── */}
-        <Animated.View entering={stagger(2)} style={{ paddingHorizontal: 20, marginTop: 24 }}>
+        <Animated.View entering={stagger(2)} style={{ paddingHorizontal: 20, marginTop: 28 }}>
           <HomeHeroScore
             score={scoreDisplay}
             grade={scoreGrade}
@@ -652,12 +713,12 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
         </Animated.View>
 
         {/* ── 오늘 추천 TOP 5 ────────────────────── */}
-        <Animated.View entering={stagger(3)} style={{ marginTop: 24 }}>
+        <Animated.View entering={stagger(3)} style={{ marginTop: 28 }}>
           <HomeTodayPicks onPickPress={handlePickPress} />
         </Animated.View>
 
         {/* ── QuotaBar 위젯 ───────────────────────── */}
-        <Animated.View entering={stagger(4)} style={{ paddingHorizontal: 20, marginTop: 20 }}>
+        <Animated.View entering={stagger(4)} style={{ paddingHorizontal: 20, marginTop: 28 }}>
           <HomeQuotaWidget
             admissionUsed={admissionUsed}
             admissionTotal={admissionTotal}
@@ -697,7 +758,7 @@ export function HomeScreenPeerSync({ testID }: HomeScreenPeerSyncProps) {
           />
         </Animated.View>
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 

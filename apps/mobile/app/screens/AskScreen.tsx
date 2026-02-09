@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import { useTheme, YStack, XStack, Text } from 'tamagui';
-import { Layout } from '@/app/constants';
+import { Layout, Colors } from '@/app/constants';
 import { ConfidenceBadge, InsightCard, ProvenanceFooter } from '@/app/components/dataBlock';
 import {
   TamaguiText,
@@ -476,7 +476,7 @@ export default function AskScreen() {
                 </Text>
                 <View
                   style={{
-                    backgroundColor: 'rgba(93, 219, 158, 0.15)',
+                    backgroundColor: Colors.primaryAlpha15,
                     paddingHorizontal: 6,
                     paddingVertical: 1,
                     borderRadius: 4,

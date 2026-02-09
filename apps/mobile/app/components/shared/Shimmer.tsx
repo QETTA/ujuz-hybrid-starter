@@ -2,10 +2,11 @@
  * Shimmer Effect Component - iOS 26 Style
  *
  * Animated shimmer effect for skeleton loaders
+ * Dark/Light mode aware
  */
 
 import { useEffect } from 'react';
-import { View, StyleSheet, ViewStyle, DimensionValue } from 'react-native';
+import { View, StyleSheet, ViewStyle, DimensionValue, useColorScheme } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -25,10 +26,15 @@ interface ShimmerProps {
 
 export default function Shimmer({ width, height, borderRadius = 8, style }: ShimmerProps) {
   const translateX = useSharedValue(-1);
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   useEffect(() => {
     translateX.value = withRepeat(withTiming(1, { duration: 1500 }), -1, false);
   }, []);
+
+  const shimmerColor = isDark ? Colors.whiteAlpha30 : 'rgba(0, 0, 0, 0.06)';
+  const containerBg = isDark ? Colors.darkSurfaceElevated : Colors.iosSecondaryBackground;
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -45,10 +51,10 @@ export default function Shimmer({ width, height, borderRadius = 8, style }: Shim
   });
 
   return (
-    <View style={[styles.container, { width, height, borderRadius }, style]}>
+    <View style={[styles.container, { width, height, borderRadius, backgroundColor: containerBg }, style]}>
       <Animated.View style={[styles.shimmer, animatedStyle]}>
         <LinearGradient
-          colors={['transparent', Colors.whiteAlpha30, 'transparent']}
+          colors={['transparent', shimmerColor, 'transparent']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.gradient}
@@ -60,7 +66,6 @@ export default function Shimmer({ width, height, borderRadius = 8, style }: Shim
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.iosSecondaryBackground,
     overflow: 'hidden',
   },
   shimmer: {

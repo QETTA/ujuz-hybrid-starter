@@ -11,7 +11,8 @@ export { Animations, type AnimationDuration, type AnimationEasing } from './anim
 export { Glass, Depths, Glows, Borders, MaterialPresets, createGlassStyle } from './materials';
 
 /**
- * Colors - design-system 내부 컴포넌트용 색상 토큰
+ * @deprecated 스크린/컴포넌트에서는 `import { Colors } from '@/app/constants'` 사용 권장.
+ * 이 객체는 design-system 내부 컴포넌트 하위 호환용으로만 유지됩니다.
  *
  * Button, Card 등 기존 RN StyleSheet 기반 컴포넌트에서 사용.
  * Tamagui 테마 토큰($primary 등)과 별도로 관리.

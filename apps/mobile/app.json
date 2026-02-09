@@ -102,7 +102,12 @@
         }
       ],
       "expo-font",
-      "@rnmapbox/maps"
+      [
+        "@mj-studio/react-native-naver-map",
+        {
+          "client_id": "r77h9jqt0p"
+        }
+      ]
     ]
   }
 }

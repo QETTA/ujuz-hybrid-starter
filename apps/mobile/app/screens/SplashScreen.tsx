@@ -1,8 +1,8 @@
 /**
- * SplashScreen - Mobile-only entry
+ * SplashScreen - 모바일 전용 엔트리
  *
  * 2026 UJUz 테마 토큰 기반
- * Spring scale-in + shimmer sweep 애니메이션
+ * Spring scale-in + FadeInDown 애니메이션
  */
 
 import { useEffect, useRef, useMemo } from 'react';
@@ -14,9 +14,9 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withDelay,
   withTiming,
-  Easing,
+  FadeIn,
+  FadeInDown,
 } from 'react-native-reanimated';
 import { useTheme } from 'tamagui';
 import { Colors } from '@/app/constants';
@@ -33,29 +33,18 @@ export default function SplashScreen() {
   const hasNavigated = useRef(false);
   const theme = useTheme();
 
-  // Spring scale-in animation
+  // Spring scale-in animation for logo
   const logoScale = useSharedValue(0.6);
   const logoOpacity = useSharedValue(0);
-  const taglineOpacity = useSharedValue(0);
-  const shimmerTranslateX = useSharedValue(-200);
 
   useEffect(() => {
     logoScale.value = withSpring(1, { damping: 12, stiffness: 100 });
     logoOpacity.value = withTiming(1, { duration: 600 });
-    taglineOpacity.value = withDelay(400, withTiming(1, { duration: 500 }));
-    shimmerTranslateX.value = withDelay(
-      600,
-      withTiming(200, { duration: 800, easing: Easing.inOut(Easing.ease) })
-    );
   }, []);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: logoScale.value }],
     opacity: logoOpacity.value,
-  }));
-
-  const taglineAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: taglineOpacity.value,
   }));
 
   // Fallback: Force navigation after 3 seconds even if hydration fails
@@ -104,19 +93,20 @@ export default function SplashScreen() {
       },
       logoWrap: {
         alignItems: 'center' as const,
-        gap: 10,
+        gap: 14,
       },
       logo: {
-        fontSize: 42,
+        fontSize: 56,
         fontWeight: '800' as const,
         fontStyle: 'italic' as const,
         color: theme.textPrimary.val,
-        letterSpacing: -1.8,
+        letterSpacing: -2.2,
       },
       tagline: {
-        fontSize: 13,
+        fontSize: 15,
         fontWeight: '600' as const,
         color: theme.textSecondary.val,
+        letterSpacing: 0.3,
       },
       footer: {
         position: 'absolute' as const,
@@ -138,10 +128,10 @@ export default function SplashScreen() {
       <View style={styles.logoWrap}>
         <Animated.View style={logoAnimatedStyle}>
           <TamaguiText preset="h1" textColor="primary" weight="bold" style={styles.logo}>
-            Ujuz
+            우쥬
           </TamaguiText>
         </Animated.View>
-        <Animated.View style={taglineAnimatedStyle}>
+        <Animated.View entering={FadeInDown.delay(400).duration(600)}>
           <TamaguiText
             preset="caption"
             textColor="secondary"
@@ -153,11 +143,11 @@ export default function SplashScreen() {
         </Animated.View>
       </View>
 
-      <View style={styles.footer}>
+      <Animated.View style={styles.footer} entering={FadeIn.delay(800).duration(500)}>
         <TamaguiText preset="caption" textColor="tertiary" style={styles.footerText}>
           오늘 갈 곳·입학·대기 알림까지
         </TamaguiText>
-      </View>
+      </Animated.View>
     </LinearGradient>
   );
 }

@@ -4,7 +4,7 @@
  */
 
 export { HomeScreenPeerSync } from './HomeScreen.peersync';
-export { default as MapScreen } from './MapScreen.mapbox';
+export { default as MapScreen } from './MapScreen';
 export { default as GroupBuyScreen } from './GroupBuyScreen';
 export { default as AskScreen } from './AskScreen';
 export { default as SplashScreen } from './SplashScreen';

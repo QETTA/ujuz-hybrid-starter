@@ -109,3 +109,6 @@ export {
   type TamaguiCardProps,
   type CardVariant as TamaguiCardVariant,
 } from './components/TamaguiCard';
+
+// Screen Wrapper (2026 Glassmorphism)
+export { GradientScaffold, type GradientVariant } from './components/GradientScaffold';

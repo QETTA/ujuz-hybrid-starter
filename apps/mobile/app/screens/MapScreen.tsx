@@ -1,10 +1,11 @@
 /**
- * MapScreen - Mapbox First (Toss-minimal) + User Data Visualization
+ * MapScreen - Naver Map (다크모드 커스텀) + User Data Visualization
  *
  * 목표:
- * - Kakao WebView 기반 지도 → Mapbox Native SDK로 전환
+ * - 네이버 지도 SDK (@mj-studio/react-native-naver-map)
  * - uju UX 원칙: Map은 도구, 상단의 '인텔리전스/컨텍스트'가 중심
  * - peers / deals / saved 레이어를 최소 토글로 제공 (선택 피로 ↓)
+ * - 다크모드 자동 전환 (isNightModeEnabled)
  *
  * Refactored:
  * - GeoJSON 변환 → map/utils/geojson.ts
@@ -20,7 +21,7 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from 'tamagui';
 
-import { MapboxMapView, ThreeSnapBottomSheet } from '@/app/components/map';
+import { NaverMapView, ThreeSnapBottomSheet } from '@/app/components/map';
 import { ConfidenceBadge } from '@/app/components/dataBlock';
 import {
   TamaguiChip,
@@ -155,14 +156,17 @@ export default function MapScreenMapbox() {
         paddingHorizontal: 16,
       },
       searchBar: {
-        height: 44,
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderRadius: 14,
-        paddingHorizontal: 16,
+        height: 48,
+        backgroundColor: theme.card.val,
+        borderRadius: 16,
+        paddingHorizontal: 18,
         flexDirection: 'row' as const,
         alignItems: 'center' as const,
         justifyContent: 'space-between' as const,
         ...Shadows.card,
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        elevation: 6,
       },
       searchText: {
         fontSize: 16,
@@ -222,16 +226,22 @@ export default function MapScreenMapbox() {
         right: 16,
         bottom: 160,
         backgroundColor: theme.textPrimary.val,
-        borderRadius: 14,
-        padding: 12,
+        borderRadius: 16,
+        width: 48,
+        height: 48,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
         ...Shadows.card,
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 6,
       },
       emptyCard: {
         position: 'absolute' as const,
         top: 220,
         left: 16,
         right: 16,
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        backgroundColor: theme.card.val,
         borderRadius: 16,
         padding: 14,
         alignItems: 'center' as const,
@@ -260,7 +270,7 @@ export default function MapScreenMapbox() {
 
   return (
     <View style={styles.container}>
-      <MapboxMapView
+      <NaverMapView
         center={{ lng: center.lng, lat: center.lat }}
         zoom={zoom}
         layers={mapLayers}
