@@ -19,6 +19,7 @@ infra/.terraform/
 
 # Logs
 *.log
+.sync-logs/
 
 # Temp / Swap / Backup
 *.tmp
