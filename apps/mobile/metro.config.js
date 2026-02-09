@@ -42,6 +42,11 @@ config.resolver = {
 // === Sync Status Middleware ===
 // Intercepts .bundle requests to track bundling state,
 // and exposes GET /sync-status endpoint for DevOverlay + Claude diagnostics.
+let syncState = { bundling: false, lastStatus: null, lastTime: null };
+function getSyncState() { return syncState; }
+function onBundleStart() { syncState = { bundling: true, lastStatus: null, lastTime: Date.now() }; }
+function onBundleDone(status) { syncState = { bundling: false, lastStatus: status, lastTime: Date.now() }; }
+
 const originalMiddleware = config.server?.enhanceMiddleware;
 config.server = {
   ...config.server,

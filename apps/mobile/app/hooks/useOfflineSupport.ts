@@ -150,14 +150,14 @@ export function useOfflineData<T>({
   // Initial fetch
   useEffect(() => {
     fetchData();
-  }, [enabled]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [enabled]);
 
   // Refetch when coming back online
   useEffect(() => {
     if (isOnline && error) {
       fetchData(true);
     }
-  }, [isOnline]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOnline]);
 
   // Clear cache
   const clearCache = useCallback(async () => {

@@ -107,7 +107,8 @@
         {
           "client_id": "r77h9jqt0p"
         }
-      ]
+      ],
+      "./plugins/withNaverMaven"
     ]
   }
 }

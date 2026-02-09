@@ -74,20 +74,16 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, isLast, onPress }) => {
   const backgroundColor = useSharedValue('transparent');
 
   const handlePressIn = useCallback(() => {
-    /* eslint-disable react-hooks/immutability -- Reanimated shared values are mutable by design */
     scale.value = withSpring(0.98, Animations.springSnappy);
     backgroundColor.value = withTiming(
       item.destructive ? Colors.iosSystemRedAlpha10 : Colors.blackAlpha5,
       { duration: 100 }
     );
-    /* eslint-enable react-hooks/immutability */
   }, [item.destructive, scale, backgroundColor]);
 
   const handlePressOut = useCallback(() => {
-    /* eslint-disable react-hooks/immutability -- Reanimated shared values are mutable by design */
     scale.value = withSpring(1, Animations.springSnappy);
     backgroundColor.value = withTiming('transparent', { duration: 100 });
-    /* eslint-enable react-hooks/immutability */
   }, [scale, backgroundColor]);
 
   const handlePress = useCallback(() => {

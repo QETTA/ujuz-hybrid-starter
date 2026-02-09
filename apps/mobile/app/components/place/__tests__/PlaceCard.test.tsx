@@ -4,7 +4,7 @@
  * Tests rendering, interactions, and accessibility
  */
 
-/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { render, fireEvent } from '@testing-library/react-native';
 
 import PlaceCard from '../PlaceCard.ios26';
