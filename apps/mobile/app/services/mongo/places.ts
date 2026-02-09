@@ -9,6 +9,9 @@ import { apiGet, getApiBaseUrl, isOnline } from './client';
 import type { PlaceWithDistance } from '@/app/types/places';
 import { MOCK_NEARBY_PLACES } from '@/app/data/mocks';
 
+// Warn-once: only log the first network failure per session
+let _placesWarnedOnce = false;
+
 // Query parameters
 export interface PlacesQueryParams {
   lat?: number;
@@ -137,7 +140,10 @@ export const placesService = {
         source: 'mongo',
       };
     } catch (error) {
-      console.warn('[MongoPlaces] searchNearby failed, fallback to mock:', error);
+      if (!_placesWarnedOnce) {
+        _placesWarnedOnce = true;
+        console.warn('[MongoPlaces] Server unreachable, using mock fallback. Further errors silenced.');
+      }
       return fallbackNearby(offset, limit);
     }
   },
@@ -154,7 +160,10 @@ export const placesService = {
       if (!result) return null;
       return normalizePlace(result);
     } catch (error) {
-      console.warn('[MongoPlaces] getById failed:', error);
+      if (!_placesWarnedOnce) {
+        _placesWarnedOnce = true;
+        console.warn('[MongoPlaces] Server unreachable, using mock fallback. Further errors silenced.');
+      }
       return MOCK_NEARBY_PLACES.find((p) => p.id === id) || null;
     }
   },
@@ -173,7 +182,10 @@ export const placesService = {
       const rows = Array.isArray(result) ? result : result.places || [];
       return rows.map((row: any) => normalizePlace(row));
     } catch (error) {
-      console.warn('[MongoPlaces] searchByText failed:', error);
+      if (!_placesWarnedOnce) {
+        _placesWarnedOnce = true;
+        console.warn('[MongoPlaces] Server unreachable, using mock fallback. Further errors silenced.');
+      }
       return MOCK_NEARBY_PLACES.filter(
         (p) => p.name.includes(query) || p.address?.includes(query)
       ).slice(0, limit);

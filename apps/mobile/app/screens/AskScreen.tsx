@@ -106,8 +106,9 @@ export default function AskScreen() {
   }, [answer, navigation, selectPlace]);
 
   const handleOpenPeerGroups = useCallback(() => {
-    navigation.navigate('PeerGroups');
-  }, [navigation]);
+    // PeerGroups screen not yet implemented — guard to prevent navigation error
+    if (__DEV__) console.log('[AskScreen] PeerGroups screen not yet registered');
+  }, []);
 
   const showEmptyState = messages.length === 0 && !loading && !answer;
 
