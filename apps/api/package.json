@@ -12,7 +12,7 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.73.0",
+    "@anthropic-ai/sdk": "^0.74.0",
     "@sentry/node": "^10.38.0",
     "@ujuz/config": "file:../../packages/config",
     "@ujuz/db": "file:../../packages/db",
